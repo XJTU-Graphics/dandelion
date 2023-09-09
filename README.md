@@ -17,3 +17,13 @@ Dandelion 开发者文档同步托管于 GitHub Pages 和 Read the Docs 两个�
 - https://dandelion-docs.readthedocs.io
 
 请访问上述二者之一来获取详细的文档。相信在这些文档的帮助下，扩展 Dandelion 使之支持更多的图形学实验会更加容易。
+
+## Contributors
+
+- greyishsong, 架构、几何处理
+- JoTaiLang, 软渲染器
+- siyuanluo, 运动求解
+- ibm5100, macOS 平台测试
+- Yqy123kkxx, 物理模拟部分实验验证
+- STORM-S314, 几何部分实验验证
+- Kylee, 渲染部分实验验证
