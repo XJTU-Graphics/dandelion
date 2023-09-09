@@ -1,0 +1,168 @@
+/*!
+
+\~english
+\page startup Start Up
+
+\~chinese
+\page startup 开始开发
+
+在开始编写代码前，请稍微花一点时间阅读以下的约定和帮助，这将有助于你更加顺利地参与到 Dandelion 的开发中。使用 Dandelion 做实验的同学可以不必遵守这些，直接开始实验。
+
+\section standard 项目规范
+
+开发过程中，除实现功能外，也请关注命名、注释（文档）、提交规范这三方面。
+
+- 命名
+  - 禁止用拼音命名，可以用 [CodeIf](https://unbug.github.io/codelf) 这个工具来查找合适的变量名，实在不方便翻译成英文的直接用中文。
+  - 文件名只能是英文，所有文件一律使用 UTF-8 编码，禁止使用任何其他编码。
+  - 类型名称（类、枚举、结构体等）遵循大驼峰，例如 `ArrayBuffer` 代表 array buffer 类型。
+  - 变量、函数名称用通常小写、下划线隔开，例如 `extract_vector3f` 代表 extract vector3f 这个过程；如果某个单词是缩写，那么这个单词大写，例如 `get_GL_type_enum` 代表获取数据类型对应的枚举值（在 GLAD 中定义，用于某些 OpenGL API）。
+  - 常量尽量定义成 `constexpr` 而不是 `const` 或者宏，命名规则与变量相同。
+  - 宏一般用全大写命名。
+- 注释：在写完代码后，请尽量注释你认为其他人不能一眼看懂的类、函数。函数内部关于实现思路的注释没有任何格式规定，而 Doxygen 注释块请遵循这两条：
+  - 对类和函数的注释应该是 Qt 风格的 Doxygen 注释块。每处英文注释开头请加上 `\~english` 指令、中文注释开头请加上 `\~chinese` 命令，否则 Doxygen 生成对应语言的文档时内容会不匹配。
+  - 如果时间紧张，可以仅写中文注释；但除非功能特别简单，还请务必写上注释，哪怕只是一个 `\brief`。
+- 提交规范
+  - 必须包含有意义的提交说明，不能什么都不写或者只写个 update on yyyy-mm-dd 这样无意义的句子。
+  - 如果某次本地提交之后发现还需要修改一些细节内容，请尽量将没有特殊意义的修改与之前的提交合并，避免“改正了某个单词拼写”或“多加了一层大括号”成为一次单独的提交。
+  - 提交说明最重要的目的是说清楚做了什么，如果觉得英语说不清，完全可以用中文写提交说明。
+
+下面是 Controller.h 文件对 `Controller` 类的部分注释：
+
+```cpp
+/*!
+ * \ingroup ui
+ * \~chinese
+ * \brief 控制器管理所有的界面组件，并处理和预览视角操作（例如旋转、缩放或者平移）相关的输入。
+ *
+ * 控制器并不负责判断来自鼠标或键盘的输入是否表示场景预览操作，这些判断是由 `Platform` 对象做出的。
+ * 因此，所有形如 `on_[device]_[act]ed()` 的方法都应当由 `Platform` 对象调用，调用条件是：
+ * 光标悬停的位置不在任何一个 ImGui 窗口上。
+ *
+ * 这是一个单例的类，其唯一一个实例可以通过 `controller()` 这个静态方法访问。
+ */
+class Controller
+{
+public:
+    /*!
+     * \~chinese
+     * \brief 获取 `Controller` 类的唯一实例。
+     *
+     * 唯一的实例被定义成函数内的静态变量，在 C++ 11 及之后的标准中，这种定义方式是线程安全的。
+     */
+    static Controller& controller();
+    ///@{
+    /*! \~chinese 禁止复制构造。*/
+    Controller(Controller& other)            = delete;
+    Controller& operator=(Controller& other) = delete;
+    ///@}
+    ~Controller();
+    /*!
+     * \~chinese
+     * \brief 在缩放窗口时调整轨迹球半径、预览视角（相机）Y 方向的 FoV，并更新自身记录的窗口尺寸。
+     * \param width 缩放后的窗口宽度。
+     * \param height 缩放后的窗口高度。
+     */
+    void on_framebuffer_resized(float width, float height);
+
+private:
+    /*! \~chinese 构造函数是私有的。 */
+    Controller();
+};
+```
+
+而在 cpp 文件中写注释只是为了帮助它人读懂代码，这时请不要用 Doxygen 注释块，否则这部分内容将会出现在生成的开发者文档中。
+
+```cpp
+void foo()
+{
+    // Machenism and explation of the operations.
+    some_operations():
+}
+```
+
+\section commit 提交更改
+
+\subsection member-submission XJTU-Graphics 组织成员
+
+我们统一在 XJTU-Graphics/Dandelion 这个仓库下协作开发。为了减少混乱，请按照如下的流程新增功能或者修复 Bug：
+
+1. 将仓库克隆到本地，新建一个分支：
+   ```bash
+   $ git clone git@github.com:XJTU-Graphics/Dandelion.git
+   $ cd Dandelion
+   $ git checkout -b your_new_branch_name
+   ```
+2. 在新的分支下修改代码、进行提交 (`git commit`)
+3. 切换到 `main` 分支并从远程下载最新的版本：
+   ```bash
+   $ git checkout main
+   $ git pull origin main
+   ```
+4. 切换回自己的分支，再 `rebase` 到 `main` 分支的最新修改上：
+   ```bash
+   $ git checkout your_new_branch_name
+   $ git rebase main
+   ```
+5. 切换到 `main` 分支，合并自己的修改，并推送到远程仓库：
+   ```bash
+   $ git checkout main
+   $ git merge your_new_branch_name
+   $ git push origin main
+   ```
+6. 完成修改后，建议删除新创建的分支，下次修改时再新建：
+   ```bash
+   $ git branch -d your_new_branch_name
+   ```
+
+我们倾向于使用 rebase 操作来维持主分支的提交记录是线性的，如果不了解 Git 的 rebase 操作，请阅读[Git-变基](https://git-scm.com/book/zh/v2/Git-%E5%88%86%E6%94%AF-%E5%8F%98%E5%9F%BA)
+
+总之，
+
+- 新建自己的分支，请勿直接在 `main` 分支上修改代码。
+- 任何提交被推送到远程仓库后禁止再次修改，严禁使用 `git push -f` (`git push --force`) 强制覆盖远程仓库。如果需要修正已经推送的错误，请新建一个提交。
+- 在推送到远程仓库前，保证自己的 `main` 分支已经是最新的。
+
+\subsection non-member-submission 非组织成员
+
+请 Fork 本项目，修改后提交 Pull Request 。
+
+\section tools 开发工具
+
+\subsection code-format 代码格式
+
+请注意， **所有的源代码文件在提交之前都应当被格式化。**
+
+为了免去写代码时考虑格式的麻烦，我们使用 clang-format 工具格式化 src 目录下的所有代码。指定格式的 .clang-format 文件已经放置于项目根目录下，请勿随意修改。
+
+目前 vim / VS Code / Visual Studio 等开发工具中都有集成 clang-format 的插件，可以直接安装使用；也可以手动在命令行使用
+
+```bash
+clang-format -style=file -i file
+```
+
+来格式化 `file` 这个文件。
+
+我们目前使用的 clang-format 版本是 14，格式化配置文件应当与 15 版本兼容。更高版本会提示 .clang-format 文件中有些配置项已被废弃 (deprecated)，但由于新版本相同功能的配置项并不兼容旧版本，我们暂时不打算升级 clang-format。
+
+\subsection spell-check 拼写检查
+
+一个拼写错误的单词可能给后期开发带来很大麻烦，我们在发现拼写错误后 **一定会更正它** 。推荐使用 cSpell 检查单词拼写，省得在写错后回头修改。
+
+- VS Code 用户可以直接安装 cSpell 插件。
+- Vim 用户可以使用 coc.nvim 并安装 coc-spell-checker 插件。
+
+\subsection code-complention 代码补全
+
+目前主要的代码补全方案有两种：
+
+- 全功能 IDE 直接提供的补全，例如 Visual Studio 或者 Qt Creator
+- 基于 Language Server Protocol (LSP) 的补全，绝大部分编辑器都使用这种方式
+
+一些代码补全工具的补全策略中包含“自动引入头文件”的功能，例如 Clangd 会在你写下新的类型时自动包含定义了这个类型的头文件。这种策略被称为 include-what-you-use (IWYU)，也就是“用什么包含什么”。
+
+但有一些依赖库并不是遵循这个原则开发的，例如 Eigen 就不是：如果你想使用 `Eigen::Vector3f` 类型，它推荐你引入 Eigen/Core 这个头文件，而不是定义了这个类型的 Eigen/src/Core/Matrix.h 这个头文件。此时“自动引入头文件”的功能就非常烦人，甚至可能导致某些错误。提交到远程的源代码中尽量不要含有类似的不当引用，为此，我们推荐在开发过程中禁止该功能。如果你使用 Clangd 提供的 Language Server，那么在启动 clangd 时加上 `--header-insertion=never` 参数就可以了，推荐直接把这个参数写进 VS Code 插件的 `clangd.arguments` 属性里。
+
+另一个必须注意的问题是：GLFW 和 GLAD 头文件的包含是有顺序要求的，必须先包含 GLAD 再包含 GLFW。而 clang-format 这样的格式化工具会自动重排头文件顺序，直接导致编译失败，我们已经在 .clang-format 文件中禁止了头文件重排序。或许其他 IDE 也会有类似的行为，请务必检查一下。
+
+*/

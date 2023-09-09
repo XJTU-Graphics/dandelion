@@ -1,0 +1,124 @@
+/*!
+\~chinese
+\page build 构建
+
+\section environment 编译和运行环境
+
+编译和运行的环境必须满足如下条件：
+
+- 提供支持 C++ 17 标准的编译器、不低于 3.14 版本的 CMake
+- 64 位操作系统
+- 显卡驱动至少支持 OpenGL 3.3 Core Profile
+
+运行于 x86-64 硬件架构上的 Windows 10 / 11、macOS 和 Debian / Ubuntu  / Linux Mint / Fedora/ Arch Linux / Manjaro 等常见 Linux 发行版均满足条件。使用 Apple M 系列芯片 (Apple Silicon) 的 macbook 和 iMac 同样可以。
+
+> 请不要使用虚拟机中的系统，因为 Virtual Box 支持的 OpenGL 版本太低，而 VMware 的虚拟显卡驱动实现的 OpenGL API 疑似存在 bug。
+> 
+> 目前已经确认 VMware 创建的 Windows 虚拟机不能正常使用 Dandelion 框架，Linux 虚拟机暂时没有问题，但如果以后出现我们不会专门解决。
+
+\section dependencies 依赖
+
+这个项目依赖于如下的第三方库：
+
+- GLFW 3.3.8, Zlib License
+- GLAD (OpenGL Core Profile, version >= 3.3), MIT & Apache License
+- Eigen 3.4.0, Mozilla Public License
+- Assimp 5.2.5, Open Assert Import Library License
+- Dear ImGui 1.89.3 (docking branch), MIT License
+- stb\_image 2.28, MIT License & Public Domain
+- spdlog 1.11.0, MIT License
+- {fmt} 9.1.0, {fmt}'s License
+- portable-file-dialogs (commit 7f852d88a480020d7f91957cbcefe514fc95000c), WTFPL License
+
+所有的依赖项均被包含于 *deps* 子目录中，不需要额外下载或安装。由于我们对一些库进行了修复移植或裁剪，也请不要轻易尝试替换 *deps* 目录下的第三方库，它们和官方发布的相应版本可能并不完全一样。
+
+由于 Dandelion 首先是一个实验框架，用于西安交通大学计算机图形学课程教学，我们在 Dandelion 的公开分支上删去了所有实验题目的实现代码。然而物体拾取 (picking) 等功能依赖于射线求交，这部分代码被删去后会造成相当的不便。对此，我们的解决方案是将 *utils* 目录下的 *aabb.cpp*, *bvh.cpp* 和 *ray.cpp* 三个文件编译成一个静态库 *dandelion-ray* ，只要在编译时链接它就可以直接使用我们提供的实现。我们目前编译了这些版本的库：
+
+- Windows: Visual Studio 2019
+- Linux: GCC 11.4 / Clang 14.0
+- macOS: Clang 14.0
+
+如果你想要使用这个静态库，请下载符合自己操作系统、编译器的版本。带有 `-debug` 后缀的库用于 Debug 模式，不带此后缀的用于 Release 模式。将两个文件都放置于 *deps* 目录下，并在 *CMakeLists.txt* 文件进行如下设置：（公开分支上默认已经完成）
+
+- 在设置 `DANDELION_UTILS_RESOURCE` 变量的命令中，注释掉上面提到的三个源文件。
+- 使用 `target_link_directories` 将 `deps` 添加到 `${PROJECT_NAME}` 这个 target 的库搜索路径中。
+- 使用 `target_link_libraries` 命令将合适的静态库链接到 `${PROJECT_NAME}` 这个 target ，建议使用 generator expression 自动区分 Debug 和 Release 模式。
+
+\section requests 工具需求
+
+- 支持 C++ 17 标准的编译器
+  - 最低要求 Visual Studio 2019、GNU G++ 11、Clang++ 14 。由于我们开启的警告等级很高，更低版本的编译器可能会产生错误的警告。
+  - 推荐使用 Visual Studio 2022、GNU G++ 12、Clang++ 15 。更高版本的编译器我们尚未测试。
+- CMake 3.14 及以上（推荐使用最新的稳定版本）
+
+在 Windows 平台上，从官方网站下载安装足够新的 Visual Studio 和 CMake 即可；在 Linux 平台上可以用包管理器安装编译器和 CMake；在 macOS 平台上，我们推荐安装 Xcode 命令行工具（不是 Xcode IDE），并使用 Homebrew 安装 CMake。
+
+> 基于 Debian 的 Linux 发行版（使用 apt 包管理器）中，所需软件包名是 `build-essential cmake cmake-extras`，其他发行版请自行确定对应的包，亦可选择从源代码编译安装。
+
+\section compilation 编译
+
+由于日志输出是调试实验的重要参考，我们始终推荐从 **终端** 启动 Dandelion。在 Windows 平台上，我们推荐使用 PowerShell 而非 cmd，并推荐使用 Windows Terminal 作为终端模拟器；在 Linux 或 macOS 平台上可以直接使用默认的 shell 和终端模拟器，更熟悉这些工具的话也可以自己挑选。
+
+以下的所有说明中，均以“终端”代指终端模拟器而非 shell。不清楚二者区别的话，可以简单认为“终端”就是指能执行命令的窗口。
+
+由于我们人力有限，Dandelion 仅支持 Debug 和 Release 两种构建类型，在不修改 *CMakeLists.txt* 的情况下，你也只能用这两个类型构建 Dandelion。这并不意味着 MinSizeRel 和 RelWithDebInfo 类型一定会构建出错，但我们不会在这两个模式下作任何测试。
+
+\subsection compilation-windows Windows
+
+由于 Dandelion 的源文件中包含 UTF-8 编码的中文，整个项目需要开启 `/utf-8` 选项编译，而 Windows 文件系统默认的中文编码是 GBK ，这可能导致兼容性问题（表现为“无访问权限”等）。因此，Dandelion 的源代码必须位于全英文路径下。
+
+打开终端，进入 dandelion 根目录并执行如下命令：
+
+```powershell
+> New-Item -ItemType "directory" build
+> Set-Location build
+> cmake -S .. -B .
+> cmake --build . --config=Debug --target dandelion --parallel 8
+```
+
+完成后可以直接运行程序：（必须在 *build* 目录下执行命令，切换到 *Debug* 目录下会导致程序找不到资源文件））
+
+```powershell
+> .\Debug\dandelion.exe
+```
+
+MSVC 和 MS Build 是 Multi-config 的构建工具，在调整构建类型时不需要重新配置 CMake 项目，只需修改参数重新编译：
+
+```powershell
+> cmake --build . --config=Release --target dandelion --parallel 8
+> .\Release\dandelion.exe
+```
+
+\subsection compilation-linux Linux
+
+打开终端，进入 dandelion 目录并执行如下命令：
+
+```bash
+$ mkdir build
+$ cd build
+$ cmake -S .. -B . -DCMAKE_BUILD_TYPE=Debug
+$ cmake --build . --parallel 8
+```
+
+完成后可以直接运行程序：
+
+```bash
+$ ./dandelion
+```
+
+GNU Make 是 Single-config 的构建工具，需要重新配置 CMake 项目才能改变构建类型：
+
+```bash
+$ cmake -S .. -B . -DCMAKE_BUILD_TYPE=Release
+$ cmake --build . --parallel 8
+```
+
+调整 `cmake` 命令的参数可以调整编译设置。修改 `--parallel` 参数后接的数字可以调整编译器使用的线程数，建议和物理核心数量等同。
+
+\subsection compilation-macos macOS
+
+macOS 同样支持 GNU Make 工具，因此打开终端执行和 Linux 平台相同的命令即可。
+
+Dandelion 应当可以使用 Xcode 编译，请注意 Xcode 和 Visual Studio 一样是 Multi-config 的构建系统，应该参照 Windows 的命令编译。我们人力有限，目前不会测试 Xcode 兼容性。
+
+*/
