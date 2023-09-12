@@ -117,6 +117,9 @@ if (MSVC)
     target_compile_options(${PROJECT_NAME}
         PRIVATE /W4 /utf-8 /wd4127 /wd4996 /wd4458
     )
+    target_compile_definitions(${PROJECT_NAME}
+        PRIVATE NOMINMAX
+    )
 else()
     target_compile_options(${PROJECT_NAME}
         PRIVATE -Wall -Wextra -Werror
