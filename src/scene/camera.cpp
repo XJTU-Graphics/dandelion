@@ -7,6 +7,11 @@
 
 #include "../utils/math.hpp"
 
+#ifdef _WIN32
+#undef near
+#undef far
+#endif
+
 using Eigen::Affine3f;
 using Eigen::Matrix3f;
 using Eigen::Matrix4f;
