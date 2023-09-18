@@ -37,5 +37,9 @@ ipch/
 .vim/
 *.swp
 
+# For Pre-compiled static libs -------------------
+deps/libdandelion-*.a
+deps/dandelion-*.lib
+
 # For Doxygen ------------------------------------
 docs/build/
