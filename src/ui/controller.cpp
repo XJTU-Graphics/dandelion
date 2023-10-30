@@ -213,6 +213,17 @@ void Controller::process_input()
                 }
             }
         }
+        // allow removing light
+        Light** light_result = get_if<Light*>(&selected_element);
+        if (light_result != nullptr){
+            Light *selected_light = *light_result;
+            for (auto light = scene->lights.begin(); light != scene->lights.end(); ++light) {
+                if (&(*light) == selected_light){
+                    scene->lights.erase(light);
+                    break;
+                }
+            }
+        }
     }
     if (ImGui::IsKeyDown(ImGuiKey_ModCtrl) && ImGui::IsKeyDown(ImGuiKey_R)) {
         main_camera->position -= main_camera->target;
