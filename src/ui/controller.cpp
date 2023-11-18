@@ -186,9 +186,9 @@ void Controller::process_input()
         }
     }
     if (ImGui::IsKeyDown(ImGuiKey_Delete)) {
-        Object** result = get_if<Object*>(&selected_element);
-        if (result != nullptr) {
-            Object* selected_object = *result;
+        Object** object_result = get_if<Object*>(&selected_element);
+        if (object_result != nullptr) {
+            Object* selected_object = *object_result;
             for (auto group = scene->groups.begin(); group != scene->groups.end(); ++group) {
                 auto& objects = (*group)->objects;
                 bool found    = false;
@@ -213,15 +213,18 @@ void Controller::process_input()
                 }
             }
         }
-        // allow removing light
         Light** light_result = get_if<Light*>(&selected_element);
-        if (light_result != nullptr){
-            Light *selected_light = *light_result;
+        if (light_result != nullptr) {
+            Light* selected_light = *light_result;
+            size_t index          = 1;
             for (auto light = scene->lights.begin(); light != scene->lights.end(); ++light) {
-                if (&(*light) == selected_light){
+                if (&(*light) == selected_light) {
+                    logger->info("delete light at index {}", index);
                     scene->lights.erase(light);
+                    unselect();
                     break;
                 }
+                ++index;
             }
         }
     }
