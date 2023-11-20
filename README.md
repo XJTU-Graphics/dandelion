@@ -33,6 +33,7 @@ Please not create any PR providing solution of any lab, such a PR will never be 
 - Yqy123kkxx: Validation of labs about simulation
 - STORM-S314: Validation of labs about geometry processing
 - Kylee: Validation of labs about rendering
+- geezmolycos: Removal of light sources through GUI operations
 
 ---
 
@@ -66,3 +67,4 @@ release 频道是一个公开仓库 (XJTU-Graphics/dandelion) ，包含西安交
 - Yqy123kkxx, 物理模拟部分实验验证
 - STORM-S314, 几何部分实验验证
 - Kylee, 渲染部分实验验证
+- geezmolycos: 通过 GUI 操作移除场景中的光源
