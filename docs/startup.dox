@@ -85,12 +85,12 @@ void foo()
 
 \subsection member-submission XJTU-Graphics 组织成员
 
-我们统一在 XJTU-Graphics/Dandelion 这个仓库下协作开发。为了减少混乱，请按照如下的流程新增功能或者修复 Bug：
+我们统一在 XJTU-Graphics/dandelion-dev 这个仓库下协作开发。为了减少混乱，请按照如下的流程新增功能或者修复 Bug：
 
 1. 将仓库克隆到本地，新建一个分支：
    ```bash
-   $ git clone git@github.com:XJTU-Graphics/Dandelion.git
-   $ cd Dandelion
+   $ git clone git@github.com:XJTU-Graphics/dandelion-dev.git
+   $ cd dandelion-dev
    $ git checkout -b your_new_branch_name
    ```
 2. 在新的分支下修改代码、进行提交 (`git commit`)
@@ -125,7 +125,7 @@ void foo()
 
 \subsection non-member-submission 非组织成员
 
-请 Fork 本项目，修改后提交 Pull Request 。
+请在 GitHub 上 Fork XJTU-Graphics/dandelion 项目，修改后提交 Pull Request 。Gitee 仅用作发布镜像，issue 和 pull request 很可能得不到回复。
 
 \section tools 开发工具
 
