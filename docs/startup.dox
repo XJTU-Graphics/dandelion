@@ -97,20 +97,18 @@ void foo()
 3. 切换到 `main` 分支并从远程下载最新的版本：
    ```bash
    $ git checkout main
-   $ git pull origin main
+   $ git pull --rebase origin main
    ```
 4. 切换回自己的分支，再 `rebase` 到 `main` 分支的最新修改上：
    ```bash
    $ git checkout your_new_branch_name
    $ git rebase main
    ```
-5. 切换到 `main` 分支，合并自己的修改，并推送到远程仓库：
+5. 解决冲突后，将自己的分支推送到远程仓库，向 `main` 分支发起一次 Pull Request：
    ```bash
-   $ git checkout main
-   $ git merge your_new_branch_name
-   $ git push origin main
+   $ git posh origin your_new_branch_name
    ```
-6. 完成修改后，建议删除新创建的分支，下次修改时再新建：
+6. PR 被合并后，建议删除新创建的分支，下次修改时再新建：
    ```bash
    $ git branch -d your_new_branch_name
    ```
@@ -120,12 +118,12 @@ void foo()
 总之，
 
 - 新建自己的分支，请勿直接在 `main` 分支上修改代码。
-- 任何提交被推送到远程仓库后禁止再次修改，严禁使用 `git push -f` (`git push --force`) 强制覆盖远程仓库。如果需要修正已经推送的错误，请新建一个提交。
-- 在推送到远程仓库前，保证自己的 `main` 分支已经是最新的。
+- 通常情况下请不要使用 revert 回退，任何情况下禁止修改一个已经被推送到远程仓库的 commit、禁止使用 `git push -f` (`git push --force`) 强制覆盖远程仓库。如果需要修正已经推送的错误，请新建一个提交。
+- 在推送到远程仓库前，保证自己已经 rebase 到了最新的 `main` 分支上。
 
 \subsection non-member-submission 非组织成员
 
-请在 GitHub 上 Fork XJTU-Graphics/dandelion 项目，修改后提交 Pull Request 。Gitee 仅用作发布镜像，issue 和 pull request 很可能得不到回复。
+请在 GitHub 上 Fork XJTU-Graphics/dandelion 项目，修改后提交 Pull Request 。Gitee 仅用作发布镜像，issue 很可能得不到回复，PR 则不会被接受。
 
 \section tools 开发工具
 
@@ -147,9 +145,9 @@ clang-format -style=file -i file
 
 \subsection spell-check 拼写检查
 
-一个拼写错误的单词可能给后期开发带来很大麻烦，我们在发现拼写错误后 **一定会更正它** 。推荐使用 cSpell 检查单词拼写，省得在写错后回头修改。
+一个拼写错误的单词可能给后期开发带来很大麻烦，我们在发现拼写错误后 **一定会更正它** 。推荐使用插件检查单词拼写，省得在写错后回头修改。
 
-- VS Code 用户可以直接安装 cSpell 插件。
+- VS Code 用户可以直接安装 Code Spell Checker 插件。
 - Vim 用户可以使用 coc.nvim 并安装 coc-spell-checker 插件。
 
 \subsection code-complention 代码补全
