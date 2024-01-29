@@ -2,41 +2,31 @@
 \~chinese
 \page structure 项目结构
 
-整个项目的结构大致如下：
+按照所实现的功能，Dandelion 的源代码被划分为若干模块（注意，非 C++ 20 引入的原生 module），每个模块的源代码存放于一个子目录中。整个项目的结构如下：
 
 ```
 dandelion
 ├── CMakeLists.txt
 ├── CREDITS
-├── deps
+├── deps        // 所有的依赖库
 │   ├── assimp
-│   ├── Eigen
-│   ├── glad
-│   ├── glfw
-│   ├── imgui
-│   ├── portable-file-dialogs.h
-│   ├── spdlog
-│   ├── fmt
-│   └── stb
-├── docs
+│   └── ...
+├── docs        // 开发者文档源码
 ├── README.md
-├── resources
-└── src
+├── resources   // 运行时所需的资源文件，包括图标、字体和 shader 源码
+└── src         // 源代码
     ├── main.cpp
-    ├── geometry
-    ├── simulation
-    ├── platform
-    ├── render
-    ├── scene
-    ├── ui
-    └── utils
+    ├── geometry    // 几何处理模块
+    ├── simulation  // 物理模拟模块
+    ├── platform    // 平台相关模块
+    ├── render      // 离线渲染模块
+    ├── scene       // 场景模块
+    ├── ui          // UI 模块
+    └── utils       // 共享工具模块
 ```
 
-- *deps* 存放第三方依赖
-- *docs* 存放开发者文档
-- *resources* 存放图标、字体和 GLSL shader
-- *src* 的每个子目录下存放一个模块的源代码（包括头文件和源文件）
+点击左侧导航栏上的 *Topics* 页面可以显示模块简介，在 *Topics* 页面上点击模块名则可以查看模块内的各种定义。
 
-目前源代码被划分成六个主要模块，详见“模块”一章中对各模块的说明。
+\note 因为 Doxygen 1.10 中将原先的“模块” (Modules) 页面改为了 Topics 页面，而其源代码中尚未提供 Topics 页面的中文翻译，所以当前的 Topics 页面标题和开头仍然是英文的。
 
 */

@@ -1,0 +1,15 @@
+/*!
+\~english
+\defgroup geometry Geometry
+\brief Files, classes and some explanations about halfedge-based geometric operations.
+
+\~chinese
+\defgroup geometry 几何处理
+\brief 使用半边网格 (halfedge mesh) 进行几何处理操作的模块。
+
+Dandelion 中的几何操作分为局部操作和全局操作两类：
+
+- 局部操作是只需要某个局部的信息——例如一点的 \f$\mathcal{N}_1\f$ 邻域、一条边的邻接面片等——就能完成的操作。
+- 全局操作是需要遍历整个网格的操作，例如一次曲面细分 (subdivision) 或一次重网格化 (re-meshing)。
+
+*/
