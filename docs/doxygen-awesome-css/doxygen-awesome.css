@@ -864,7 +864,7 @@ html.dark-mode iframe#MSearchResults {
 
 .ui-resizable-e {
     background: var(--separator-color);
-    width: 1px;
+    width: 5px;
 }
 
 /*
