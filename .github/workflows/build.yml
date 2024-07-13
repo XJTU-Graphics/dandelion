@@ -38,5 +38,39 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: dandelion-windows-x64
+          name: dandelion-windows-x64-msvc
           path: ./build/Release
+
+  build_lib_windows_x64:
+    runs-on: windows-2019
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup msbuild
+        uses: microsoft/setup-msbuild@v2
+      
+      - name: Create build dir
+        run: |
+          New-Item -ItemType "directory" "lib\build"
+        shell: powershell
+      
+      - name: Generate VS build file with CMake
+        run: cmake -G "Visual Studio 16 2019" -S ".\lib" -B ".\lib\build"
+        shell: powershell
+      
+      - name: Build Dandelion-lib
+        run: |
+          cmake --build ".\lib\build" --config Debug --target dandelion-bvh --parallel 8
+          cmake --build ".\lib\build" --config Debug --target dandelion-ray --parallel 8
+          cmake --build ".\lib\build" --config Release --target dandelion-bvh --parallel 8
+          cmake --build ".\lib\build" --config Release --target dandelion-ray --parallel 8
+        shell: powershell
+      
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dandelion-lib-windows-x64-msvc
+          path: |
+            ./lib/build/Debug
+            ./lib/build/Release
