@@ -8,8 +8,6 @@ on:
   pull_request:
     branches: [ main, actions-auto-build ]
 
-env:
-
 jobs:
   build_windows_x64:
     runs-on: windows-2019
