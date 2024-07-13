@@ -1,0 +1,44 @@
+name: Dandelion-dev CI
+
+on:
+  workflow_dispatch:
+
+  push:
+    branches: [ main, actions-auto-build ]
+  pull_request:
+    branches: [ main, actions-auto-build ]
+
+env:
+
+jobs:
+  build_windows_x64:
+    runs-on: windows-2019
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup msbuild
+        uses: microsoft/setup-msbuild@v2
+      
+      - name: Create build dir
+        run: |
+          New-Item -ItemType "directory" build
+        shell: powershell
+      
+      - name: Generate VS build file with CMake
+        run: cmake -G "Visual Studio 16 2019" -S . -B build
+        shell: powershell
+      
+      - name: Build Dandelion
+        run: cmake --build build --config Release --target dandelion --parallel 8
+        shell: powershell
+      
+      - name: Copy resources
+        run: Copy-Item -Path ".\build\resources" -Destination ".\build\Release\resources" -Recurse
+        shell: powershell
+      
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dandelion-windows-x64
+          path: ./build/Release
