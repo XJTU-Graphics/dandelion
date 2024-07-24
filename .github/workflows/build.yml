@@ -74,3 +74,32 @@ jobs:
           path: |
             ./lib/build/Debug
             ./lib/build/Release
+
+  build_linux:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout dandelion-autobuild
+        uses: actions/checkout@v4
+        with:
+          repository: geezmolycos/dandelion-autobuild # TODO: please change it to XJTU-graphics
+          token: REDACTED # only for testing
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          path: dandelion-dev
+
+      - name: Update rolling distribution images
+        run: |
+          python3 build_all.py -u
+        shell: bash
+
+      - name: Build docker images
+        run: |
+          python3 build_all.py -im
+        shell: bash      
+
+      - name: Build dandelion
+        run: |
+          python3 build_all.py -b
+        shell: bash
