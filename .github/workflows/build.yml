@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
 
   push:
-    branches: [ main, actions-auto-build ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, actions-auto-build ]
+    branches: [ main ]
 
 jobs:
   build_windows_x64:
@@ -103,3 +103,9 @@ jobs:
         run: |
           python3 build_all.py -b
         shell: bash
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dandelion-linux-x64
+          path: logs
