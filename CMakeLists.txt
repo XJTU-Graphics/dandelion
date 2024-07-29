@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 project(dandelion VERSION 0.4)
 
-add_link_options(-Wl,--disable-dynamicbase,--disable-high-entropy-va,--default-image-base-low)
-
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release")
@@ -147,12 +145,12 @@ if (MSVC)
         PRIVATE NOMINMAX
     )
 else()
-    # target_compile_options(${PROJECT_NAME}
-    #     PRIVATE -Wall -Wextra -Werror
-    # )
+    target_compile_options(${PROJECT_NAME}
+        PRIVATE -Wall -Wextra -Werror
+    )
 endif()
-# GCC 13 and onward will trigger dangling reference warning with assimp and fmt
-if(${CMAKE_C_COMPILER_ID} MATCHES "GNU" AND ${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER_EQUAL 13)
+# ignore dangling reference warning with assimp and fmt with GCC 13 and onward
+if(${CMAKE_C_COMPILER_ID} STREQUAL "GNU" AND ${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER_EQUAL 13)
     target_compile_options(assimp
         PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wno-dangling-reference -Wno-maybe-uninitialized>
     )
@@ -160,6 +158,12 @@ if(${CMAKE_C_COMPILER_ID} MATCHES "GNU" AND ${CMAKE_CXX_COMPILER_VERSION} VERSIO
         PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wno-dangling-reference -Wno-maybe-uninitialized>
     )
 endif()
-
+# workaround for MINGW which will produce relocation error due to high image base
+# the specific reason is not known
+if (MINGW)
+    target_link_options(${PROJECT_NAME}
+        PRIVATE -Wl,--default-image-base-low
+    )
+endif ()
 
 file(COPY ${PROJECT_SOURCE_DIR}/resources DESTINATION ${PROJECT_BINARY_DIR})
