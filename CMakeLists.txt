@@ -165,5 +165,11 @@ if (MINGW)
         PRIVATE -Wl,--default-image-base-low
     )
 endif ()
+# libc++ 18 marked 'char_traits<fmt::detail::char8_type>' as deprecated and will remove it in 19, so if using clang 18, turn off this warning
+if(${CMAKE_C_COMPILER_ID} MATCHES "Clang" AND ${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER_EQUAL 18)
+    target_compile_options(${PROJECT_NAME}
+        PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wno-deprecated-declarations>
+    )
+endif()
 
 file(COPY ${PROJECT_SOURCE_DIR}/resources DESTINATION ${PROJECT_BINARY_DIR})
