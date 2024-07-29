@@ -81,8 +81,7 @@ jobs:
       - name: Checkout dandelion-autobuild
         uses: actions/checkout@v4
         with:
-          repository: geezmolycos/dandelion-autobuild # TODO: please change it to XJTU-graphics
-          token: REDACTED # only for testing
+          repository: XJTU-Graphics/dandelion-autobuild
 
       - name: Checkout code
         uses: actions/checkout@v4
