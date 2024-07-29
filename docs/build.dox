@@ -29,7 +29,7 @@
 - Eigen 3.4.0, Mozilla Public License
 - Assimp 5.2.5, Open Assert Import Library License
 - Dear ImGui 1.89.3 (docking branch), MIT License
-- stb\_image 2.28, MIT License & Public Domain
+- stb\_image 2.30, MIT License & Public Domain
 - spdlog 1.11.0, MIT License
 - {fmt} 9.1.0, {fmt}'s License
 - portable-file-dialogs (commit 7f852d88a480020d7f91957cbcefe514fc95000c), WTFPL License
