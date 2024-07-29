@@ -9,7 +9,7 @@ on:
     branches: [ main ]
 
 jobs:
-  build_windows_x64:
+  build_windows_x64_msvc:
     runs-on: windows-2019
     steps:
       - name: Checkout code
@@ -28,7 +28,7 @@ jobs:
         shell: powershell
       
       - name: Build Dandelion
-        run: cmake --build build --config Release --target dandelion --parallel 8
+        run: cmake --build build --config Release --target dandelion --parallel $Env:NUMBER_OF_PROCESSORS
         shell: powershell
       
       - name: Copy resources
@@ -41,7 +41,7 @@ jobs:
           name: dandelion-windows-x64-msvc
           path: ./build/Release
 
-  build_lib_windows_x64:
+  build_lib_windows_x64_msvc:
     runs-on: windows-2019
     steps:
       - name: Checkout code
@@ -61,10 +61,10 @@ jobs:
       
       - name: Build Dandelion-lib
         run: |
-          cmake --build ".\lib\build" --config Debug --target dandelion-bvh --parallel 8
-          cmake --build ".\lib\build" --config Debug --target dandelion-ray --parallel 8
-          cmake --build ".\lib\build" --config Release --target dandelion-bvh --parallel 8
-          cmake --build ".\lib\build" --config Release --target dandelion-ray --parallel 8
+          cmake --build ".\lib\build" --config Debug --target dandelion-bvh --parallel $Env:NUMBER_OF_PROCESSORS
+          cmake --build ".\lib\build" --config Debug --target dandelion-ray --parallel $Env:NUMBER_OF_PROCESSORS
+          cmake --build ".\lib\build" --config Release --target dandelion-bvh --parallel $Env:NUMBER_OF_PROCESSORS
+          cmake --build ".\lib\build" --config Release --target dandelion-ray --parallel $Env:NUMBER_OF_PROCESSORS
         shell: powershell
       
       - name: Upload Artifact
@@ -74,6 +74,51 @@ jobs:
           path: |
             ./lib/build/Debug
             ./lib/build/Release
+
+  build_windows_x64_mingw:
+    runs-on: windows-2019
+    strategy:
+      matrix:
+        include:
+          - { sys: mingw64 }
+          - { sys: ucrt64 }
+          - { sys: clang64 }
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{matrix.sys}}
+          update: true
+          install: >-
+            git
+            make
+          pacboy: >-
+            toolchain:p
+            cmake:p
+            ninja:p
+      
+      - name: Create build dir
+        run: mkdir build
+      
+      - name: Generate build file
+        run: cmake -G Ninja -S . -B build
+      
+      - name: Build Dandelion
+        run: cmake --build build # ninja always runs in parallel
+      
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dandelion-windows-x64-mingw-${{matrix.sys}}
+          path: |
+            build/dandelion.exe
+            build/resources
 
   build_linux:
     runs-on: ubuntu-24.04
