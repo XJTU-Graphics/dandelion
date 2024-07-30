@@ -107,7 +107,7 @@ jobs:
         run: mkdir build
       
       - name: Generate build file
-        run: cmake -G Ninja -S . -B build
+        run: cmake -G Ninja -S . -B build -DCMAKE_BUILD_TYPE=Release
       
       - name: Build Dandelion
         run: cmake --build build # ninja always runs in parallel
@@ -153,3 +153,26 @@ jobs:
         with:
           name: dandelion-linux-x64
           path: logs
+
+  build_macos:
+    runs-on: macos-13
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Create build dir
+        run: mkdir build
+      
+      - name: Generate build file
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      
+      - name: Build Dandelion
+        run: cmake --build build --target dandelion --parallel $(sysctl -n hw.activecpu)
+      
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dandelion-macos-x64
+          path: |
+            build/dandelion.app
+            build/resources
