@@ -174,5 +174,5 @@ jobs:
         with:
           name: dandelion-macos-x64
           path: |
-            build/dandelion.app
+            build/dandelion
             build/resources
