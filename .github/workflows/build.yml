@@ -75,7 +75,7 @@ jobs:
             ninja:p
       
       - name: Build.sh
-        environment:
+        env:
           OS_NAME: ${{ matrix.sys }}
           DANDELION_PATH: dandelion
           BUILD_PATH: build
