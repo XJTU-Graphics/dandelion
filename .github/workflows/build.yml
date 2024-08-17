@@ -88,6 +88,7 @@ jobs:
       - if: ${{ matrix.build_kind == 'lib' }}
         name: Upload Artifact (debug)
         uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: dandelion-windows_${{ matrix.sys }}-x64-${{ matrix.build_kind }}-debug
           path: build_output/${{ matrix.sys }}-debug-artifacts/*
@@ -95,6 +96,7 @@ jobs:
       - if: ${{ matrix.build_kind == 'lib' || matrix.build_kind == 'dev' }}
         name: Upload Artifact (release)
         uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: dandelion-windows_${{ matrix.sys }}-x64-${{ matrix.build_kind }}-release
           path: build_output/${{ matrix.sys }}-release-artifacts/*
@@ -137,6 +139,7 @@ jobs:
       - if: ${{ matrix.sys == 'ubuntu-24.04' && matrix.build_kind == 'lib' }}
         name: Upload Artifact (debug)
         uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: dandelion-linux-x64-${{ matrix.build_kind }}-debug
           path: build_output/${{ matrix.sys }}-debug-artifacts/*
@@ -144,6 +147,7 @@ jobs:
       - if: ${{ matrix.sys == 'ubuntu-24.04' }}
         name: Upload Artifact (release)
         uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: dandelion-linux-x64-${{ matrix.build_kind }}-release
           path: build_output/${{ matrix.sys }}-release-artifacts/*
@@ -176,6 +180,7 @@ jobs:
       - if: ${{ matrix.build_kind == 'dev-lib' || matrix.build_type == 'release' }}
         name: Upload Artifact
         uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: dandelion-macos-arm64-${{ matrix.build_kind }}-${{ matrix.build_type }}
           path: ./build/${{ matrix.artifacts }}
