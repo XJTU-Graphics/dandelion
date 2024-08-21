@@ -33,9 +33,10 @@ jobs:
       - name: Build Dandelion
         run: cmake --build build --config ${{ matrix.build_type }} --parallel $Env:NUMBER_OF_PROCESSORS
       
-      - if: ${{ matrix.build_kind == 'dev-lib' || matrix.build_type == 'release' }}
+      - if: ${{ matrix.build_kind == 'lib' || matrix.build_type == 'release' }}
         name: Upload Artifact
         uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: dandelion-windows_msvc-x64-${{ matrix.build_kind }}-${{ matrix.build_type }}
           path: ./build/${{ matrix.build_type }}/*
@@ -177,7 +178,7 @@ jobs:
       - name: Build Dandelion
         run: cmake --build build --parallel $(sysctl -n hw.activecpu)
       
-      - if: ${{ matrix.build_kind == 'dev-lib' || matrix.build_type == 'release' }}
+      - if: ${{ matrix.build_kind == 'lib' || matrix.build_type == 'release' }}
         name: Upload Artifact
         uses: actions/upload-artifact@v4
         continue-on-error: true
