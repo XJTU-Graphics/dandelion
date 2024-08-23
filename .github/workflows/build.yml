@@ -39,10 +39,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+      
       - name: Generate VS build file
         run: |
           New-Item -ItemType "directory" build
-          cmake -G "Visual Studio 17 2022" -S ${{ matrix.cmake_root }} -B build
+          cmake -G "Visual Studio 17 2022" -S ${{ matrix.cmake_root }} -B build -D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache
       
       - name: Build Dandelion
         run: cmake --build build --config ${{ matrix.build_type }} --parallel $Env:NUMBER_OF_PROCESSORS
@@ -59,7 +62,7 @@ jobs:
         name: Upload Nightly
         run: |
           7z a -tzip -mx9 ${{ env.ARTIFACT_NAME }}.zip ./build/${{ matrix.build_type }}/*
-          gh release upload nightly ${{ env.ARTIFACT_NAME }}.zip --clobber
+          gh release upload nightly ${{ env.ARTIFACT_NAME }}.zip -R ${{github.repository}} --clobber
         continue-on-error: true
   
   build_macos:
@@ -85,11 +88,14 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+            
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2
       
       - name: Generate build file
         run: |
           mkdir build
-          cmake -S ${{ matrix.cmake_root }} -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          cmake -S ${{ matrix.cmake_root }} -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache
       
       - name: Build Dandelion
         run: cmake --build build --parallel $(sysctl -n hw.activecpu)
@@ -106,7 +112,7 @@ jobs:
         name: Upload Nightly
         run: |
           7z a -tzip -mx9 ${{ env.ARTIFACT_NAME }}.zip ./build/${{ matrix.artifacts }}
-          gh release upload nightly ${{ env.ARTIFACT_NAME }}.zip --clobber
+          gh release upload nightly ${{ env.ARTIFACT_NAME }}.zip -R ${{github.repository}} --clobber
         continue-on-error: true
 
   build_windows_x64_mingw:
@@ -130,6 +136,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: XJTU-Graphics/dandelion-autobuild
+      
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2
 
       - name: Checkout code
         uses: actions/checkout@v4
@@ -158,6 +167,8 @@ jobs:
         run: |
           mkdir build
           mkdir build_output
+          # apply a temporary patch to allow ccache to be used
+          sed -i '/-DCMAKE_BUILD_TYPE=\(Debug\|Release\)/ s/\(-DCMAKE_BUILD_TYPE=\(Debug\|Release\)\)/\1 -D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache/' build.sh
           bash build.sh ${{ matrix.build_kind }}
       
       - if: ${{ env.UPLOAD_TO_ARTIFACT == 'true' && matrix.should_upload_debug }}
@@ -180,7 +191,7 @@ jobs:
         name: Upload Nightly (debug)
         run: |
           7z a -tzip -mx9 ${{ env.ARTIFACT_NAME }}-debug.zip build_output/${{ matrix.sys }}-debug-artifacts/*
-          gh release upload nightly ${{ env.ARTIFACT_NAME }}-debug.zip --clobber
+          gh release upload nightly ${{ env.ARTIFACT_NAME }}-debug.zip -R ${{github.repository}} --clobber
         continue-on-error: true
         shell: powershell
 
@@ -188,7 +199,7 @@ jobs:
         name: Upload Nightly (release)
         run: |
           7z a -tzip -mx9 ${{ env.ARTIFACT_NAME }}-release.zip build_output/${{ matrix.sys }}-release-artifacts/*
-          gh release upload nightly ${{ env.ARTIFACT_NAME }}-release.zip --clobber
+          gh release upload nightly ${{ env.ARTIFACT_NAME }}-release.zip -R ${{github.repository}} --clobber
         continue-on-error: true
         shell: powershell
 
@@ -253,12 +264,12 @@ jobs:
         name: Upload Nightly (debug)
         run: |
           7z a -tzip -mx9 ${{ env.ARTIFACT_NAME }}-debug.zip build_output/${{ matrix.sys }}-debug-artifacts/*
-          gh release upload nightly ${{ env.ARTIFACT_NAME }}-debug.zip --clobber
+          gh release upload nightly ${{ env.ARTIFACT_NAME }}-debug.zip -R ${{github.repository}} --clobber
         continue-on-error: true
 
       - if: ${{ env.UPLOAD_TO_NIGHTLY == 'true' && matrix.should_upload_release }}
         name: Upload Nightly (release)
         run: |
           7z a -tzip -mx9 ${{ env.ARTIFACT_NAME }}-release.zip build_output/${{ matrix.sys }}-release-artifacts/*
-          gh release upload nightly ${{ env.ARTIFACT_NAME }}-release.zip --clobber
+          gh release upload nightly ${{ env.ARTIFACT_NAME }}-release.zip -R ${{github.repository}} --clobber
         continue-on-error: true
