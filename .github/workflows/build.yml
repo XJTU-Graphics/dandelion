@@ -1,5 +1,12 @@
 name: Dandelion-dev CI
 
+env:
+  GH_TOKEN: ${{ github.token }} # Needed by gh cli
+  # We default upload only to nightly release
+  # as there's a limit on artifact storage space
+  UPLOAD_TO_ARTIFACT: ${{ vars.UPLOAD_TO_ARTIFACT || false }}
+  UPLOAD_TO_NIGHTLY: ${{ vars.UPLOAD_TO_NIGHTLY || true }}
+
 on:
   workflow_dispatch:
 
@@ -18,6 +25,13 @@ jobs:
             cmake_root: .
           - build_kind: lib
             cmake_root: lib
+          - should_upload: false
+          - build_kind: lib
+            should_upload: true
+          - build_type: release
+            should_upload: true
+    env:
+      ARTIFACT_NAME: dandelion-windows_msvc-x64-${{ matrix.build_kind }}-${{ matrix.build_type }}
     defaults:
       run:
         shell: powershell
@@ -33,155 +47,16 @@ jobs:
       - name: Build Dandelion
         run: cmake --build build --config ${{ matrix.build_type }} --parallel $Env:NUMBER_OF_PROCESSORS
       
-      - if: ${{ matrix.build_kind == 'lib' || matrix.build_type == 'release' }}
+      - if: ${{ env.UPLOAD_TO_ARTIFACT && matrix.should_upload }}
         name: Upload Artifact
         uses: actions/upload-artifact@v4
         continue-on-error: true
         with:
-          name: dandelion-windows_msvc-x64-${{ matrix.build_kind }}-${{ matrix.build_type }}
+          name: ${{ env.ARTIFACT_NAME }}
           path: ./build/${{ matrix.build_type }}/*
 
-  build_windows_x64_mingw:
-    runs-on: windows-2019
-    strategy:
-      matrix:
-        sys: [ucrt64, clang64]
-        build_kind: [dev, lib]
-    defaults:
-      run:
-        shell: msys2 {0}
-    steps:
-      - name: Checkout dandelion-autobuild
-        uses: actions/checkout@v4
-        with:
-          repository: XJTU-Graphics/dandelion-autobuild
-          ref: lib_and_release
-
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          path: dandelion
-      
-      - name: Setup MSYS2
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: ${{ matrix.sys }}
-          update: true
-          install: >-
-            git
-            make
-          pacboy: >-
-            toolchain:p
-            cmake:p
-            ninja:p
-      
-      - name: Build.sh
-        env:
-          OS_NAME: ${{ matrix.sys }}
-          DANDELION_PATH: dandelion
-          BUILD_PATH: build
-          BUILD_OUTPUT_PATH: build_output
+      - if: ${{ env.UPLOAD_TO_NIGHTLY && matrix.should_upload }}
+        name: Upload Nightly
         run: |
-          mkdir build
-          mkdir build_output
-          bash build.sh ${{ matrix.build_kind }}
-      
-      - if: ${{ matrix.build_kind == 'lib' }}
-        name: Upload Artifact (debug)
-        uses: actions/upload-artifact@v4
-        continue-on-error: true
-        with:
-          name: dandelion-windows_${{ matrix.sys }}-x64-${{ matrix.build_kind }}-debug
-          path: build_output/${{ matrix.sys }}-debug-artifacts/*
-
-      - if: ${{ matrix.build_kind == 'lib' || matrix.build_kind == 'dev' }}
-        name: Upload Artifact (release)
-        uses: actions/upload-artifact@v4
-        continue-on-error: true
-        with:
-          name: dandelion-windows_${{ matrix.sys }}-x64-${{ matrix.build_kind }}-release
-          path: build_output/${{ matrix.sys }}-release-artifacts/*
-
-  build_linux:
-    runs-on: ubuntu-24.04
-    strategy:
-      matrix:
-        sys: [archlinux, debian-12, fedora, ubuntu-22.04, ubuntu-24.04]
-        build_kind: [dev, lib]
-    defaults:
-      run:
-        shell: bash
-    steps:
-      - name: Checkout dandelion-autobuild
-        uses: actions/checkout@v4
-        with:
-          repository: XJTU-Graphics/dandelion-autobuild
-          ref: lib_and_release
-
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          path: dandelion
-
-      - if: ${{ matrix.sys == 'archlinux' }}
-        name: Update rolling distribution images
-        run: |
-          python3 build_all.py -u
-
-      - name: Build docker image
-        run: |
-          python3 build_all.py --build-images -i dockerfiles/${{ matrix.sys }}.Dockerfile
-
-      - name: Build dandelion
-        run: |
-          python3 build_all.py --build --build-kind ${{ matrix.build_kind }} -i dockerfiles/${{ matrix.sys }}.Dockerfile
-
-      # only upload one version to conserve storage quota
-      - if: ${{ matrix.sys == 'ubuntu-24.04' && matrix.build_kind == 'lib' }}
-        name: Upload Artifact (debug)
-        uses: actions/upload-artifact@v4
-        continue-on-error: true
-        with:
-          name: dandelion-linux-x64-${{ matrix.build_kind }}-debug
-          path: build_output/${{ matrix.sys }}-debug-artifacts/*
-
-      - if: ${{ matrix.sys == 'ubuntu-24.04' }}
-        name: Upload Artifact (release)
-        uses: actions/upload-artifact@v4
-        continue-on-error: true
-        with:
-          name: dandelion-linux-x64-${{ matrix.build_kind }}-release
-          path: build_output/${{ matrix.sys }}-release-artifacts/*
-
-  build_macos:
-    runs-on: macos-14
-    strategy:
-      matrix:
-        build_kind: [dev, lib]
-        build_type: [debug, release]
-        include:
-          - build_kind: dev
-            cmake_root: .
-            artifacts: dandelion
-          - build_kind: lib
-            cmake_root: lib
-            artifacts: libdandelion*
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Generate build file
-        run: |
-          mkdir build
-          cmake -S ${{ matrix.cmake_root }} -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
-      
-      - name: Build Dandelion
-        run: cmake --build build --parallel $(sysctl -n hw.activecpu)
-      
-      - if: ${{ matrix.build_kind == 'lib' || matrix.build_type == 'release' }}
-        name: Upload Artifact
-        uses: actions/upload-artifact@v4
-        continue-on-error: true
-        with:
-          name: dandelion-macos-arm64-${{ matrix.build_kind }}-${{ matrix.build_type }}
-          path: ./build/${{ matrix.artifacts }}
+          7z a -tzip -mx9 ${{ env.ARTIFACT_NAME }}.zip ./build/${{ matrix.build_type }}/*
+          gh release upload ${{ env.ARTIFACT_NAME }}.zip
