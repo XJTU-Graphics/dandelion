@@ -130,7 +130,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: XJTU-Graphics/dandelion-autobuild
-          ref: lib_and_release
 
       - name: Checkout code
         uses: actions/checkout@v4
@@ -212,7 +211,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: XJTU-Graphics/dandelion-autobuild
-          ref: lib_and_release
 
       - name: Checkout code
         uses: actions/checkout@v4
