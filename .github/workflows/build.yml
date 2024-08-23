@@ -42,7 +42,7 @@ jobs:
       - name: ccache
         uses: hendrikmuhs/ccache-action@v1.2
         with:
-          key: ${ARTIFACT_NAME}
+          key: ${{ env.ARTIFACT_NAME }}
       
       - name: Generate VS build file
         run: |
@@ -94,7 +94,7 @@ jobs:
       - name: ccache
         uses: hendrikmuhs/ccache-action@v1.2
         with:
-          key: ${ARTIFACT_NAME}
+          key: ${{ env.ARTIFACT_NAME }}
       
       - name: Generate build file
         run: |
@@ -144,7 +144,7 @@ jobs:
       - name: ccache
         uses: hendrikmuhs/ccache-action@v1.2
         with:
-          key: ${ARTIFACT_NAME}
+          key: ${{ env.ARTIFACT_NAME }}
 
       - name: Checkout code
         uses: actions/checkout@v4
