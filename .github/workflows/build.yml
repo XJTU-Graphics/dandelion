@@ -59,4 +59,4 @@ jobs:
         name: Upload Nightly
         run: |
           7z a -tzip -mx9 ${{ env.ARTIFACT_NAME }}.zip ./build/${{ matrix.build_type }}/*
-          gh release upload ${{ env.ARTIFACT_NAME }}.zip
+          gh release upload nightly ${{ env.ARTIFACT_NAME }}.zip --clobber
