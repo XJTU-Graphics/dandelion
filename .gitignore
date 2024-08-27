@@ -36,6 +36,9 @@ ipch/
 # Vim
 .vim/
 *.swp
+# Unit Test Data
+test/input/
+test/ans/
 
 # For Pre-compiled static libs -------------------
 deps/libdandelion-*.a

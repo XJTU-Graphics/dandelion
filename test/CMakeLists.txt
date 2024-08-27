@@ -65,6 +65,7 @@ set(DANDELION_SIMULATION_SOURCES
 )
 set(TEST_SOURCES
     basic_tests.cpp
+    geometry_tests.cpp
 )
 
 set(SOURCES
