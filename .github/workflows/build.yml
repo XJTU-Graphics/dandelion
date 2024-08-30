@@ -4,6 +4,7 @@ env:
   GH_TOKEN: ${{ secrets.DANDELION_DEV }} # Needed by gh cli
   DANDELION_DEV_REPO: XJTU-Graphics/dandelion-dev
   DANDELION_DEV_TOKEN: ${{ secrets.DANDELION_DEV }}
+  DANDELION_AUTOBUILD_REPO: XJTU-Graphics/dandelion-autobuild
   # We default upload only to nightly release
   # as there's a limit on artifact storage space
   UPLOAD_TO_ARTIFACT: ${{ vars.UPLOAD_TO_ARTIFACT || 'false' }}
@@ -11,6 +12,9 @@ env:
 
 on:
   workflow_dispatch:
+
+  push:
+    branches: [ main ]
 
   pull_request:
     branches: [ main ]
@@ -94,4 +98,229 @@ jobs:
         run: |
           7z a -tzip -mx9 ${{ env.ARTIFACT_NAME }}.zip ./build/${{ matrix.build_type }}/*
           gh release upload nightly ${{ env.ARTIFACT_NAME }}.zip -R ${{github.repository}} --clobber
+        continue-on-error: true
+  
+  build_macos:
+    runs-on: macos-14
+    needs: check_dev_updated
+    if: ${{ needs.check_dev_updated.outputs.updated == 'true' }}
+    strategy:
+      matrix:
+        build_kind: [dev, lib]
+        build_type: [debug, release]
+        include:
+          - build_kind: dev
+            cmake_root: .
+            artifacts: dandelion
+          - build_kind: lib
+            cmake_root: lib
+            artifacts: libdandelion*
+          - should_upload: false
+          - build_kind: lib
+            should_upload: true
+          - build_type: release
+            should_upload: true
+    env:
+      ARTIFACT_NAME: dandelion-macos-arm64-${{ matrix.build_kind }}-${{ matrix.build_type }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.DANDELION_DEV_REPO }}
+          token: ${{ env.DANDELION_DEV_TOKEN }}
+            
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ${{ env.ARTIFACT_NAME }}
+      
+      - name: Generate build file
+        run: |
+          mkdir build
+          cmake -S ${{ matrix.cmake_root }} -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache
+      
+      - name: Build Dandelion
+        run: cmake --build build --parallel $(sysctl -n hw.activecpu)
+      
+      - if: ${{ env.UPLOAD_TO_ARTIFACT == 'true' && matrix.should_upload }}
+        name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        continue-on-error: true
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: ./build/${{ matrix.artifacts }}
+
+      - if: ${{ env.UPLOAD_TO_NIGHTLY == 'true' && matrix.should_upload }}
+        name: Upload Nightly
+        run: |
+          7z a -tzip -mx9 ${{ env.ARTIFACT_NAME }}.zip ./build/${{ matrix.artifacts }}
+          gh release upload nightly ${{ env.ARTIFACT_NAME }}.zip -R ${{github.repository}} --clobber
+        continue-on-error: true
+
+  build_windows_x64_mingw:
+    runs-on: windows-2022
+    needs: check_dev_updated
+    if: ${{ needs.check_dev_updated.outputs.updated == 'true' }}
+    strategy:
+      matrix:
+        sys: [ucrt64, clang64]
+        build_kind: [dev, lib]
+        include:
+          - should_upload_debug: false
+            should_upload_release: true
+          - build_kind: lib
+            should_upload_debug: true
+    env:
+      ARTIFACT_NAME: dandelion-windows_${{ matrix.sys }}-x64-${{ matrix.build_kind }}
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - name: Checkout dandelion-autobuild
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.DANDELION_AUTOBUILD_REPO }}
+      
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ${{ env.ARTIFACT_NAME }}
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          path: dandelion
+          repository: ${{ env.DANDELION_DEV_REPO }}
+          token: ${{ env.DANDELION_DEV_TOKEN }}
+      
+      - name: Setup MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{ matrix.sys }}
+          path-type: inherit
+          update: false
+          install: >-
+            git
+            make
+          pacboy: >-
+            toolchain:p
+            cmake:p
+            ninja:p
+      
+      - name: Build.sh
+        env:
+          OS_NAME: ${{ matrix.sys }}
+          DANDELION_PATH: dandelion
+          BUILD_PATH: build
+          BUILD_OUTPUT_PATH: build_output
+        run: |
+          mkdir build
+          mkdir build_output
+          # apply a temporary patch to allow ccache to be used
+          sed -i '/-DCMAKE_BUILD_TYPE=\(Debug\|Release\)/ s/\(-DCMAKE_BUILD_TYPE=\(Debug\|Release\)\)/\1 -D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache/' build.sh
+          bash build.sh ${{ matrix.build_kind }}
+      
+      - if: ${{ env.UPLOAD_TO_ARTIFACT == 'true' && matrix.should_upload_debug }}
+        name: Upload Artifact (debug)
+        uses: actions/upload-artifact@v4
+        continue-on-error: true
+        with:
+          name: ${{ env.ARTIFACT_NAME }}-debug
+          path: build_output/${{ matrix.sys }}-debug-artifacts/*
+
+      - if: ${{ env.UPLOAD_TO_ARTIFACT == 'true' && matrix.should_upload_release }}
+        name: Upload Artifact (release)
+        uses: actions/upload-artifact@v4
+        continue-on-error: true
+        with:
+          name: ${{ env.ARTIFACT_NAME }}-release
+          path: build_output/${{ matrix.sys }}-release-artifacts/*
+
+      - if: ${{ env.UPLOAD_TO_NIGHTLY == 'true' && matrix.should_upload_debug }}
+        name: Upload Nightly (debug)
+        run: |
+          7z a -tzip -mx9 ${{ env.ARTIFACT_NAME }}-debug.zip build_output/${{ matrix.sys }}-debug-artifacts/*
+          gh release upload nightly ${{ env.ARTIFACT_NAME }}-debug.zip -R ${{github.repository}} --clobber
+        continue-on-error: true
+
+      - if: ${{ env.UPLOAD_TO_NIGHTLY == 'true' && matrix.should_upload_release }}
+        name: Upload Nightly (release)
+        run: |
+          7z a -tzip -mx9 ${{ env.ARTIFACT_NAME }}-release.zip build_output/${{ matrix.sys }}-release-artifacts/*
+          gh release upload nightly ${{ env.ARTIFACT_NAME }}-release.zip -R ${{github.repository}} --clobber
+        continue-on-error: true
+
+  build_linux:
+    runs-on: ubuntu-24.04
+    needs: check_dev_updated
+    if: ${{ needs.check_dev_updated.outputs.updated == 'true' }}
+    strategy:
+      matrix:
+        sys: [archlinux, debian-12, fedora, ubuntu-22.04, ubuntu-24.04]
+        build_kind: [dev, lib]
+        include:
+          - should_upload_debug: false
+            should_upload_release: true
+          - build_kind: lib
+            should_upload_debug: true
+    env:
+      ARTIFACT_NAME: dandelion-linux-x64-${{ matrix.build_kind }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout dandelion-autobuild
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.DANDELION_AUTOBUILD_REPO }}
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          path: dandelion
+          repository: ${{ env.DANDELION_DEV_REPO }}
+          token: ${{ env.DANDELION_DEV_TOKEN }}
+
+      - if: ${{ matrix.sys == 'archlinux' }}
+        name: Update rolling distribution images
+        run: |
+          python3 build_all.py -u
+
+      - name: Build docker image
+        run: |
+          python3 build_all.py --build-images -i dockerfiles/${{ matrix.sys }}.Dockerfile
+
+      - name: Build dandelion
+        run: |
+          python3 build_all.py --build --build-kind ${{ matrix.build_kind }} -i dockerfiles/${{ matrix.sys }}.Dockerfile
+
+      # only upload one version to conserve storage quota
+      - if: ${{ env.UPLOAD_TO_ARTIFACT == 'true' && matrix.sys == 'ubuntu-24.04' && matrix.should_upload_debug }}
+        name: Upload Artifact (debug)
+        uses: actions/upload-artifact@v4
+        continue-on-error: true
+        with:
+          name: ${{ env.ARTIFACT_NAME }}-debug
+          path: build_output/${{ matrix.sys }}-debug-artifacts/*
+
+      - if: ${{ env.UPLOAD_TO_ARTIFACT == 'true' && matrix.sys == 'ubuntu-24.04' && matrix.should_upload_release }}
+        name: Upload Artifact (release)
+        uses: actions/upload-artifact@v4
+        continue-on-error: true
+        with:
+          name: ${{ env.ARTIFACT_NAME }}-release
+          path: build_output/${{ matrix.sys }}-release-artifacts/*
+
+      - if: ${{ env.UPLOAD_TO_NIGHTLY == 'true' && matrix.should_upload_debug }}
+        name: Upload Nightly (debug)
+        run: |
+          7z a -tzip -mx9 ${{ env.ARTIFACT_NAME }}-debug.zip build_output/${{ matrix.sys }}-debug-artifacts/*
+          gh release upload nightly ${{ env.ARTIFACT_NAME }}-debug.zip -R ${{github.repository}} --clobber
+        continue-on-error: true
+
+      - if: ${{ env.UPLOAD_TO_NIGHTLY == 'true' && matrix.should_upload_release }}
+        name: Upload Nightly (release)
+        run: |
+          7z a -tzip -mx9 ${{ env.ARTIFACT_NAME }}-release.zip build_output/${{ matrix.sys }}-release-artifacts/*
+          gh release upload nightly ${{ env.ARTIFACT_NAME }}-release.zip -R ${{github.repository}} --clobber
         continue-on-error: true
