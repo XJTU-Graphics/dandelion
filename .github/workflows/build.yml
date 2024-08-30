@@ -230,7 +230,7 @@ jobs:
         continue-on-error: true
         with:
           name: ${{ env.ARTIFACT_NAME }}-debug
-          path: build_output/${{ matrix.sys }}-debug-artifacts/*
+          path: ./build_output/${{ matrix.sys }}-debug-artifacts/*
 
       - if: ${{ env.UPLOAD_TO_ARTIFACT == 'true' && matrix.should_upload_release }}
         name: Upload Artifact (release)
@@ -238,19 +238,19 @@ jobs:
         continue-on-error: true
         with:
           name: ${{ env.ARTIFACT_NAME }}-release
-          path: build_output/${{ matrix.sys }}-release-artifacts/*
+          path: ./build_output/${{ matrix.sys }}-release-artifacts/*
 
       - if: ${{ env.UPLOAD_TO_NIGHTLY == 'true' && matrix.should_upload_debug }}
         name: Upload Nightly (debug)
         run: |
-          7z a -tzip -mx9 ${{ env.ARTIFACT_NAME }}-debug.zip build_output/${{ matrix.sys }}-debug-artifacts/*
+          7z a -tzip -mx9 ${{ env.ARTIFACT_NAME }}-debug.zip ./build_output/${{ matrix.sys }}-debug-artifacts/*
           gh release upload nightly ${{ env.ARTIFACT_NAME }}-debug.zip -R ${{github.repository}} --clobber
         continue-on-error: true
 
       - if: ${{ env.UPLOAD_TO_NIGHTLY == 'true' && matrix.should_upload_release }}
         name: Upload Nightly (release)
         run: |
-          7z a -tzip -mx9 ${{ env.ARTIFACT_NAME }}-release.zip build_output/${{ matrix.sys }}-release-artifacts/*
+          7z a -tzip -mx9 ${{ env.ARTIFACT_NAME }}-release.zip ./build_output/${{ matrix.sys }}-release-artifacts/*
           gh release upload nightly ${{ env.ARTIFACT_NAME }}-release.zip -R ${{github.repository}} --clobber
         continue-on-error: true
 
@@ -306,7 +306,7 @@ jobs:
         continue-on-error: true
         with:
           name: ${{ env.ARTIFACT_NAME }}-debug
-          path: build_output/${{ matrix.sys }}-debug-artifacts/*
+          path: ./build_output/${{ matrix.sys }}-debug-artifacts/*
 
       - if: ${{ env.UPLOAD_TO_ARTIFACT == 'true' && matrix.sys == 'ubuntu-24.04' && matrix.should_upload_release }}
         name: Upload Artifact (release)
@@ -314,18 +314,18 @@ jobs:
         continue-on-error: true
         with:
           name: ${{ env.ARTIFACT_NAME }}-release
-          path: build_output/${{ matrix.sys }}-release-artifacts/*
+          path: ./build_output/${{ matrix.sys }}-release-artifacts/*
 
       - if: ${{ env.UPLOAD_TO_NIGHTLY == 'true' && matrix.should_upload_debug }}
         name: Upload Nightly (debug)
         run: |
-          7z a -tzip -mx9 ${{ env.ARTIFACT_NAME }}-debug.zip build_output/${{ matrix.sys }}-debug-artifacts/*
+          7z a -tzip -mx9 ${{ env.ARTIFACT_NAME }}-debug.zip ./build_output/${{ matrix.sys }}-debug-artifacts/*
           gh release upload nightly ${{ env.ARTIFACT_NAME }}-debug.zip -R ${{github.repository}} --clobber
         continue-on-error: true
 
       - if: ${{ env.UPLOAD_TO_NIGHTLY == 'true' && matrix.should_upload_release }}
         name: Upload Nightly (release)
         run: |
-          7z a -tzip -mx9 ${{ env.ARTIFACT_NAME }}-release.zip build_output/${{ matrix.sys }}-release-artifacts/*
+          7z a -tzip -mx9 ${{ env.ARTIFACT_NAME }}-release.zip ./build_output/${{ matrix.sys }}-release-artifacts/*
           gh release upload nightly ${{ env.ARTIFACT_NAME }}-release.zip -R ${{github.repository}} --clobber
         continue-on-error: true
