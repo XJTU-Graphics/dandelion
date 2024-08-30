@@ -36,6 +36,7 @@ jobs:
           fi
           # update title
           gh release edit nightly -R ${{ github.repository }} --title "Nightly build [${CURRENT_NIGHTLY_HASH}]"
+
   build_windows_x64_msvc:
     runs-on: windows-2022
     needs: check_dev_updated
@@ -65,16 +66,17 @@ jobs:
         with:
           repository: ${{ env.DANDELION_DEV_REPO }}
           token: ${{ env.DANDELION_DEV_TOKEN }}
-      
+
       - name: ccache
         uses: hendrikmuhs/ccache-action@v1.2
         with:
           key: ${{ env.ARTIFACT_NAME }}
+          variant: sccache
       
       - name: Generate VS build file
         run: |
           New-Item -ItemType "directory" build
-          cmake -G "Visual Studio 17 2022" -S ${{ matrix.cmake_root }} -B build -D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache
+          cmake -G "Visual Studio 17 2022" -S ${{ matrix.cmake_root }} -B build -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
       
       - name: Build Dandelion
         run: cmake --build build --config ${{ matrix.build_type }} --parallel $Env:NUMBER_OF_PROCESSORS
@@ -93,4 +95,3 @@ jobs:
           7z a -tzip -mx9 ${{ env.ARTIFACT_NAME }}.zip ./build/${{ matrix.build_type }}/*
           gh release upload nightly ${{ env.ARTIFACT_NAME }}.zip -R ${{github.repository}} --clobber
         continue-on-error: true
-  
