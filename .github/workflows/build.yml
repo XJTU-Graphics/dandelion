@@ -3,6 +3,7 @@ name: Dandelion-dev CI
 env:
   GH_TOKEN: ${{ secrets.DANDELION_DEV }} # Needed by gh cli
   DANDELION_DEV_REPO: XJTU-Graphics/dandelion-dev
+  DANDELION_DEV_BRANCH: ci_lib_and_release # for testing, REMEMBER TO CHANGE
   DANDELION_DEV_TOKEN: ${{ secrets.DANDELION_DEV }}
   DANDELION_AUTOBUILD_REPO: XJTU-Graphics/dandelion-autobuild
   # We default upload only to nightly release
@@ -31,7 +32,7 @@ jobs:
           LAST_NIGHTLY_HASH=$(gh release view nightly -R ${{ github.repository }} --json name --jq '.name' | cut -d "[" -f2 | cut -d "]" -f1)
           CURRENT_NIGHTLY_HASH=$(curl -s -H "Authorization: token ${{ env.DANDELION_DEV_TOKEN }}" \
             -H "Accept: application/vnd.github.VERSION.sha" \
-            "https://api.github.com/repos/${{ env.DANDELION_DEV_REPO }}/commits/main")
+            "https://api.github.com/repos/${{ env.DANDELION_DEV_REPO }}/commits/${{ env.DANDELION_DEV_BRANCH }}")
           if [ ${LAST_NIGHTLY_HASH} = ${CURRENT_NIGHTLY_HASH} ]; then
             # is not updated
             echo "updated=false" >> "$GITHUB_OUTPUT"
@@ -69,6 +70,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ${{ env.DANDELION_DEV_REPO }}
+          ref: ${{ env.DANDELION_DEV_BRANCH }}
           token: ${{ env.DANDELION_DEV_TOKEN }}
 
       - name: ccache
@@ -127,6 +129,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ${{ env.DANDELION_DEV_REPO }}
+          ref: ${{ env.DANDELION_DEV_BRANCH }}
           token: ${{ env.DANDELION_DEV_TOKEN }}
             
       - name: ccache
@@ -191,6 +194,7 @@ jobs:
         with:
           path: dandelion
           repository: ${{ env.DANDELION_DEV_REPO }}
+          ref: ${{ env.DANDELION_DEV_BRANCH }}
           token: ${{ env.DANDELION_DEV_TOKEN }}
       
       - name: Setup MSYS2
@@ -279,6 +283,7 @@ jobs:
         with:
           path: dandelion
           repository: ${{ env.DANDELION_DEV_REPO }}
+          ref: ${{ env.DANDELION_DEV_BRANCH }}
           token: ${{ env.DANDELION_DEV_TOKEN }}
 
       - if: ${{ matrix.sys == 'archlinux' }}
