@@ -1,0 +1,46 @@
+name: Dandelion-release CI
+
+env:
+  GH_TOKEN: ${{ github.token }} # Needed by gh cli
+  DANDELION_AUTOBUILD_REPO: XJTU-Graphics/dandelion-autobuild
+
+on:
+  workflow_dispatch:
+
+  workflow_run:
+    workflows: ["Dandelion-dev CI"]
+    types:
+      - completed
+
+jobs:
+  
+  build_windows_x64_msvc:
+    runs-on: windows-2022
+    strategy:
+      matrix:
+        build_type: [debug, release]
+    defaults:
+      run:
+        shell: powershell
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Get lib
+        run: |
+          New-Item -ItemType "directory" build
+          Invoke-WebRequest -Uri https://github.com/XJTU-Graphics/dandelion/releases/download/nightly/dandelion-windows_msvc-x64-lib-${{ matrix.build_type }}.zip -OutFile "build\l.zip"
+          7z x -tzip .\build\l.zip -o"build"
+
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ${{ env.ARTIFACT_NAME }}
+          variant: sccache
+      
+      - name: Generate VS build file
+        run: |
+          cmake -G "Visual Studio 17 2022" -S . -B build -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+      
+      - name: Build Dandelion
+        run: cmake --build build --config ${{ matrix.build_type }} --parallel $Env:NUMBER_OF_PROCESSORS
