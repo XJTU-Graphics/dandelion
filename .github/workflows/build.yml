@@ -3,12 +3,11 @@ name: Dandelion-dev CI
 env:
   GH_TOKEN: ${{ secrets.DANDELION_DEV }} # Needed by gh cli
   DANDELION_DEV_REPO: XJTU-Graphics/dandelion-dev
-  DANDELION_DEV_BRANCH: ci_lib_and_release # for testing, REMEMBER TO CHANGE
+  DANDELION_DEV_BRANCH: main
   DANDELION_DEV_TOKEN: ${{ secrets.DANDELION_DEV }}
   DANDELION_AUTOBUILD_REPO: XJTU-Graphics/dandelion-autobuild
-  # We default upload only to nightly release
+  # We upload only to nightly release
   # as there's a limit on artifact storage space
-  UPLOAD_TO_ARTIFACT: ${{ vars.UPLOAD_TO_ARTIFACT || 'false' }}
   UPLOAD_TO_NIGHTLY: ${{ vars.UPLOAD_TO_NIGHTLY || 'true' }}
 
 on:
@@ -86,14 +85,6 @@ jobs:
       
       - name: Build Dandelion
         run: cmake --build build --config ${{ matrix.build_type }} --parallel $Env:NUMBER_OF_PROCESSORS
-      
-      - if: ${{ env.UPLOAD_TO_ARTIFACT == 'true' && matrix.should_upload }}
-        name: Upload Artifact
-        uses: actions/upload-artifact@v4
-        continue-on-error: true
-        with:
-          name: ${{ env.ARTIFACT_NAME }}
-          path: ./build/${{ matrix.build_type }}/*
 
       - if: ${{ env.UPLOAD_TO_NIGHTLY == 'true' && matrix.should_upload }}
         name: Upload Nightly
@@ -144,14 +135,6 @@ jobs:
       
       - name: Build Dandelion
         run: cmake --build build --parallel $(sysctl -n hw.activecpu)
-      
-      - if: ${{ env.UPLOAD_TO_ARTIFACT == 'true' && matrix.should_upload }}
-        name: Upload Artifact
-        uses: actions/upload-artifact@v4
-        continue-on-error: true
-        with:
-          name: ${{ env.ARTIFACT_NAME }}
-          path: ./build/${{ matrix.artifacts }}
 
       - if: ${{ env.UPLOAD_TO_NIGHTLY == 'true' && matrix.should_upload }}
         name: Upload Nightly
@@ -223,22 +206,6 @@ jobs:
           # apply a temporary patch to allow ccache to be used
           sed -i '/-DCMAKE_BUILD_TYPE=\(Debug\|Release\)/ s/\(-DCMAKE_BUILD_TYPE=\(Debug\|Release\)\)/\1 -D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache/' build.sh
           bash build.sh ${{ matrix.build_kind }}
-      
-      - if: ${{ env.UPLOAD_TO_ARTIFACT == 'true' && matrix.should_upload_debug }}
-        name: Upload Artifact (debug)
-        uses: actions/upload-artifact@v4
-        continue-on-error: true
-        with:
-          name: ${{ env.ARTIFACT_NAME }}-debug
-          path: ./build_output/${{ matrix.sys }}-debug-artifacts/*
-
-      - if: ${{ env.UPLOAD_TO_ARTIFACT == 'true' && matrix.should_upload_release }}
-        name: Upload Artifact (release)
-        uses: actions/upload-artifact@v4
-        continue-on-error: true
-        with:
-          name: ${{ env.ARTIFACT_NAME }}-release
-          path: ./build_output/${{ matrix.sys }}-release-artifacts/*
 
       - if: ${{ env.UPLOAD_TO_NIGHTLY == 'true' && matrix.should_upload_debug }}
         name: Upload Nightly (debug)
@@ -299,31 +266,15 @@ jobs:
         run: |
           python3 build_all.py --build --build-kind ${{ matrix.build_kind }} -i dockerfiles/${{ matrix.sys }}.Dockerfile
 
-      # only upload one version to conserve storage quota
-      - if: ${{ env.UPLOAD_TO_ARTIFACT == 'true' && matrix.sys == 'ubuntu-24.04' && matrix.should_upload_debug }}
-        name: Upload Artifact (debug)
-        uses: actions/upload-artifact@v4
-        continue-on-error: true
-        with:
-          name: ${{ env.ARTIFACT_NAME }}-debug
-          path: ./build_output/${{ matrix.sys }}-debug-artifacts/*
-
-      - if: ${{ env.UPLOAD_TO_ARTIFACT == 'true' && matrix.sys == 'ubuntu-24.04' && matrix.should_upload_release }}
-        name: Upload Artifact (release)
-        uses: actions/upload-artifact@v4
-        continue-on-error: true
-        with:
-          name: ${{ env.ARTIFACT_NAME }}-release
-          path: ./build_output/${{ matrix.sys }}-release-artifacts/*
-
-      - if: ${{ env.UPLOAD_TO_NIGHTLY == 'true' && matrix.should_upload_debug }}
+      # linux builds are compatible, upload only once
+      - if: ${{ matrix.sys == 'ubuntu-24.04' && env.UPLOAD_TO_NIGHTLY == 'true' && matrix.should_upload_debug }}
         name: Upload Nightly (debug)
         run: |
           7z a -tzip -mx9 ${{ env.ARTIFACT_NAME }}-debug.zip ./build_output/${{ matrix.sys }}-debug-artifacts/*
           gh release upload nightly ${{ env.ARTIFACT_NAME }}-debug.zip -R ${{github.repository}} --clobber
         continue-on-error: true
 
-      - if: ${{ env.UPLOAD_TO_NIGHTLY == 'true' && matrix.should_upload_release }}
+      - if: ${{ matrix.sys == 'ubuntu-24.04' && env.UPLOAD_TO_NIGHTLY == 'true' && matrix.should_upload_release }}
         name: Upload Nightly (release)
         run: |
           7z a -tzip -mx9 ${{ env.ARTIFACT_NAME }}-release.zip ./build_output/${{ matrix.sys }}-release-artifacts/*
