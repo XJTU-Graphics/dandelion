@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 project(dandelion VERSION 0.4)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release")
 if (CMAKE_BUILD_TYPE MATCHES "(Debug)|(Release)")
@@ -64,9 +64,7 @@ set(DANDELION_UTILS_SOURCES
 set(DANDELION_RENDER_SOURCES
     src/render/shader.cpp
     src/render/rasterizer.cpp
-    src/render/rasterizer_mt.cpp
     src/render/rasterizer_renderer.cpp
-    src/render/rasterizer_renderer_mt.cpp
     src/render/whitted_renderer.cpp
     src/render/render_engine.cpp
     src/render/triangle.cpp

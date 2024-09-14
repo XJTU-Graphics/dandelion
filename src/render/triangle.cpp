@@ -7,7 +7,11 @@
 // Triangle的构造函数
 Triangle::Triangle()
 {
-    vertex[0] << 0, 0, 0, 1;
-    vertex[1] << 0, 0, 0, 1;
-    vertex[2] << 0, 0, 0, 1;
+    viewport_pos[0] << 0, 0, 0, 1;
+    viewport_pos[1] << 0, 0, 0, 1;
+    viewport_pos[2] << 0, 0, 0, 1;
+
+    world_pos[0] << 0, 0, 0, 1;
+    world_pos[1] << 0, 0, 0, 1;
+    world_pos[2] << 0, 0, 0, 1;
 }
