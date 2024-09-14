@@ -3,12 +3,16 @@
 
 #include <memory>
 #include <functional>
+#include <queue>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <spdlog/spdlog.h>
 
 #include "../scene/scene.h"
+#include "rasterizer.h"
+#include "graphics_interface.h"
+#include "rasterizer_renderer.h"
 
 /*!
  * \file render/render_engine.h
@@ -20,7 +24,7 @@ class WhittedRenderer;
 enum class RendererType
 {
     RASTERIZER,
-    RASTERIZER_MT,
+    // RASTERIZER_MT,
     WHITTED_STYLE
 };
 
@@ -38,8 +42,9 @@ public:
     std::vector<unsigned char> rendering_res;
     /*! \~chinese 根据aspect_ratio对渲染出图片的长和宽进行设置*/
     float width, height;
-    /*! \~chinese 使用多线程时的线程数设置*/
+    /*! \~chinese whitted_style renderer使用多线程时的线程数设置*/
     int n_threads;
+
     /*!
      * \~chinese
      * \brief 渲染器的渲染函数
@@ -68,14 +73,29 @@ public:
 class RasterizerRenderer
 {
 public:
-    RasterizerRenderer(RenderEngine& render_engine);
+    RasterizerRenderer(RenderEngine& engine, int num_vertex_threads, int num_rasterizer_threads,
+                       int num_fragment_threads);
+
     /*! \~chinese 光栅化渲染器的渲染调用接口*/
     void render(const Scene& scene);
+
     /*! \~chinese 多线程光栅化渲染器的渲染调用接口*/
-    void render_mt(const Scene& scene);
+    // void render_mt(const Scene& scene);
     float& width;
     float& height;
-    int& n_threads;
+    int n_vertex_threads;
+    int n_rasterizer_threads;
+    int n_fragment_threads;
+
+    // initialize vertex processor
+    VertexProcessor vertex_processor;
+
+    // initialize rasterizer
+    Rasterizer rasterizer;
+
+    // initialize fragment processor
+    FragmentProcessor fragment_processor;
+
     std::vector<unsigned char>& rendering_res;
 
 private:

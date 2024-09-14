@@ -356,14 +356,14 @@ void Toolbar::render_mode(Scene& scene)
         ImGui::Combo("Renderer", &renderer_index, renderer_names, 3);
         switch (renderer_index) {
         case 0: current_renderer = RendererType::RASTERIZER; break;
-        case 1: current_renderer = RendererType::RASTERIZER_MT; break;
+        // case 1: current_renderer = RendererType::RASTERIZER_MT; break;
         case 2: current_renderer = RendererType::WHITTED_STYLE; break;
         default: break;
         }
-        if (current_renderer == RendererType::RASTERIZER_MT) {
-            ImGui::SetNextItemWidth(0.5f * ImGui::CalcItemWidth());
-            ImGui::InputInt("Number of Threads", &render_engine.n_threads);
-        }
+        // if (current_renderer == RendererType::RASTERIZER_MT) {
+        //     ImGui::SetNextItemWidth(0.5f * ImGui::CalcItemWidth());
+        //     ImGui::InputInt("Number of Threads", &render_engine.n_threads);
+        // }
         if (current_renderer == RendererType::WHITTED_STYLE) {
             ImGui::Checkbox("Use BVH for Acceleration", &render_engine.whitted_render->use_bvh);
         }
@@ -444,7 +444,7 @@ void Toolbar::render_mode(Scene& scene)
             ImGui::OpenPopup("Rendered Image");
         }
         if (ImGui::BeginPopupModal("Rendered Image", &always_true)) {
-            ImVec2 image_size(px(480.0f), px(480.0f / scene.camera.aspect_ratio));
+            ImVec2 image_size(480.0f, 480.0f / scene.camera.aspect_ratio);
             render_engine.width  = image_size.x;
             render_engine.height = image_size.y;
             if (!rendering_ready) {

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 project(test VERSION 0.1)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 
@@ -45,9 +45,7 @@ set(DANDELION_UTILS_SOURCES
 set(DANDELION_RENDER_SOURCES
     ../src/render/shader.cpp
     ../src/render/rasterizer.cpp
-    ../src/render/rasterizer_mt.cpp
     ../src/render/rasterizer_renderer.cpp
-    ../src/render/rasterizer_renderer_mt.cpp
     ../src/render/whitted_renderer.cpp
     ../src/render/render_engine.cpp
     ../src/render/triangle.cpp
