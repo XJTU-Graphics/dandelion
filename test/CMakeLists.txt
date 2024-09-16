@@ -132,3 +132,20 @@ else()
         PRIVATE -Wall -Wextra -Werror
     )
 endif()
+# ignore dangling reference warning with assimp and fmt with GCC 13 and onward
+# ignore maybe uninitialized warning from copy constructor of Eigen::Matrix with GCC 12 and onward
+if(${CMAKE_C_COMPILER_ID} STREQUAL "GNU" AND ${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER_EQUAL 12)
+    target_compile_options(assimp
+        PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wno-dangling-reference -Wno-maybe-uninitialized>
+    )
+    target_compile_options(${PROJECT_NAME}
+        PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wno-maybe-uninitialized>
+    )
+endif()
+# workaround for MINGW which will produce relocation error due to high image base
+# the specific reason is not known
+if (MINGW)
+    target_link_options(${PROJECT_NAME}
+        PRIVATE -Wl,--default-image-base-low
+    )
+endif ()
