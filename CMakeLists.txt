@@ -149,12 +149,13 @@ else()
     )
 endif()
 # ignore dangling reference warning with assimp and fmt with GCC 13 and onward
-if(${CMAKE_C_COMPILER_ID} STREQUAL "GNU" AND ${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER_EQUAL 13)
+# ignore maybe uninitialized warning from copy constructor of Eigen::Matrix with GCC 12 and onward
+if(${CMAKE_C_COMPILER_ID} STREQUAL "GNU" AND ${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER_EQUAL 12)
     target_compile_options(assimp
         PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wno-dangling-reference -Wno-maybe-uninitialized>
     )
     target_compile_options(${PROJECT_NAME}
-        PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wno-dangling-reference -Wno-maybe-uninitialized>
+        PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wno-maybe-uninitialized>
     )
 endif()
 # workaround for MINGW which will produce relocation error due to high image base
@@ -164,11 +165,5 @@ if (MINGW)
         PRIVATE -Wl,--default-image-base-low
     )
 endif ()
-# libc++ 18 marked 'char_traits<fmt::detail::char8_type>' as deprecated and will remove it in 19, so if using clang 18, turn off this warning
-if(${CMAKE_C_COMPILER_ID} MATCHES "Clang" AND ${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER_EQUAL 18)
-    target_compile_options(${PROJECT_NAME}
-        PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wno-deprecated-declarations>
-    )
-endif()
 
 file(COPY ${PROJECT_SOURCE_DIR}/resources DESTINATION ${PROJECT_BINARY_DIR})
