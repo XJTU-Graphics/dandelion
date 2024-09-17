@@ -14,7 +14,9 @@ set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 set(ASSIMP_BUILD_COLLADA_IMPORTER TRUE)
 set(ASSIMP_BUILD_OBJ_IMPORTER TRUE)
 set(ASSIMP_BUILD_FBX_IMPORTER TRUE)
+
 add_subdirectory(../deps/assimp ${PROJECT_BINARY_DIR}/deps/assimp)
+add_subdirectory(../deps/fmt ${PROJECT_BINARY_DIR}/deps/fmt)
 
 set(GLAD_SOURCES
     ../deps/glad/src/glad.c
@@ -88,6 +90,7 @@ target_link_directories(${PROJECT_NAME} PRIVATE ../deps)
 target_link_libraries(${PROJECT_NAME}
     glfw
     assimp
+    fmt::fmt
     debug dandelion-ray-debug
     optimized dandelion-ray
     debug dandelion-bvh-debug
@@ -96,7 +99,6 @@ target_link_libraries(${PROJECT_NAME}
 target_compile_definitions(${PROJECT_NAME}
     PRIVATE $<$<CONFIG:Debug>:DEBUG>
     PRIVATE SPDLOG_FMT_EXTERNAL
-    PRIVATE FMT_HEADER_ONLY
     PRIVATE CATCH_AMALGAMATED_CUSTOM_MAIN
 )
 # Apple macOS has platform-specific libraries (frameworks) which need to be linked
