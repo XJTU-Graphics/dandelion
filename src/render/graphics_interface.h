@@ -71,8 +71,8 @@ VertexShaderPayload vertex_shader(const VertexShaderPayload& payload);
  * \param camera 当前观察相机
  *
  */
-Eigen::Vector3f phong_fragment_shader(const FragmentShaderPayload& payload, GL::Material material,
-                                      const std::list<Light>& lights, Camera camera);
+Eigen::Vector3f phong_fragment_shader(const FragmentShaderPayload& payload, const GL::Material& material,
+                                      const std::list<Light>& lights, const Camera& camera);
 
 /*!
  * \~chinese
