@@ -273,7 +273,8 @@ public:
      * \brief 执行一次 Loop 曲面细分。
      *
      * 该函数使用 `flip_edge` 和 `split_edge` 完成一次 Loop 曲面细分。注意，Loop
-     * 曲面细分只能细分三角网格。
+     * 曲面细分只能细分三角网格。细分过程使用 `is_boundary` 和 `on_boundary`
+     * 等 API 来判断 mesh 边界并进行处理。
      */
     void loop_subdivide();
     /*!
@@ -364,9 +365,9 @@ private:
     void erase(Face* f);
     /*!
      * \~chinese
-     * \brief 清楚已删除元素的记录。
+     * \brief 释放内存并清除已删除元素的记录。
      *
-     * 这个函数清空 `erased_[elements]` 中存储的删除记录。
+     * 这个函数执行 `delete` 释放内存，并清空各 `erased_[elements]` 容器中存储的删除记录。
      */
     void clear_erasure_records();
     /*!
