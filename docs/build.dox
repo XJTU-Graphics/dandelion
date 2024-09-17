@@ -6,19 +6,19 @@
 
 编译和运行的环境必须满足如下条件：
 
-- 提供支持 C++ 17 标准的编译器、不低于 3.14 版本的 CMake
+- 提供支持 C++ 20 标准的编译器、不低于 3.14 版本的 CMake
 - 64 位操作系统
 - 显卡驱动至少支持 OpenGL 3.3 Core Profile
 
-运行于 x86-64 硬件架构上的 Windows 10 / 11、macOS 和 Debian / Ubuntu  / Linux Mint / Fedora/ Arch Linux / Manjaro 等常见 Linux 发行版均满足条件。使用 Apple M 系列芯片 (Apple Silicon) 的 macbook 和 iMac 同样可以。
+运行于 x86-64 硬件架构上的 Windows 10 / 11、macOS 和 Debian / Ubuntu  / Linux Mint / Fedora / Arch Linux / Manjaro 等常见 Linux 发行版均满足条件。使用 Apple M 系列芯片 (Apple Silicon) 的 macbook 和 iMac 同样可以。
 
 在 Linux 平台上，我们仅对 KDE 和 GNOME 两种桌面环境提供支持。其他的桌面环境上也许可以运行，但我们不提供任何保证。
 
-> 请不要使用虚拟机中的系统，因为 Virtual Box 支持的 OpenGL 版本太低，而 VMware 的虚拟显卡驱动实现的 OpenGL API 疑似存在 bug。
+> 非常不建议使用虚拟机中的系统，因为 Virtual Box 支持的 OpenGL 版本太低，而 VMware 的虚拟显卡驱动实现的 OpenGL API 疑似存在 bug。
 > 
 > 目前已经确认 VMware 创建的 Windows 虚拟机完全不能正常使用 Dandelion 框架；Linux 虚拟机也许可以运行，但依然有可能出现问题，并且我们 **不负责解决任何在虚拟机下运行产生的问题** 。
 > 
-> 同理，请勿使用 WSL 进行实验。因为 WSL2 本质上也是一个虚拟机，虽然图形驱动的问题更少，但却不能运行桌面环境 (Desktop Environment, DE) ，打不开文件对话框。
+> 同理，不建议使用 WSL 进行实验。因为 WSL2 本质上也是一个虚拟机，我们确实没有精力去解决虚拟环境带来的问题。
 
 \section dependencies 依赖
 
@@ -30,16 +30,16 @@
 - Assimp 5.2.5, Open Assert Import Library License
 - Dear ImGui 1.89.3 (docking branch), MIT License
 - stb\_image 2.30, MIT License & Public Domain
-- spdlog 1.11.0, MIT License
-- {fmt} 9.1.0, {fmt}'s License
+- spdlog 1.14.1, MIT License
+- {fmt} 11.0.2, {fmt}'s License
 - portable-file-dialogs (commit 7f852d88a480020d7f91957cbcefe514fc95000c), WTFPL License
 
 在 Linux 平台上，为了编译 GLFW ，你可能需要按照 [Compiling GLFW](https://www.glfw.org/docs/latest/compile_guide.html) 的要求安装相应的依赖库。除此以外，所有的依赖项均被包含于 *deps* 子目录中，不需要额外下载或安装。由于我们对一些库进行了修复移植或裁剪，也请不要轻易尝试替换 *deps* 目录下的第三方库，它们和官方发布的相应版本可能并不完全一样。
 
 由于 Dandelion 首先是一个实验框架，用于西安交通大学计算机图形学课程教学，我们在 Dandelion 的公开频道上删去了所有实验题目的参考答案。然而物体拾取 (picking) 等功能依赖于射线求交，这部分代码被删去后会造成相当的不便。对此，我们的解决方案是将 *utils* 目录下的 *aabb.cpp*, *bvh.cpp* 和 *ray.cpp* 文件编译成两个静态库 *dandelion-ray* 和 *dandelion-bvh* ，只要在编译时链接它们就可以直接使用我们提供的实现。我们目前编译了这些版本的库：
 
-- Windows: Visual Studio 2019
-- Linux: GCC 11.4 / Clang 14.0
+- Windows: Visual Studio 2022 / Clang / UCRT
+- Linux: GCC 11 / Clang 14
 - macOS: AppleClang 14.0
 
 如果你想要使用这个静态库，请到仓库 Release 中下载符合自己操作系统、编译器的版本。带有 `-debug` 后缀的库用于 Debug 模式，不带此后缀的用于 Release 模式。相应的链接指令在 CMakeLists.txt 中已经写好，将四个文件都放置于 *deps* 目录下即可通过编译。
@@ -51,16 +51,14 @@
 
 \section requests 工具需求
 
-- 支持 C++ 17 标准的编译器
-  - 最低要求 Visual Studio 2019、GNU G++ 11、Clang++ 14 。由于我们开启的警告等级很高，更低版本的编译器可能会产生错误的警告。
-  - 推荐使用 Visual Studio 2022、GNU G++ 12、Clang++ 15 。更高版本的编译器我们尚未测试。
+- 支持 C++ 20 标准的编译器
+  - 最低要求 Visual Studio 2019、GNU GCC 11、Clang 14 。由于我们开启的警告等级很高，更低版本的编译器可能会产生错误的警告。
+  - 推荐使用 Visual Studio 2022、GNU GCC 12+、Clang 15+ ，可以使用最新的稳定版本。
 - CMake 3.14 及以上（推荐使用最新的稳定版本）
 
 在 Windows 平台上，从官方网站下载安装足够新的 Visual Studio 和 CMake 即可；在 Linux 平台上可以用包管理器安装编译器和 CMake；在 macOS 平台上，我们推荐安装 Xcode 命令行工具（不是 Xcode IDE），并使用 Homebrew 安装 CMake。
 
 > 基于 Debian 的 Linux 发行版（使用 apt 包管理器）中，所需软件包名是 `build-essential cmake cmake-extras`，其他发行版请自行确定对应的包，亦可选择从源代码编译安装。
-> 
-> 当前版本的代码在使用 GCC 13 编译时，会由于新增加的警告 `-Wdangling-reference` 而失败。已经确认该警告是被 fmt 触发，并非框架代码的问题，我们无力修改。因此，请使用 GCC 13 的同学在 CMakeLists 中禁用该警告。
 
 我们使用 portable-file-dialogs 实现模型文件选择的对话框，这个库使在不同的平台上使用不同的原生命令或 API。在 Linux 平台上需要额外注意一些问题：
 
@@ -103,6 +101,8 @@ MSVC 和 MS Build 是 Multi-config 的构建工具，在调整构建类型时不
 > cmake --build . --config Release --target dandelion --parallel 8
 > .\Release\dandelion.exe
 ```
+
+如果你希望在 Windows 平台上使用 MinGW 工具链构建，请注意 MinGW 是 Single-config 构建工具，执行命令的方式与 Linux 平台相同。
 
 \subsection compilation-linux Linux
 
