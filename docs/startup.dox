@@ -27,6 +27,8 @@
   - 如果某次本地提交之后发现还需要修改一些细节内容，请尽量将没有特殊意义的修改与之前的提交合并，避免“改正了某个单词拼写”或“多加了一层大括号”成为一次单独的提交。
   - 提交说明最重要的目的是说清楚做了什么，如果觉得英语说不清，完全可以用中文写提交说明。
 
+另外，如果你想要拓展之前已有的功能或算法，请慎重考虑是否将现有的代码完全删掉再重写。如果考虑后认为确实需要完全重写，请注意尽量维持与原先相似的日志输出，为其他成员维护、调试提供足够的信息。
+
 下面是 Controller.h 文件对 `Controller` 类的部分注释：
 
 ```cpp
@@ -76,7 +78,8 @@ private:
 ```cpp
 void foo()
 {
-    // Machenism and explation of the operations.
+    // Machenism and explation of the operations, maybe in english.
+    // 用中文说明也没问题，表达清晰更重要。
     some_operations():
 }
 ```
@@ -104,9 +107,9 @@ void foo()
    $ git checkout your_new_branch_name
    $ git rebase main
    ```
-5. 解决冲突后，将自己的分支推送到远程仓库，向 `main` 分支发起一次 Pull Request：
+5. 解决冲突后，将自己的分支推送到远程仓库，向 `main` 分支发起一次 Pull Request：（如果远程仓库之前没有同名分支，push 操作会自动创建名为 `your_new_branch_name` 的分支）
    ```bash
-   $ git posh origin your_new_branch_name
+   $ git push origin your_new_branch_name
    ```
 6. PR 被合并后，建议删除新创建的分支，下次修改时再新建：
    ```bash
@@ -119,6 +122,7 @@ void foo()
 
 - 新建自己的分支，请勿直接在 `main` 分支上修改代码。
 - 通常情况下请不要使用 revert 回退，任何情况下禁止修改一个已经被推送到远程仓库的 commit、禁止使用 `git push -f` (`git push --force`) 强制覆盖远程仓库。如果需要修正已经推送的错误，请新建一个提交。
+- 通常不要使用 `merge` 命令，如果遇到严重冲突不知道该怎么解决，请与其他人讨论。
 - 在推送到远程仓库前，保证自己已经 rebase 到了最新的 `main` 分支上。
 
 \subsection non-member-submission 非组织成员
@@ -141,8 +145,6 @@ clang-format -style=file -i file
 
 来格式化 `file` 这个文件。
 
-我们目前使用的 clang-format 版本是 14，格式化配置文件应当与 15 版本兼容。更高版本会提示 .clang-format 文件中有些配置项已被废弃 (deprecated)，但由于新版本相同功能的配置项并不兼容旧版本，我们暂时不打算升级 clang-format。
-
 \subsection spell-check 拼写检查
 
 一个拼写错误的单词可能给后期开发带来很大麻烦，我们在发现拼写错误后 **一定会更正它** 。推荐使用插件检查单词拼写，省得在写错后回头修改。
@@ -159,7 +161,7 @@ clang-format -style=file -i file
 
 一些代码补全工具的补全策略中包含“自动引入头文件”的功能，例如 Clangd 会在你写下新的类型时自动包含定义了这个类型的头文件。这种策略被称为 include-what-you-use (IWYU)，也就是“用什么包含什么”。
 
-但有一些依赖库并不是遵循这个原则开发的，例如 Eigen 就不是：如果你想使用 `Eigen::Vector3f` 类型，它推荐你引入 Eigen/Core 这个头文件，而不是定义了这个类型的 Eigen/src/Core/Matrix.h 这个头文件。此时“自动引入头文件”的功能就非常烦人，甚至可能导致某些错误。提交到远程的源代码中尽量不要含有类似的不当引用，为此，我们推荐在开发过程中禁止该功能。如果你使用 Clangd 提供的 Language Server，那么在启动 clangd 时加上 `--header-insertion=never` 参数就可以了，推荐直接把这个参数写进 VS Code 插件的 `clangd.arguments` 属性里。
+但有一些依赖库并不是遵循这个原则开发的。例如你想使用 `Eigen::Vector3f` 类型时，官方文档建议引入 Eigen/Core 这个头文件，而不是定义了这个类型的 Eigen/src/Core/Matrix.h 这个头文件。此时“自动引入头文件”的功能就非常烦人，甚至可能导致某些错误。提交到远程的源代码中尽量不要含有类似的不当引用，为此，我们推荐在开发过程中禁止该功能。如果你使用 Clangd 提供的 Language Server，那么在启动 clangd 时加上 `--header-insertion=never` 参数就可以了，推荐直接把这个参数写进 VS Code 插件的 `clangd.arguments` 属性里。
 
 另一个必须注意的问题是：GLFW 和 GLAD 头文件的包含是有顺序要求的，必须先包含 GLAD 再包含 GLFW。而 clang-format 这样的格式化工具会自动重排头文件顺序，直接导致编译失败，我们已经在 .clang-format 文件中禁止了头文件重排序。或许其他 IDE 也会有类似的行为，请务必检查一下。
 
