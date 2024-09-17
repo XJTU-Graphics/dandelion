@@ -149,8 +149,8 @@ else()
     )
 endif()
 # ignore dangling reference warning with assimp and fmt with GCC 13 and onward
-# ignore maybe uninitialized warning from copy constructor of Eigen::Matrix with GCC 12 and onward
-if(${CMAKE_C_COMPILER_ID} STREQUAL "GNU" AND ${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER_EQUAL 12)
+# ignore maybe uninitialized warning from copy constructor of Eigen::Matrix with GCC 11 and onward
+if(${CMAKE_C_COMPILER_ID} STREQUAL "GNU" AND ${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER_EQUAL 11)
     target_compile_options(assimp
         PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wno-dangling-reference -Wno-maybe-uninitialized>
     )
