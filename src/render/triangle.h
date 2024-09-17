@@ -5,6 +5,7 @@
 #include <Eigen/Geometry>
 
 /*!
+ * \ingroup rendering
  * \file render/triangle.h
  */
 

@@ -13,11 +13,11 @@
 #include "../scene/camera.h"
 #include "graphics_interface.h"
 
-using Eigen::Vector3f;
-
 /*!
+ * \file render/rasterizer_renderer.h
+ * \ingroup rendering
  * \~chinese
- * \brief 作用于每个顶点，通常是处理从世界空间到屏幕空间的坐标变化，后面紧接着光栅化。
+ * \brief 光栅化渲染器中顶点处理、片元处理两个阶段的实现。
  */
 class VertexProcessor
 {
@@ -31,6 +31,11 @@ private:
     std::mutex queue_mutex;
 };
 
+/*!
+ * \ingroup rendering
+ * \~chinese
+ * \brief 负责执行片元着色器的工作线程。
+ */
 class FragmentProcessor
 {
 public:
