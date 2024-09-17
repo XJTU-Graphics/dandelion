@@ -16,11 +16,19 @@
 
 /*!
  * \file render/render_engine.h
+ * \ingroup rendering
+ * \~chinese
+ * \brief 定义了渲染引擎和渲染器。
  */
 
 class RasterizerRenderer;
 class WhittedRenderer;
 
+/*!
+ * \ingroup rendering
+ * \~chinese
+ * \brief 可用的渲染器类型
+ */
 enum class RendererType
 {
     RASTERIZER,
@@ -31,7 +39,7 @@ enum class RendererType
 /*!
  * \ingroup rendering
  * \~chinese
- * \brief 负责实现整个渲染的接口
+ * \brief 离线渲染的执行入口
  */
 class RenderEngine
 {
@@ -40,14 +48,14 @@ public:
 
     /*! \~chinese 渲染的结果（以无符号字符型变量进行存储）*/
     std::vector<unsigned char> rendering_res;
-    /*! \~chinese 根据aspect_ratio对渲染出图片的长和宽进行设置*/
+    /*! \~chinese 根据aspect_ratio对渲染出图片的长和宽进行设置 */
     float width, height;
-    /*! \~chinese whitted_style renderer使用多线程时的线程数设置*/
+    /*! \~chinese whitted_style renderer使用多线程时的线程数设置 */
     int n_threads;
 
     /*!
      * \~chinese
-     * \brief 渲染器的渲染函数
+     * \brief 离线渲染入口，负责调用渲染器的渲染函数
      *
      * 可以选择不同的渲染方式，在设置好场景之后，执行该函数能够得到
      * 使用选定方式对当前场景的渲染结果
@@ -56,19 +64,19 @@ public:
      * \param type 渲染器类型
      */
     void render(Scene& scene, RendererType type);
-    /*! \~chinese 渲染结果预览的背景颜色*/
+    /*! \~chinese 渲染结果预览的背景颜色 */
     static Eigen::Vector3f background_color;
 
-    /*! \~chinese 光栅化渲染器*/
+    /*! \~chinese 光栅化渲染器 */
     std::unique_ptr<RasterizerRenderer> rasterizer_render;
-    /*! \~chinese whitted style渲染器*/
+    /*! \~chinese whitted style渲染器 */
     std::unique_ptr<WhittedRenderer> whitted_render;
 };
 
 /*!
  * \ingroup rendering
  * \~chinese
- * \brief 负责实现Rasterizition的整个pipeline
+ * \brief 实现光栅化渲染管线。
  */
 class RasterizerRenderer
 {
@@ -105,20 +113,20 @@ private:
 /*!
  * \ingroup rendering
  * \~chinese
- * \brief 负责实现Whitted_style的整个pipeline
+ * \brief 实现 Whitted-Style 光线追踪管线。
  */
 class WhittedRenderer
 {
 public:
     WhittedRenderer(RenderEngine& engine);
-    /*! \~chinese whitted-style渲染器的渲染调用接口*/
+    /*! \~chinese whitted-style渲染器的渲染调用接口 */
     void render(Scene& scene);
-    /*! \~chinese 镜面反射的阈值为material.shiness>=1000*/
+    /*! \~chinese 镜面反射的阈值 */
     static constexpr float mirror_threshold = 1000.0f;
     float& width;
     float& height;
     int& n_threads;
-    /*! \~chinese 是否使用BVH进行加速*/
+    /*! \~chinese 是否使用 BVH 进行加速*/
     bool use_bvh;
     std::vector<unsigned char>& rendering_res;
 
@@ -136,12 +144,11 @@ private:
     std::optional<std::tuple<Intersection, GL::Material>> trace(const Ray& ray, const Scene& scene);
     /*!
      * \~chinese
-     * \brief 实现光线追踪
+     * \brief 追踪指定光线得到颜色
      *
      * \param ray 当前追踪的光线
      * \param scene 当前渲染的场景
-     * \param depth 当前反射的次数
-     *
+     * \param depth 最大反射次数
      */
     Eigen::Vector3f cast_ray(const Ray& ray, const Scene& scene, int depth);
     std::shared_ptr<spdlog::logger> logger;
