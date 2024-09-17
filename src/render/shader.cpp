@@ -90,8 +90,8 @@ void FragmentProcessor::worker_thread()
     }
 }
 
-Vector3f phong_fragment_shader(const FragmentShaderPayload& payload, GL::Material material,
-                               const std::list<Light>& lights, Camera camera)
+Vector3f phong_fragment_shader(const FragmentShaderPayload& payload, const GL::Material& material,
+                               const std::list<Light>& lights, const Camera& camera)
 {
     // these lines below are just for compiling and can be deleted
     (void)payload;

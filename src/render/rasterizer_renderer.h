@@ -37,8 +37,8 @@ public:
     void worker_thread();
 
     Eigen::Vector3f (*fragment_shader_ptr)(const FragmentShaderPayload& payload,
-                                           GL::Material material, const std::list<Light>& lights,
-                                           Camera camera);
+                                           const GL::Material& material, const std::list<Light>& lights,
+                                           const Camera& camera);
 
 private:
 };
