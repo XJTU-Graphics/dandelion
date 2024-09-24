@@ -136,4 +136,13 @@ void RasterizerRenderer::render(const Scene& scene)
 
     this->logger->info("rendering (single thread) takes {:.6f} seconds",
                        rendering_duration.count());
+
+    for (long unsigned int i = 0; i < Context::frame_buffer.depth_buffer.size(); i++) {
+        rendering_res.push_back(
+            static_cast<unsigned char>(Context::frame_buffer.color_buffer[i].x()));
+        rendering_res.push_back(
+            static_cast<unsigned char>(Context::frame_buffer.color_buffer[i].y()));
+        rendering_res.push_back(
+            static_cast<unsigned char>(Context::frame_buffer.color_buffer[i].z()));
+    }
 }
