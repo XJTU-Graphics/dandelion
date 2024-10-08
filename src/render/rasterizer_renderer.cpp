@@ -98,8 +98,8 @@ void RasterizerRenderer::render(const Scene& scene)
             // set Uniforms for vertex shader
             Uniforms::MVP         = cam.projection() * cam.view() * object->model();
             Uniforms::inv_trans_M = object->model().inverse().transpose();
-            Uniforms::width       = this->width;
-            Uniforms::height      = this->height;
+            Uniforms::width       = static_cast<int>(this->width);
+            Uniforms::height      = static_cast<int>(this->height);
             // To do: 同步
             Uniforms::material = object->mesh.material;
             Uniforms::lights   = scene.lights;
