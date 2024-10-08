@@ -101,53 +101,6 @@ target_compile_definitions(${PROJECT_NAME}
     PRIVATE SPDLOG_FMT_EXTERNAL
     PRIVATE CATCH_AMALGAMATED_CUSTOM_MAIN
 )
-# Apple macOS has platform-specific libraries (frameworks) which need to be linked
-if (APPLE)
-    find_package(OpenGL REQUIRED)
-    target_include_directories(${PROJECT_NAME} PRIVATE ${OPENGL_INCLUDE_DIR})
-    target_link_libraries(${PROJECT_NAME}
-        "-framework Cocoa"
-        "-framework OpenGL"
-        "-framework IOKit"
-        ${OPENGL_gl_LIBRARY}
-    )
-endif()
-# Disable the deprecated-non-prototype warning for zlib
-if (${CMAKE_C_COMPILER_ID} MATCHES "Clang")
-    target_compile_options(zlibstatic
-        PRIVATE $<$<COMPILE_LANGUAGE:C>:-Wno-deprecated-non-prototype>
-    )
-endif()
-if (MSVC)
-    # Disable C4127 for Eigen
-    # Disable C4996 for std::fopen
-    # Disable C4458 because we usually declare local variables with the same name
-    # as member variables just as short for the members.
-    target_compile_options(${PROJECT_NAME}
-        PRIVATE /W4 /utf-8 /wd4127 /wd4996 /wd4458
-    )
-    target_compile_definitions(${PROJECT_NAME}
-        PRIVATE NOMINMAX
-    )
-else()
-    target_compile_options(${PROJECT_NAME}
-        PRIVATE -Wall -Wextra -Werror
-    )
-endif()
-# ignore dangling reference warning with assimp and fmt with GCC 13 and onward
-# ignore maybe uninitialized warning from copy constructor of Eigen::Matrix with GCC 12 and onward
-if(${CMAKE_C_COMPILER_ID} STREQUAL "GNU" AND ${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER_EQUAL 12)
-    target_compile_options(assimp
-        PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wno-dangling-reference -Wno-maybe-uninitialized>
-    )
-    target_compile_options(${PROJECT_NAME}
-        PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wno-maybe-uninitialized>
-    )
-endif()
-# workaround for MINGW which will produce relocation error due to high image base
-# the specific reason is not known
-if (MINGW)
-    target_link_options(${PROJECT_NAME}
-        PRIVATE -Wl,--default-image-base-low
-    )
-endif ()
+
+set(current_target ${PROJECT_NAME})
+include(${CMAKE_CURRENT_SOURCE_DIR}/../CompilerFlags.cmake)
