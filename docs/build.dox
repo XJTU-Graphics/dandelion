@@ -26,7 +26,7 @@
 
 - GLFW 3.3.8, Zlib License
 - GLAD (OpenGL Core Profile, version >= 3.3), MIT & Apache License
-- Eigen 3.4.0, Mozilla Public License
+- Eigen (commit 12068cbcdb835d7bd88b09d8439d2171e856be06), Mozilla Public License
 - Assimp 5.2.5, Open Assert Import Library License
 - Dear ImGui 1.89.3 (docking branch), MIT License
 - stb\_image 2.30, MIT License & Public Domain
