@@ -1,11 +1,6 @@
 #ifndef DANDELION_SCENE_CAMERA_H
 #define DANDELION_SCENE_CAMERA_H
 
-#ifdef _WIN32
-#undef near
-#undef far
-#endif
-
 #include <Eigen/Core>
 
 /*!
@@ -48,9 +43,9 @@ public:
     /*! \~chinese 相机看向的位置（目标点）。 */
     Eigen::Vector3f target;
     /*! \~chinese 可视范围近平面到观察坐标系原点的距离（正值）。 */
-    float near;
+    float near_plane;
     /*! \~chinese 可视范围远平面到观察坐标系原点的距离（正值）。 */
-    float far;
+    float far_plane;
     /*! \~chinese Y 方向（上下）的视角大小。 */
     float fov_y_degrees;
     /*! \~chinese 可视范围的宽度与高度之比。 */

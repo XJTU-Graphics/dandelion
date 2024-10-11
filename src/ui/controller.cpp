@@ -122,7 +122,7 @@ void Controller::on_picking()
     // If the ray intersects with any object, the intersected object will be picked.
     Ray ray = generate_ray((int)(controller.window_width), (int)(controller.window_height),
                            (int)(io.MousePos.x), (int)(io.MousePos.y), *(controller.main_camera),
-                           controller.main_camera->far);
+                           controller.main_camera->far_plane);
     if (mode == WorkingMode::MODEL) {
         pick_element(ray);
     } else {
