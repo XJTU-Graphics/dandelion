@@ -102,7 +102,7 @@ void Platform::eventloop()
     controller.on_framebuffer_resized(static_cast<float>(window_width),
                                       static_cast<float>(window_height));
     while (!glfwWindowShouldClose(window)) {
-        glClearColor(RGB(54, 54, 54), 1.0f);
+        glClearColor(RGB_COLOR(54, 54, 54), 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();

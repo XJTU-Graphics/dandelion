@@ -54,10 +54,10 @@ Material::Material(const Vector3f& K_ambient, const Vector3f& K_diffuse, const V
 {
 }
 
-const Vector3f Mesh::default_wireframe_color(RGB(255, 194, 75));
-const Vector3f Mesh::default_face_color(RGB(255, 255, 255));
-const Vector3f Mesh::highlight_wireframe_color(RGB(115, 206, 244));
-const Vector3f Mesh::highlight_face_color(RGB(115, 206, 244));
+const Vector3f Mesh::default_wireframe_color(RGB_COLOR(255, 194, 75));
+const Vector3f Mesh::default_face_color(RGB_COLOR(255, 255, 255));
+const Vector3f Mesh::highlight_wireframe_color(RGB_COLOR(115, 206, 244));
+const Vector3f Mesh::highlight_face_color(RGB_COLOR(115, 206, 244));
 
 Mesh::Mesh()
     : vertices(GL_DYNAMIC_DRAW, vertex_position_location),

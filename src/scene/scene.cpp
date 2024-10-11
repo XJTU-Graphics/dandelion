@@ -55,26 +55,26 @@ void Scene::render_ground(const Shader& shader)
         // x axis
         vertices.append(0.0f, 0.0f, 0.0f); // x+ highlighted as a red line
         vertices.append(far_distance, 0.0f, 0.0f);
-        colors.append(RGB(226, 53, 79));
-        colors.append(RGB(226, 53, 79));
+        colors.append(RGB_COLOR(226, 53, 79));
+        colors.append(RGB_COLOR(226, 53, 79));
         vertices.append(0.0f, 0.0f, 0.0f); // x- rendered as a normal line;
         vertices.append(-far_distance, 0.0f, 0.0f);
-        colors.append(RGB(68, 68, 68));
-        colors.append(RGB(68, 68, 68));
+        colors.append(RGB_COLOR(68, 68, 68));
+        colors.append(RGB_COLOR(68, 68, 68));
         // y axis
         vertices.append(0.0f, 0.0f, 0.0f); // y+ highlighted as a green line
         vertices.append(0.0f, far_distance, 0.0f);
-        colors.append(RGB(131, 204, 6));
-        colors.append(RGB(131, 204, 6));
+        colors.append(RGB_COLOR(131, 204, 6));
+        colors.append(RGB_COLOR(131, 204, 6));
         // z axis
         vertices.append(0.0f, 0.0f, 0.0f); // z+ highlighted as a blue line
         vertices.append(0.0f, 0.0f, far_distance);
-        colors.append(RGB(43, 134, 232));
-        colors.append(RGB(43, 134, 232));
+        colors.append(RGB_COLOR(43, 134, 232));
+        colors.append(RGB_COLOR(43, 134, 232));
         vertices.append(0.0f, 0.0f, 0.0f); // z- rendered as a normal line
         vertices.append(0.0f, 0.0f, -far_distance);
-        colors.append(RGB(68, 68, 68));
-        colors.append(RGB(68, 68, 68));
+        colors.append(RGB_COLOR(68, 68, 68));
+        colors.append(RGB_COLOR(68, 68, 68));
         for (size_t i = 1; i <= n_baselines; i++) {
             vertices.append(-far_distance, 0.0f, -baseline_gap * i);
             vertices.append(far_distance, 0.0f, -baseline_gap * i);
@@ -85,7 +85,7 @@ void Scene::render_ground(const Shader& shader)
             vertices.append(baseline_gap * i, 0.0f, -far_distance);
             vertices.append(baseline_gap * i, 0.0f, far_distance);
             for (size_t j = 0; j < 8; j++) {
-                colors.append(RGB(68, 68, 68));
+                colors.append(RGB_COLOR(68, 68, 68));
             }
         }
         baselines.bind();
