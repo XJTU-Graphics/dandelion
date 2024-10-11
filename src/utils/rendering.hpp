@@ -17,7 +17,7 @@
  * \~chinese
  * 将整数形式的颜色转换成浮点数，便于传入 Eigen::Vector3f 的构造函数。
  */
-#define RGB(r, g, b) (float)r / 255.0f, (float)g / 255.0f, (float)b / 255.0f
+#define RGB_COLOR(r, g, b) (float)r / 255.0f, (float)g / 255.0f, (float)b / 255.0f
 
 ///@{
 /*!

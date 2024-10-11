@@ -1,6 +1,6 @@
 #include "render_engine.h"
 
-Eigen::Vector3f RenderEngine::background_color(RGB(100, 100, 100));
+Eigen::Vector3f RenderEngine::background_color(RGB_COLOR(100, 100, 100));
 
 RenderEngine::RenderEngine()
 {
@@ -29,8 +29,7 @@ void SpinLock::lock()
         if (!this->locked.test_and_set())
             return;
         do {
-            for (std::atomic<int> i = 0; i < 150; ++i)
-                ;
+            for (std::atomic<int> i = 0; i < 150; ++i);
         } while (this->locked.test());
     }
 }
