@@ -7,11 +7,6 @@
 
 #include "../utils/math.hpp"
 
-#ifdef _WIN32
-#undef near
-#undef far
-#endif
-
 using Eigen::Affine3f;
 using Eigen::Matrix3f;
 using Eigen::Matrix4f;
@@ -20,7 +15,7 @@ using Eigen::Vector4f;
 
 Camera::Camera(const Eigen::Vector3f& position, const Eigen::Vector3f& target, float near_plane,
                float far_plane, float fov_y_degrees, float aspect_ratio)
-    : position(position), target(target), near(near_plane), far(far_plane),
+    : position(position), target(target), near_plane(near_plane), far_plane(far_plane),
       fov_y_degrees(fov_y_degrees), aspect_ratio(aspect_ratio)
 {
     world_up.x() = 0.0f;
@@ -60,7 +55,7 @@ Matrix4f Camera::projection()
     // 这里没有使用相机本身的 near 而是取 near = -far 来让相机能看到“背后”的物体。
     projection(0, 0) = 1.0f / right;
     projection(1, 1) = 1.0f / top;
-    projection(2, 2) = -1.0f / far;
+    projection(2, 2) = -1.0f / far_plane;
     projection(2, 3) = 0.0f;
     projection(3, 3) = 1.0f;
 

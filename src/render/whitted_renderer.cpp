@@ -35,7 +35,7 @@ enum class MaterialType
 };
 
 // 显示渲染的进度条
-void UpdateProgress(float progress)
+void update_progress(float progress)
 {
     int barwidth = 70;
     std::cout << "[";
@@ -81,18 +81,14 @@ void WhittedRenderer::render(Scene& scene)
             // cast ray
             framebuffer[idx++] = cast_ray(ray, scene, 0);
         }
-        UpdateProgress(j / height);
+        update_progress(j / height);
     }
-    // save result to whitted_res.ppm
-    FILE* fp = fopen("whitted_res.ppm", "wb");
-    (void)fprintf(fp, "P6\n%d %d\n255\n", (int)width, (int)height);
     static unsigned char color_res[3];
     rendering_res.clear();
     for (long unsigned int i = 0; i < framebuffer.size(); i++) {
         color_res[0] = static_cast<unsigned char>(255 * clamp(0.f, 1.f, framebuffer[i][0]));
         color_res[1] = static_cast<unsigned char>(255 * clamp(0.f, 1.f, framebuffer[i][1]));
         color_res[2] = static_cast<unsigned char>(255 * clamp(0.f, 1.f, framebuffer[i][2]));
-        fwrite(color_res, 1, 3, fp);
         rendering_res.push_back(color_res[0]);
         rendering_res.push_back(color_res[1]);
         rendering_res.push_back(color_res[2]);

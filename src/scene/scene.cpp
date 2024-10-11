@@ -125,18 +125,18 @@ void Scene::render_camera(const Shader& shader)
         camera_vao.release();
         initialized = true;
     }
-    float far             = camera.far;
+    float far_plane       = camera.far_plane;
     float tan_half_fov_y  = std::tan(0.5f * radians(camera.fov_y_degrees));
-    float half_height     = camera.far * tan_half_fov_y;
+    float half_height     = camera.far_plane * tan_half_fov_y;
     float half_width      = half_height * camera.aspect_ratio;
     float target_distance = (camera.target - camera.position).norm();
     camera_vao.bind();
     camera_vertices.data.clear();
     camera_vertices.append(0.0f, 0.0f, 0.0f);
-    camera_vertices.append(-half_width, half_height, -far);
-    camera_vertices.append(half_width, half_height, -far);
-    camera_vertices.append(half_width, -half_height, -far);
-    camera_vertices.append(-half_width, -half_height, -far);
+    camera_vertices.append(-half_width, half_height, -far_plane);
+    camera_vertices.append(half_width, half_height, -far_plane);
+    camera_vertices.append(half_width, -half_height, -far_plane);
+    camera_vertices.append(-half_width, -half_height, -far_plane);
     camera_vertices.append(0.0f, 0.0f, -target_distance);
     camera_vertices.to_gpu();
     shader.set_uniform("model", (Matrix4f)(camera.view().inverse()));

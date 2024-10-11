@@ -6,6 +6,7 @@
 #include <string>
 #include <variant>
 #include <optional>
+#include <filesystem>
 
 #include <imgui/imgui.h>
 #include <glad/glad.h>
@@ -14,6 +15,8 @@
 #include <fmt/format.h>
 #include "../utils/formatter.hpp"
 #include <spdlog/spdlog.h>
+#include <portable-file-dialogs.h>
+#include <stb/stb_image_write.h>
 
 #include "settings.h"
 #include "../scene/camera.h"
@@ -24,6 +27,7 @@
 #include "../render/render_engine.h"
 #include "../simulation/solver.h"
 
+namespace fs = std::filesystem;
 using namespace UI;
 using Eigen::AngleAxisf;
 using Eigen::Matrix4f;
@@ -334,8 +338,7 @@ void Toolbar::model_mode(Scene& scene)
     }
 }
 
-const char* renderer_names[] = {"Rasterizer Renderer", "Rasterizer Renderer (MT)",
-                                "Whitted-Style Ray-Tracer"};
+const char* renderer_names[] = {"Rasterizer Renderer", "Whitted-Style Ray-Tracer"};
 
 void Toolbar::render_mode(Scene& scene)
 {
@@ -353,17 +356,16 @@ void Toolbar::render_mode(Scene& scene)
         static int renderer_index            = 0;
         static RendererType current_renderer = RendererType::RASTERIZER;
 
-        ImGui::Combo("Renderer", &renderer_index, renderer_names, 3);
+        ImGui::Combo("Renderer", &renderer_index, renderer_names, 2);
         switch (renderer_index) {
         case 0: current_renderer = RendererType::RASTERIZER; break;
-        // case 1: current_renderer = RendererType::RASTERIZER_MT; break;
-        case 2: current_renderer = RendererType::WHITTED_STYLE; break;
+        case 1: current_renderer = RendererType::WHITTED_STYLE; break;
         default: break;
         }
-        // if (current_renderer == RendererType::RASTERIZER_MT) {
-        //     ImGui::SetNextItemWidth(0.5f * ImGui::CalcItemWidth());
-        //     ImGui::InputInt("Number of Threads", &render_engine.n_threads);
-        // }
+        if (current_renderer == RendererType::RASTERIZER) {
+            ImGui::SetNextItemWidth(0.5f * ImGui::CalcItemWidth());
+            ImGui::InputInt("Number of Threads", &render_engine.n_threads);
+        }
         if (current_renderer == RendererType::WHITTED_STYLE) {
             ImGui::Checkbox("Use BVH for Acceleration", &render_engine.whitted_render->use_bvh);
         }
@@ -429,24 +431,27 @@ void Toolbar::render_mode(Scene& scene)
         ImGui::AlignTextToFramePadding();
         ImGui::BeginGroup();
         ImGui::Text("Near Plane");
-        ImGui::SliderFloat("near", &(scene.camera.near), 0.0001f, scene.camera.far, "%.4f",
-                           ImGuiSliderFlags_AlwaysClamp | ImGuiSliderFlags_Logarithmic);
+        ImGui::SliderFloat("near", &(scene.camera.near_plane), 0.0001f, scene.camera.far_plane,
+                           "%.4f", ImGuiSliderFlags_AlwaysClamp | ImGuiSliderFlags_Logarithmic);
         ImGui::EndGroup();
         ImGui::SameLine();
         ImGui::BeginGroup();
         ImGui::Text("Far Plane");
-        ImGui::SliderFloat("far", &(scene.camera.far), scene.camera.near, 1000.0f, "%.1f",
-                           ImGuiSliderFlags_AlwaysClamp | ImGuiSliderFlags_Logarithmic);
+        ImGui::SliderFloat("far", &(scene.camera.far_plane), scene.camera.near_plane, 1000.0f,
+                           "%.1f", ImGuiSliderFlags_AlwaysClamp | ImGuiSliderFlags_Logarithmic);
         ImGui::EndGroup();
         ImGui::PopItemWidth();
 
         if (open_rendered_image) {
             ImGui::OpenPopup("Rendered Image");
         }
-        if (ImGui::BeginPopupModal("Rendered Image", &always_true)) {
-            ImVec2 image_size(480.0f, 480.0f / scene.camera.aspect_ratio);
-            render_engine.width  = image_size.x;
-            render_engine.height = image_size.y;
+        constexpr ImGuiWindowFlags image_window_flags =
+            ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar;
+        if (ImGui::BeginPopupModal("Rendered Image", &always_true, image_window_flags)) {
+            constexpr float image_width = 480.0f;
+            const ImVec2 image_size(image_width, image_width / scene.camera.aspect_ratio);
+            render_engine.width  = std::floor(image_size.x);
+            render_engine.height = std::floor(image_size.y);
             if (!rendering_ready) {
                 render_engine.render(scene, current_renderer);
                 glBindTexture(GL_TEXTURE_2D, gl_rendered_texture);
@@ -455,8 +460,30 @@ void Toolbar::render_mode(Scene& scene)
                 glBindTexture(GL_TEXTURE_2D, 0);
                 rendering_ready = true;
             }
-            ImGui::SetWindowSize(ImVec2(px(500.0f), px(400.0f)));
-            ImGui::Image((void*)(intptr_t)gl_rendered_texture, image_size);
+
+            // The "Rendered Image" window has a default size, but it can also be resized.
+            const float margin_x = ImGui::GetWindowContentRegionMin().x;
+            const ImVec2 default_window_size(px(image_size.x) + 2.0f * margin_x,
+                                             px(image_size.y) + px(70.0f));
+            ImGui::SetWindowSize(default_window_size, ImGuiCond_Once);
+            // The displayed image will be resized together.
+            const ImVec2 current_window_size = ImGui::GetWindowSize();
+            ImVec2 displayed_size(current_window_size.x - 2.0f * margin_x, 0.0f);
+            displayed_size.y = displayed_size.x / scene.camera.aspect_ratio;
+            ImGui::Image((void*)(intptr_t)gl_rendered_texture, displayed_size);
+            if (ImGui::Button("Save Image")) {
+                string target_file =
+                    pfd::save_file("Save Rendered Image", ".", {"PNG Image", "*.png"}).result();
+                fs::path target_file_path(target_file);
+                const bool folder_exists = fs::exists(target_file_path.parent_path());
+                if (folder_exists) {
+                    stbi_write_png(target_file.c_str(), static_cast<int>(render_engine.width),
+                                   static_cast<int>(render_engine.height), 3,
+                                   render_engine.rendering_res.data(),
+                                   static_cast<int>(render_engine.width) * 3);
+                    spdlog::info("rendered image saved to {}", target_file);
+                }
+            }
             ImGui::EndPopup();
         }
 
