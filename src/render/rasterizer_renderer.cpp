@@ -1,5 +1,4 @@
-#include <algorithm>
-#include <fstream>
+#include <cstddef>
 #include <memory>
 #include <vector>
 #include <thread>
@@ -12,6 +11,7 @@
 #include "../scene/light.h"
 #include "../utils/logger.h"
 
+using std::size_t;
 using std::chrono::steady_clock;
 using duration   = std::chrono::duration<float>;
 using time_point = std::chrono::time_point<steady_clock, duration>;
@@ -109,12 +109,12 @@ void RasterizerRenderer::render(const Scene& scene)
             const std::vector<float>& vertices     = object->mesh.vertices.data;
             const std::vector<unsigned int>& faces = object->mesh.faces.data;
             const std::vector<float>& normals      = object->mesh.normals.data;
-            unsigned int num_faces                 = faces.size();
+            size_t num_faces                       = faces.size();
 
             // process vertices
-            for (unsigned int i = 0; i < num_faces; i += 3) {
-                for (unsigned int j = 0; j < 3; j++) {
-                    unsigned int idx = faces[i + j];
+            for (size_t i = 0; i < num_faces; i += 3) {
+                for (size_t j = 0; j < 3; j++) {
+                    size_t idx = faces[i + j];
                     vertex_processor.input_vertices(
                         Vector4f(vertices[3 * idx], vertices[3 * idx + 1], vertices[3 * idx + 2],
                                  1.0f),
