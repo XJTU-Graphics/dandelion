@@ -146,3 +146,68 @@ void RasterizerRenderer::render(const Scene& scene)
             static_cast<unsigned char>(Context::frame_buffer.color_buffer[i].z()));
     }
 }
+
+void VertexProcessor::input_vertices(const Vector4f& positions, const Vector3f& normals)
+{
+    std::unique_lock<std::mutex> lock(queue_mutex);
+    VertexShaderPayload payload;
+    payload.world_position = positions;
+    payload.normal         = normals;
+    vertex_queue.push(payload);
+}
+
+void VertexProcessor::worker_thread()
+{
+    while (true) {
+        VertexShaderPayload payload;
+        {
+            if (vertex_queue.empty()) {
+                continue;
+            }
+            std::unique_lock<std::mutex> lock(queue_mutex);
+            if (vertex_queue.empty()) {
+                continue;
+            }
+            payload = vertex_queue.front();
+            vertex_queue.pop();
+        }
+        if (payload.world_position.w() == -1.0f) {
+            Context::vertex_finish = true;
+            return;
+        }
+        VertexShaderPayload output_payload = vertex_shader_ptr(payload);
+        {
+            std::unique_lock<std::mutex> lock(Context::vertex_queue_mutex);
+            Context::vertex_shader_output_queue.push(output_payload);
+        }
+    }
+}
+
+void FragmentProcessor::worker_thread()
+{
+    while (true) {
+        FragmentShaderPayload fragment;
+        {
+            if (Context::rasterizer_finish && Context::rasterizer_output_queue.empty()) {
+                Context::fragment_finish = true;
+                return;
+            }
+            if (Context::rasterizer_output_queue.empty()) {
+                continue;
+            }
+            std::unique_lock<std::mutex> lock(Context::rasterizer_queue_mutex);
+            if (Context::rasterizer_output_queue.empty()) {
+                continue;
+            }
+            fragment = Context::rasterizer_output_queue.front();
+            Context::rasterizer_output_queue.pop();
+        }
+        int index = (Uniforms::height - 1 - fragment.y) * Uniforms::width + fragment.x;
+        if (fragment.depth > Context::frame_buffer.depth_buffer[index]) {
+            continue;
+        }
+        fragment.color =
+            fragment_shader_ptr(fragment, Uniforms::material, Uniforms::lights, Uniforms::camera);
+        Context::frame_buffer.set_pixel(index, fragment.depth, fragment.color);
+    }
+}
