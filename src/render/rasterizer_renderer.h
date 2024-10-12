@@ -1,7 +1,6 @@
 #ifndef DANDELION_RENDER_RASTERIZER_RENDERER_H
 #define DANDELION_RENDER_RASTERIZER_RENDERER_H
 
-#include <vector>
 #include <list>
 #include <queue>
 
@@ -42,8 +41,8 @@ public:
     void worker_thread();
 
     Eigen::Vector3f (*fragment_shader_ptr)(const FragmentShaderPayload& payload,
-                                           const GL::Material& material, const std::list<Light>& lights,
-                                           const Camera& camera);
+                                           const GL::Material& material,
+                                           const std::list<Light>& lights, const Camera& camera);
 
 private:
 };
