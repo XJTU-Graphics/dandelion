@@ -30,6 +30,7 @@
 - Assimp 5.2.5, Open Assert Import Library License
 - Dear ImGui 1.89.3 (docking branch), MIT License
 - stb\_image 2.30, MIT License & Public Domain
+- stb\_image\_write 1.16 (modified for AppleClang compatibility), MIT License & Public Domain
 - spdlog 1.14.1, MIT License
 - {fmt} 11.0.2, {fmt}'s License
 - portable-file-dialogs (commit 7f852d88a480020d7f91957cbcefe514fc95000c), WTFPL License
@@ -52,8 +53,8 @@
 \section requests 工具需求
 
 - 支持 C++ 20 标准的编译器
-  - 最低要求 Visual Studio 2019、GNU GCC 11、Clang 14 。由于我们开启的警告等级很高，更低版本的编译器可能会产生错误的警告。
-  - 推荐使用 Visual Studio 2022、GNU GCC 12+、Clang 15+ ，可以使用最新的稳定版本。
+  - 最低要求 Visual Studio 2022、GNU GCC 11、Clang 14 。由于我们开启的警告等级很高，更低版本的编译器可能会产生错误的警告。
+  - 推荐使用 Visual Studio 2022、GNU GCC 12+、Clang 15+ ，推荐使用最新的稳定版本。
 - CMake 3.14 及以上（推荐使用最新的稳定版本）
 
 在 Windows 平台上，从官方网站下载安装足够新的 Visual Studio 和 CMake 即可；在 Linux 平台上可以用包管理器安装编译器和 CMake；在 macOS 平台上，我们推荐安装 Xcode 命令行工具（不是 Xcode IDE），并使用 Homebrew 安装 CMake。
