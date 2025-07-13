@@ -2,7 +2,7 @@
 Open Asset Import Library (assimp)
 ----------------------------------------------------------------------
 
-Copyright (c) 2006-2022, assimp team
+Copyright (c) 2006-2025, assimp team
 
 All rights reserved.
 
@@ -55,6 +55,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string>
 
 namespace Assimp {
+AI_WONT_RETURN inline void Throw_ArgOutOfRange(const std::string &argument) AI_WONT_RETURN_SUFFIX;
+AI_WONT_RETURN inline void Throw_CloseNotFound(const std::string &node) AI_WONT_RETURN_SUFFIX;
+AI_WONT_RETURN inline void Throw_ConvertFail_Str2ArrF(const std::string &nodeName, const std::string &pAttrValue) AI_WONT_RETURN_SUFFIX;
+AI_WONT_RETURN inline void Throw_ConvertFail_Str2ArrD(const std::string &nodeName, const std::string &pAttrValue) AI_WONT_RETURN_SUFFIX;
+AI_WONT_RETURN inline void Throw_ConvertFail_Str2ArrB(const std::string &nodeName, const std::string &pAttrValue) AI_WONT_RETURN_SUFFIX;
+AI_WONT_RETURN inline void Throw_ConvertFail_Str2ArrI(const std::string &nodeName, const std::string &pAttrValue) AI_WONT_RETURN_SUFFIX;
+AI_WONT_RETURN inline void Throw_DEF_And_USE(const std::string &nodeName) AI_WONT_RETURN_SUFFIX;
+AI_WONT_RETURN inline void Throw_IncorrectAttr(const std::string &nodeName, const std::string &pAttrName) AI_WONT_RETURN_SUFFIX;
+AI_WONT_RETURN inline void Throw_IncorrectAttrValue(const std::string &nodeName, const std::string &pAttrName) AI_WONT_RETURN_SUFFIX;
+AI_WONT_RETURN inline void Throw_MoreThanOnceDefined(const std::string &nodeName, const std::string &pNodeType, const std::string &pDescription) AI_WONT_RETURN_SUFFIX;
+AI_WONT_RETURN inline void Throw_TagCountIncorrect(const std::string &pNode) AI_WONT_RETURN_SUFFIX;
+AI_WONT_RETURN inline void Throw_USE_NotFound(const std::string &nodeName, const std::string &pAttrValue) AI_WONT_RETURN_SUFFIX;
 
 inline void Throw_ArgOutOfRange(const std::string &argument) {
     throw DeadlyImportError("Argument value is out of range for: \"" + argument + "\".");
@@ -263,7 +275,9 @@ public:
     /// Also exception can be thrown if trouble will found.
     /// \param [in] pFile - name of file to be parsed.
     /// \param [in] pIOHandler - pointer to IO helper object.
-    void ParseFile(const std::string &pFile, IOSystem *pIOHandler);
+    void ParseFile(const std::string &file, IOSystem *pIOHandler);
+    void ParseFile(std::istream &myIstream);
+    void ParseFile(XmlParser &theParser);
     bool CanRead(const std::string &pFile, IOSystem *pIOHandler, bool pCheckSig) const;
     void InternReadFile(const std::string &pFile, aiScene *pScene, IOSystem *pIOHandler);
     const aiImporterDesc *GetInfo() const;

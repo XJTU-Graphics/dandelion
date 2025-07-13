@@ -22,8 +22,9 @@ int main()
     // but the formatter in C++20's std::format formats it to UTC time.
     // In the future we may migrate the whole project to C++20/23, so we do
     // not want to use an inconsistent feature.
-    std::tm now = fmt::localtime(std::time(nullptr));
-    spdlog::info("Dandelion 3D, started at {:%Y-%m-%d %H:%M:%S%z}", now);
+    std::time_t current_timestamp = std::time(nullptr);
+    std::tm *now = std::localtime(&current_timestamp);
+    spdlog::info("Dandelion 3D, started at {:%Y-%m-%d %H:%M:%S%z}", *now);
 
     Platform platform;
     platform.eventloop();

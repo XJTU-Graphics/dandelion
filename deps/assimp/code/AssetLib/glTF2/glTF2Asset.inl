@@ -2,7 +2,7 @@
 Open Asset Import Library (assimp)
 ----------------------------------------------------------------------
 
-Copyright (c) 2006-2022, assimp team
+Copyright (c) 2006-2025, assimp team
 
 All rights reserved.
 
@@ -39,12 +39,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ----------------------------------------------------------------------
 */
 
-#include "AssetLib/glTF/glTFCommon.h"
+#include "AssetLib/glTFCommon/glTFCommon.h"
 
 #include <assimp/MemoryIOWrapper.h>
 #include <assimp/StringUtils.h>
 #include <assimp/DefaultLogger.hpp>
 #include <assimp/Base64.hpp>
+#include <rapidjson/document.h>
+#include <rapidjson/schema.h>
+#include <rapidjson/stringbuffer.h>
 
 // clang-format off
 #ifdef ASSIMP_ENABLE_DRACO
@@ -84,6 +87,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using namespace Assimp;
 
 namespace glTF2 {
+
 using glTFCommon::FindStringInContext;
 using glTFCommon::FindNumberInContext;
 using glTFCommon::FindUIntInContext;
@@ -136,6 +140,18 @@ inline CustomExtension ReadExtensions(const char *name, Value &obj) {
         ret.mBoolValue.value = obj.GetBool();
         ret.mBoolValue.isPresent = true;
     }
+    return ret;
+}
+
+inline Extras ReadExtras(Value &obj) {
+    Extras ret;
+
+    ret.mValues.reserve(obj.MemberCount());
+    for (auto it = obj.MemberBegin(); it != obj.MemberEnd(); ++it) {
+        auto &val = it->value;
+        ret.mValues.emplace_back(ReadExtensions(it->name.GetString(), val));
+    }
+
     return ret;
 }
 
@@ -248,7 +264,7 @@ inline void Object::ReadExtensions(Value &val) {
 
 inline void Object::ReadExtras(Value &val) {
     if (Value *curExtras = FindObject(val, "extras")) {
-        this->extras = glTF2::ReadExtensions("extras", *curExtras);
+        this->extras = glTF2::ReadExtras(*curExtras);
     }
 }
 
@@ -279,6 +295,8 @@ inline void SetDecodedIndexBuffer_Draco(const draco::Mesh &dracoMesh, Mesh::Prim
     // Usually uint32_t but shouldn't assume
     if (sizeof(dracoMesh.face(draco::FaceIndex(0))[0]) == componentBytes) {
         memcpy(decodedIndexBuffer->GetPointer(), &dracoMesh.face(draco::FaceIndex(0))[0], decodedIndexBuffer->byteLength);
+        // Assign this alternate data buffer to the accessor
+        prim.indices->decodedBuffer.swap(decodedIndexBuffer);
         return;
     }
 
@@ -371,7 +389,7 @@ template <class T>
 inline LazyDict<T>::LazyDict(Asset &asset, const char *dictId, const char *extId) :
         mDictId(dictId),
         mExtId(extId),
-        mDict(0),
+        mDict(nullptr),
         mAsset(asset) {
     asset.mDicts.push_back(this); // register to the list of dictionaries
 }
@@ -770,12 +788,14 @@ inline void BufferView::Read(Value &obj, Asset &r) {
     }
 }
 
-inline uint8_t *BufferView::GetPointer(size_t accOffset) {
+inline uint8_t *BufferView::GetPointerAndTailSize(size_t accOffset, size_t& outTailSize) {
     if (!buffer) {
+        outTailSize = 0;
         return nullptr;
     }
-    uint8_t *basePtr = buffer->GetPointer();
+    uint8_t * const basePtr = buffer->GetPointer();
     if (!basePtr) {
+        outTailSize = 0;
         return nullptr;
     }
 
@@ -784,17 +804,25 @@ inline uint8_t *BufferView::GetPointer(size_t accOffset) {
         const size_t begin = buffer->EncodedRegion_Current->Offset;
         const size_t end = begin + buffer->EncodedRegion_Current->DecodedData_Length;
         if ((offset >= begin) && (offset < end)) {
+            outTailSize = end - offset;
             return &buffer->EncodedRegion_Current->DecodedData[offset - begin];
         }
     }
 
+    if (offset >= buffer->byteLength)
+    {
+        outTailSize = 0;
+        return nullptr;
+    }
+
+    outTailSize = buffer->byteLength - offset;
     return basePtr + offset;
 }
 
 //
 // struct Accessor
 //
-inline void Accessor::Sparse::PopulateData(size_t numBytes, uint8_t *bytes) {
+inline void Accessor::Sparse::PopulateData(size_t numBytes, const uint8_t *bytes) {
     if (bytes) {
         data.assign(bytes, bytes + numBytes);
     } else {
@@ -803,11 +831,21 @@ inline void Accessor::Sparse::PopulateData(size_t numBytes, uint8_t *bytes) {
 }
 
 inline void Accessor::Sparse::PatchData(unsigned int elementSize) {
-    uint8_t *pIndices = indices->GetPointer(indicesByteOffset);
+    size_t indicesTailDataSize;
+    uint8_t *pIndices = indices->GetPointerAndTailSize(indicesByteOffset, indicesTailDataSize);
     const unsigned int indexSize = int(ComponentTypeSize(indicesType));
     uint8_t *indicesEnd = pIndices + count * indexSize;
 
-    uint8_t *pValues = values->GetPointer(valuesByteOffset);
+    if ((uint64_t)indicesEnd > (uint64_t)pIndices + indicesTailDataSize) {
+        throw DeadlyImportError("Invalid sparse accessor. Indices outside allocated memory.");
+    }
+
+    size_t valuesTailDataSize;
+    uint8_t* pValues = values->GetPointerAndTailSize(valuesByteOffset, valuesTailDataSize);
+
+    if (elementSize * count > valuesTailDataSize) {
+        throw DeadlyImportError("Invalid sparse accessor. Indices outside allocated memory.");
+    }
     while (pIndices != indicesEnd) {
         size_t offset;
         switch (indicesType) {
@@ -879,6 +917,9 @@ inline void Accessor::Read(Value &obj, Asset &r) {
         if (Value *indicesValue = FindObject(*sparseValue, "indices")) {
             //indices bufferView
             Value *indiceViewID = FindUInt(*indicesValue, "bufferView");
+            if (!indiceViewID) {
+                throw DeadlyImportError("A bufferView value is required, when reading ", id.c_str(), name.empty() ? "" : " (" + name + ")");
+            }
             sparse->indices = r.bufferViews.Retrieve(indiceViewID->GetUint());
             //indices byteOffset
             sparse->indicesByteOffset = MemberOrDefault(*indicesValue, "byteOffset", size_t(0));
@@ -894,6 +935,9 @@ inline void Accessor::Read(Value &obj, Asset &r) {
         if (Value *valuesValue = FindObject(*sparseValue, "values")) {
             //value bufferView
             Value *valueViewID = FindUInt(*valuesValue, "bufferView");
+            if (!valueViewID) {
+                throw DeadlyImportError("A bufferView value is required, when reading ", id.c_str(), name.empty() ? "" : " (" + name + ")");
+            }
             sparse->values = r.bufferViews.Retrieve(valueViewID->GetUint());
             //value byteOffset
             sparse->valuesByteOffset = MemberOrDefault(*valuesValue, "byteOffset", size_t(0));
@@ -903,7 +947,17 @@ inline void Accessor::Read(Value &obj, Asset &r) {
 
         const unsigned int elementSize = GetElementSize();
         const size_t dataSize = count * elementSize;
-        sparse->PopulateData(dataSize, bufferView ? bufferView->GetPointer(byteOffset) : 0);
+        if (bufferView) {
+            size_t bufferViewTailSize;
+            const uint8_t* bufferViewPointer = bufferView->GetPointerAndTailSize(byteOffset, bufferViewTailSize);
+            if (dataSize > bufferViewTailSize) {
+                throw DeadlyImportError("Invalid buffer when reading ", id.c_str(), name.empty() ? "" : " (" + name + ")");
+            }
+            sparse->PopulateData(dataSize, bufferViewPointer);
+        }
+        else {
+            sparse->PopulateData(dataSize, nullptr);
+        }
         sparse->PatchData(elementSize);
     }
 }
@@ -962,14 +1016,15 @@ inline size_t Accessor::GetMaxByteSize() {
 }
 
 template <class T>
-void Accessor::ExtractData(T *&outData) {
+size_t Accessor::ExtractData(T *&outData, const std::vector<unsigned int> *remappingIndices) {
     uint8_t *data = GetPointer();
     if (!data) {
         throw DeadlyImportError("GLTF2: data is null when extracting data from ", getContextForErrorMessages(id, name));
     }
 
+    const size_t usedCount = (remappingIndices != nullptr) ? remappingIndices->size() : count;
     const size_t elemSize = GetElementSize();
-    const size_t totalSize = elemSize * count;
+    const size_t totalSize = elemSize * usedCount;
 
     const size_t stride = GetStride();
 
@@ -980,18 +1035,31 @@ void Accessor::ExtractData(T *&outData) {
     }
 
     const size_t maxSize = GetMaxByteSize();
-    if (count * stride > maxSize) {
-        throw DeadlyImportError("GLTF: count*stride ", (count * stride), " > maxSize ", maxSize, " in ", getContextForErrorMessages(id, name));
-    }
 
-    outData = new T[count];
-    if (stride == elemSize && targetElemSize == elemSize) {
-        memcpy(outData, data, totalSize);
-    } else {
-        for (size_t i = 0; i < count; ++i) {
-            memcpy(outData + i, data + i * stride, elemSize);
+    outData = new T[usedCount];
+
+    if (remappingIndices != nullptr) {
+        const unsigned int maxIndexCount = static_cast<unsigned int>(maxSize / stride);
+        for (size_t i = 0; i < usedCount; ++i) {
+            size_t srcIdx = (*remappingIndices)[i];
+            if (srcIdx >= maxIndexCount) {
+                throw DeadlyImportError("GLTF: index*stride ", (srcIdx * stride), " > maxSize ", maxSize, " in ", getContextForErrorMessages(id, name));
+            }
+            memcpy(outData + i, data + srcIdx * stride, elemSize);
+        }
+    } else { // non-indexed cases
+        if (usedCount * stride > maxSize) {
+            throw DeadlyImportError("GLTF: count*stride ", (usedCount * stride), " > maxSize ", maxSize, " in ", getContextForErrorMessages(id, name));
+        }
+        if (stride == elemSize && targetElemSize == elemSize) {
+            memcpy(outData, data, totalSize);
+        } else {
+            for (size_t i = 0; i < usedCount; ++i) {
+                memcpy(outData + i, data + i * stride, elemSize);
+            }
         }
     }
+    return usedCount;
 }
 
 inline void Accessor::WriteData(size_t _count, const void *src_buffer, size_t src_stride) {
@@ -1152,6 +1220,17 @@ inline void Texture::Read(Value &obj, Asset &r) {
     if (Value *samplerVal = FindUInt(obj, "sampler")) {
         sampler = r.samplers.Retrieve(samplerVal->GetUint());
     }
+
+    if (Value *extensions = FindObject(obj, "extensions")) {
+        if (r.extensionsUsed.KHR_texture_basisu) {
+            if (Value *curBasisU = FindObject(*extensions, "KHR_texture_basisu")) {
+
+                if (Value *sourceVal = FindUInt(*curBasisU, "source")) {
+                    source = r.images.Retrieve(sourceVal->GetUint());
+                }
+            }
+        }
+    }
 }
 
 void Material::SetTextureProperties(Asset &r, Value *prop, TextureInfo &out) {
@@ -1250,6 +1329,19 @@ inline void Material::Read(Value &material, Asset &r) {
             }
         }
 
+        if (r.extensionsUsed.KHR_materials_specular) {
+            if (Value *curMatSpecular = FindObject(*extensions, "KHR_materials_specular")) {
+                MaterialSpecular specular;
+
+                ReadMember(*curMatSpecular, "specularFactor", specular.specularFactor);
+                ReadTextureProperty(r, *curMatSpecular, "specularTexture", specular.specularTexture);
+                ReadMember(*curMatSpecular, "specularColorFactor", specular.specularColorFactor);
+                ReadTextureProperty(r, *curMatSpecular, "specularColorTexture", specular.specularColorTexture);
+
+                this->materialSpecular = Nullable<MaterialSpecular>(specular);
+            }
+        }
+
         // Extension KHR_texture_transform is handled in ReadTextureProperty
 
         if (r.extensionsUsed.KHR_materials_sheen) {
@@ -1313,6 +1405,28 @@ inline void Material::Read(Value &material, Asset &r) {
             }
         }
 
+        if (r.extensionsUsed.KHR_materials_emissive_strength) {
+            if (Value *curMaterialEmissiveStrength = FindObject(*extensions, "KHR_materials_emissive_strength")) {
+                MaterialEmissiveStrength emissiveStrength;
+
+                ReadMember(*curMaterialEmissiveStrength, "emissiveStrength", emissiveStrength.emissiveStrength);
+
+                this->materialEmissiveStrength = Nullable<MaterialEmissiveStrength>(emissiveStrength);
+            }
+        }
+
+        if (r.extensionsUsed.KHR_materials_anisotropy) {
+            if (Value *curMaterialAnisotropy = FindObject(*extensions, "KHR_materials_anisotropy")) {
+                MaterialAnisotropy anisotropy;
+
+                ReadMember(*curMaterialAnisotropy, "anisotropyStrength", anisotropy.anisotropyStrength);
+                ReadMember(*curMaterialAnisotropy, "anisotropyRotation", anisotropy.anisotropyRotation);
+                ReadTextureProperty(r, *curMaterialAnisotropy, "anisotropyTexture", anisotropy.anisotropyTexture);
+
+                this->materialAnisotropy = Nullable<MaterialAnisotropy>(anisotropy);
+            }
+        }
+
         unlit = nullptr != FindObject(*extensions, "KHR_materials_unlit");
     }
 }
@@ -1337,6 +1451,12 @@ inline void PbrSpecularGlossiness::SetDefaults() {
     glossinessFactor = 1.0f;
 }
 
+inline void MaterialSpecular::SetDefaults() {
+    //KHR_materials_specular properties
+    SetVector(specularColorFactor, defaultSpecularColorFactor);
+    specularFactor = 1.f;
+}
+
 inline void MaterialSheen::SetDefaults() {
     //KHR_materials_sheen properties
     SetVector(sheenColorFactor, defaultSheenFactor);
@@ -1346,13 +1466,24 @@ inline void MaterialSheen::SetDefaults() {
 inline void MaterialVolume::SetDefaults() {
     //KHR_materials_volume properties
     thicknessFactor = 0.f;
-    attenuationDistance = INFINITY;
+    attenuationDistance = std::numeric_limits<float>::infinity();
     SetVector(attenuationColor, defaultAttenuationColor);
 }
 
 inline void MaterialIOR::SetDefaults() {
     //KHR_materials_ior properties
     ior = 1.5f;
+}
+
+inline void MaterialEmissiveStrength::SetDefaults() {
+    //KHR_materials_emissive_strength properties
+    emissiveStrength = 0.f;
+}
+
+inline void MaterialAnisotropy::SetDefaults() {
+    //KHR_materials_anisotropy properties
+    anisotropyStrength = 0.f;
+    anisotropyRotation = 0.f;
 }
 
 inline void Mesh::Read(Value &pJSON_Object, Asset &pAsset_Root) {
@@ -1485,6 +1616,22 @@ inline void Mesh::Read(Value &pJSON_Object, Asset &pAsset_Root) {
                                 (*vec).resize(idx + 1);
                             }
                             (*vec)[idx] = pAsset_Root.accessors.Retrieve(it->value.GetUint());
+                        }
+                    }
+                }
+            }
+
+            if(this->targetNames.empty())
+            {
+                Value *curExtras = FindObject(primitive, "extras");
+                if (nullptr != curExtras) {
+                    if (Value *curTargetNames = FindArray(*curExtras, "targetNames")) {
+                        this->targetNames.resize(curTargetNames->Size());
+                        for (unsigned int j = 0; j < curTargetNames->Size(); ++j) {
+                            Value &targetNameValue = (*curTargetNames)[j];
+                            if (targetNameValue.IsString()) {
+                                this->targetNames[j] = targetNameValue.GetString();
+                            }
                         }
                     }
                 }
@@ -1888,7 +2035,7 @@ inline void Asset::Load(const std::string &pFile, bool isBinary)
     std::vector<char> sceneData;
     rapidjson::Document doc = ReadDocument(*stream, isBinary, sceneData);
 
-    // If a schemaDocumentProvider is available, see if the glTF schema is present. 
+    // If a schemaDocumentProvider is available, see if the glTF schema is present.
     // If so, use it to validate the document.
     if (mSchemaDocumentProvider) {
         if (const rapidjson::SchemaDocument *gltfSchema = mSchemaDocumentProvider->GetRemoteDocument("glTF.schema.json", 16)) {
@@ -1928,6 +2075,12 @@ inline void Asset::Load(const std::string &pFile, bool isBinary)
         mDicts[i]->AttachToDocument(doc);
     }
 
+    // Read the "extensions" property, then add it to each scene's metadata.
+    CustomExtension customExtensions;
+    if (Value *extensionsObject = FindObject(doc, "extensions")) {
+        customExtensions = glTF2::ReadExtensions("extensions", *extensionsObject);
+    }
+
     // Read the "scene" property, which specifies which scene to load
     // and recursively load everything referenced by it
     unsigned int sceneIndex = 0;
@@ -1939,6 +2092,8 @@ inline void Asset::Load(const std::string &pFile, bool isBinary)
     if (Value *scenesArray = FindArray(doc, "scenes")) {
         if (sceneIndex < scenesArray->Size()) {
             this->scene = scenes.Retrieve(sceneIndex);
+
+            this->scene->customExtensions = customExtensions;
         }
     }
 
@@ -2001,6 +2156,7 @@ inline void Asset::ReadExtensionsRequired(Document &doc) {
     }
 
     CHECK_REQUIRED_EXT(KHR_draco_mesh_compression);
+    CHECK_REQUIRED_EXT(KHR_texture_basisu);
 
 #undef CHECK_REQUIRED_EXT
 }
@@ -2018,6 +2174,7 @@ inline void Asset::ReadExtensionsUsed(Document &doc) {
     }
 
     CHECK_EXT(KHR_materials_pbrSpecularGlossiness);
+    CHECK_EXT(KHR_materials_specular);
     CHECK_EXT(KHR_materials_unlit);
     CHECK_EXT(KHR_lights_punctual);
     CHECK_EXT(KHR_texture_transform);
@@ -2026,6 +2183,8 @@ inline void Asset::ReadExtensionsUsed(Document &doc) {
     CHECK_EXT(KHR_materials_transmission);
     CHECK_EXT(KHR_materials_volume);
     CHECK_EXT(KHR_materials_ior);
+    CHECK_EXT(KHR_materials_emissive_strength);
+    CHECK_EXT(KHR_materials_anisotropy);
     CHECK_EXT(KHR_draco_mesh_compression);
     CHECK_EXT(KHR_texture_basisu);
 
@@ -2049,8 +2208,10 @@ inline std::string Asset::FindUniqueID(const std::string &str, const char *suffi
     std::string id = str;
 
     if (!id.empty()) {
-        if (mUsedIds.find(id) == mUsedIds.end())
+        if (mUsedIds.find(id) == mUsedIds.end()){
+            mUsedNamesMap[id] = 0;
             return id;
+        }
 
         id += "_";
     }
@@ -2059,17 +2220,13 @@ inline std::string Asset::FindUniqueID(const std::string &str, const char *suffi
 
     Asset::IdMap::iterator it = mUsedIds.find(id);
     if (it == mUsedIds.end()) {
+        mUsedNamesMap[id] = 0;
         return id;
     }
 
-    std::vector<char> buffer;
-    buffer.resize(id.size() + 16);
-    int offset = ai_snprintf(buffer.data(), buffer.size(), "%s_", id.c_str());
-    for (int i = 0; it != mUsedIds.end(); ++i) {
-        ai_snprintf(buffer.data() + offset, buffer.size() - offset, "%d", i);
-        id = buffer.data();
-        it = mUsedIds.find(id);
-    }
+    auto key = id;
+    id += "_" + std::to_string(mUsedNamesMap[key]);
+    mUsedNamesMap[key] = mUsedNamesMap[key] + 1;
 
     return id;
 }

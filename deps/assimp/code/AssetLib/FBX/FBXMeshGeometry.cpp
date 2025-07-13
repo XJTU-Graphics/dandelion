@@ -2,7 +2,7 @@
 Open Asset Import Library (assimp)
 ----------------------------------------------------------------------
 
-Copyright (c) 2006-2022, assimp team
+Copyright (c) 2006-2025, assimp team
 
 All rights reserved.
 
@@ -69,13 +69,16 @@ Geometry::Geometry(uint64_t id, const Element& element, const std::string& name,
         }
         const BlendShape* const bsp = ProcessSimpleConnection<BlendShape>(*con, false, "BlendShape -> Geometry", element);
         if (bsp) {
-            blendShapes.push_back(bsp);
+            auto pr = blendShapes.insert(bsp);
+            if (!pr.second) {
+                FBXImporter::LogWarn("there is the same blendShape id ", bsp->ID());
+            }
         }
     }
 }
 
 // ------------------------------------------------------------------------------------------------
-const std::vector<const BlendShape*>& Geometry::GetBlendShapes() const {
+const std::unordered_set<const BlendShape*>& Geometry::GetBlendShapes() const {
     return blendShapes;
 }
 
@@ -415,9 +418,11 @@ void ResolveVertexDataArray(std::vector<T>& data_out, const Scope& source,
 {
     bool isDirect = ReferenceInformationType == "Direct";
     bool isIndexToDirect = ReferenceInformationType == "IndexToDirect";
+    const bool hasDataElement = HasElement(source, dataElementName);
+    const bool hasIndexDataElement = HasElement(source, indexDataElementName);
 
     // fall-back to direct data if there is no index data element
-    if ( isIndexToDirect && !HasElement( source, indexDataElementName ) ) {
+    if (isIndexToDirect && !hasIndexDataElement) {
         isDirect = true;
         isIndexToDirect = false;
     }
@@ -426,7 +431,8 @@ void ResolveVertexDataArray(std::vector<T>& data_out, const Scope& source,
     // deal with this more elegantly and with less redundancy, but right
     // now it seems unavoidable.
     if (MappingInformationType == "ByVertice" && isDirect) {
-        if (!HasElement(source, dataElementName)) {
+        if (!hasDataElement) {
+            FBXImporter::LogWarn("missing data element: ", dataElementName);
             return;
         }
         std::vector<T> tempData;
@@ -448,14 +454,22 @@ void ResolveVertexDataArray(std::vector<T>& data_out, const Scope& source,
     }
     else if (MappingInformationType == "ByVertice" && isIndexToDirect) {
 		std::vector<T> tempData;
-		ParseVectorDataArray(tempData, GetRequiredElement(source, dataElementName));
+        if (!hasDataElement || !hasIndexDataElement) {
+            if (!hasDataElement)
+                FBXImporter::LogWarn("missing data element: ", dataElementName);
+            if (!hasIndexDataElement)
+                FBXImporter::LogWarn("missing index data element: ", indexDataElementName);
+            return;
+        }
+
+        ParseVectorDataArray(tempData, GetRequiredElement(source, dataElementName));
 
         std::vector<int> uvIndices;
         ParseVectorDataArray(uvIndices,GetRequiredElement(source,indexDataElementName));
 
-        if (uvIndices.size() != vertex_count) {
+        if (uvIndices.size() != mapping_offsets.size()) {
             FBXImporter::LogError("length of input data unexpected for ByVertice mapping: ",
-                                  uvIndices.size(), ", expected ", vertex_count);
+                                  uvIndices.size(), ", expected ", mapping_offsets.size());
             return;
         }
 
@@ -473,6 +487,11 @@ void ResolveVertexDataArray(std::vector<T>& data_out, const Scope& source,
         }
     }
     else if (MappingInformationType == "ByPolygonVertex" && isDirect) {
+        if (!hasDataElement) {
+            FBXImporter::LogWarn("missing data element: ", dataElementName);
+            return;
+        }
+
 		std::vector<T> tempData;
 		ParseVectorDataArray(tempData, GetRequiredElement(source, dataElementName));
 
@@ -487,7 +506,14 @@ void ResolveVertexDataArray(std::vector<T>& data_out, const Scope& source,
     }
     else if (MappingInformationType == "ByPolygonVertex" && isIndexToDirect) {
 		std::vector<T> tempData;
-		ParseVectorDataArray(tempData, GetRequiredElement(source, dataElementName));
+        if (!hasDataElement || !hasIndexDataElement) {
+            if (!hasDataElement)
+                FBXImporter::LogWarn("missing data element: ", dataElementName);
+            if (!hasIndexDataElement)
+                FBXImporter::LogWarn("missing index data element: ", indexDataElementName);
+            return;
+        }
+        ParseVectorDataArray(tempData, GetRequiredElement(source, dataElementName));
 
         std::vector<int> uvIndices;
         ParseVectorDataArray(uvIndices,GetRequiredElement(source,indexDataElementName));
@@ -618,10 +644,12 @@ void MeshGeometry::ReadVertexDataMaterials(std::vector<int>& materials_out, cons
         return;
     }
 
-    // materials are handled separately. First of all, they are assigned per-face
-    // and not per polyvert. Secondly, ReferenceInformationType=IndexToDirect
-    // has a slightly different meaning for materials.
-    ParseVectorDataArray(materials_out,GetRequiredElement(source,"Materials"));
+    if (source["Materials"]) {
+        // materials are handled separately. First of all, they are assigned per-face
+        // and not per polyvert. Secondly, ReferenceInformationType=IndexToDirect
+        // has a slightly different meaning for materials.
+        ParseVectorDataArray(materials_out, GetRequiredElement(source, "Materials"));
+    }
 
     if (MappingInformationType == "AllSame") {
         // easy - same material for all faces
@@ -657,11 +685,14 @@ ShapeGeometry::ShapeGeometry(uint64_t id, const Element& element, const std::str
         DOMError("failed to read Geometry object (class: Shape), no data scope found");
     }
     const Element& Indexes = GetRequiredElement(*sc, "Indexes", &element);
-    const Element& Normals = GetRequiredElement(*sc, "Normals", &element);
     const Element& Vertices = GetRequiredElement(*sc, "Vertices", &element);
     ParseVectorDataArray(m_indices, Indexes);
     ParseVectorDataArray(m_vertices, Vertices);
-    ParseVectorDataArray(m_normals, Normals);
+
+    if ((*sc)["Normals"]) {
+        const Element& Normals = GetRequiredElement(*sc, "Normals", &element);
+        ParseVectorDataArray(m_normals, Normals);
+    }
 }
 
 // ------------------------------------------------------------------------------------------------

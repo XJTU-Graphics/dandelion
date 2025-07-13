@@ -2,7 +2,7 @@
 Open Asset Import Library (assimp)
 ----------------------------------------------------------------------
 
-Copyright (c) 2006-2022, assimp team
+Copyright (c) 2006-2025, assimp team
 
 All rights reserved.
 
@@ -49,7 +49,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <assimp/BaseImporter.h>
 #include <map>
 
-namespace Assimp    {
+namespace Assimp {
 
 // Forward declarations
 namespace DXF {
@@ -68,8 +68,8 @@ namespace DXF {
  */
 class DXFImporter : public BaseImporter {
 public:
-    DXFImporter();
-    ~DXFImporter() override;
+    DXFImporter() = default;
+    ~DXFImporter() override = default;
 
     // -------------------------------------------------------------------
     /** Returns whether the class can handle the format of the given file.

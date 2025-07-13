@@ -2,8 +2,7 @@
 Open Asset Import Library (assimp)
 ----------------------------------------------------------------------
 
-Copyright (c) 2006-2022, assimp team
-
+Copyright (c) 2006-2025, assimp team
 
 All rights reserved.
 
@@ -72,7 +71,7 @@ public:
     ColladaExporter(const aiScene *pScene, IOSystem *pIOSystem, const std::string &path, const std::string &file);
 
     /// Destructor
-    virtual ~ColladaExporter();
+    virtual ~ColladaExporter() = default;
 
 protected:
     /// Starts writing the contents
@@ -101,7 +100,7 @@ protected:
     void WritePointLight(const aiLight *const light);
     void WriteDirectionalLight(const aiLight *const light);
     void WriteSpotLight(const aiLight *const light);
-    void WriteAmbienttLight(const aiLight *const light);
+    void WriteAmbientLight(const aiLight *const light);
 
     /// Writes the controller library
     void WriteControllerLibrary();

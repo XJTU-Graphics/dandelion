@@ -2,7 +2,7 @@
 Open Asset Import Library (assimp)
 ----------------------------------------------------------------------
 
-Copyright (c) 2006-2022, assimp team
+Copyright (c) 2006-2025, assimp team
 
 All rights reserved.
 
@@ -62,8 +62,7 @@ namespace Assimp {
 
 template <>
 const char *LogFunctions<FBXImporter>::Prefix() {
-	static auto prefix = "FBX: ";
-	return prefix;
+	return "FBX: ";
 }
 
 } // namespace Assimp
@@ -73,33 +72,25 @@ using namespace Assimp::Formatter;
 using namespace Assimp::FBX;
 
 namespace {
-
-static const aiImporterDesc desc = {
-	"Autodesk FBX Importer",
-	"",
-	"",
-	"",
-	aiImporterFlags_SupportTextFlavour,
-	0,
-	0,
-	0,
-	0,
-	"fbx"
-};
-}
-
-// ------------------------------------------------------------------------------------------------
-// Constructor to be privately used by #Importer
-FBXImporter::FBXImporter() :
-        mSettings() {
-    // empty
+    static constexpr aiImporterDesc desc = {
+	    "Autodesk FBX Importer",
+	    "",
+	    "",
+	    "",
+	    aiImporterFlags_SupportTextFlavour,
+	    0,
+	    0,
+	    0,
+	    0,
+	    "fbx"
+    };
 }
 
 // ------------------------------------------------------------------------------------------------
 // Returns whether the class can handle the format of the given file.
 bool FBXImporter::CanRead(const std::string & pFile, IOSystem * pIOHandler, bool /*checkSig*/) const {
 	// at least ASCII-FBX files usually have a 'FBX' somewhere in their head
-	static const char *tokens[] = { "fbx" };
+	static const char *tokens[] = { " \n\r\n " };
 	return SearchFileHeaderForToken(pIOHandler, pFile, tokens, AI_COUNT_OF(tokens));
 }
 
@@ -126,6 +117,7 @@ void FBXImporter::SetupProperties(const Importer *pImp) {
     mSettings.useLegacyEmbeddedTextureNaming = pImp->GetPropertyBool(AI_CONFIG_IMPORT_FBX_EMBEDDED_TEXTURES_LEGACY_NAMING, false);
     mSettings.removeEmptyBones = pImp->GetPropertyBool(AI_CONFIG_IMPORT_REMOVE_EMPTY_BONES, true);
     mSettings.convertToMeters = pImp->GetPropertyBool(AI_CONFIG_FBX_CONVERT_TO_M, false);
+    mSettings.ignoreUpDirection = pImp->GetPropertyBool(AI_CONFIG_IMPORT_FBX_IGNORE_UP_DIRECTION, false);
     mSettings.useSkeleton = pImp->GetPropertyBool(AI_CONFIG_FBX_USE_SKELETON_BONE_CONTAINER, false);
 }
 
@@ -156,19 +148,19 @@ void FBXImporter::InternReadFile(const std::string &pFile, aiScene *pScene, IOSy
 	// broad-phase tokenized pass in which we identify the core
 	// syntax elements of FBX (brackets, commas, key:value mappings)
 	TokenList tokens;
-	try {
-
+    Assimp::StackAllocator tempAllocator;
+    try {
 		bool is_binary = false;
 		if (!strncmp(begin, "Kaydara FBX Binary", 18)) {
 			is_binary = true;
-			TokenizeBinary(tokens, begin, contents.size());
+            TokenizeBinary(tokens, begin, contents.size(), tempAllocator);
 		} else {
-			Tokenize(tokens, begin);
+            Tokenize(tokens, begin, tempAllocator);
 		}
 
 		// use this information to construct a very rudimentary
 		// parse-tree representing the FBX scope structure
-		Parser parser(tokens, is_binary);
+        Parser parser(tokens, tempAllocator, is_binary);
 
 		// take the raw parse-tree and convert it to a FBX DOM
 		Document doc(parser, mSettings);
@@ -187,10 +179,12 @@ void FBXImporter::InternReadFile(const std::string &pFile, aiScene *pScene, IOSy
 		// assimp universal format (M)
 		SetFileScale(size_relative_to_cm * 0.01f);
 
-		std::for_each(tokens.begin(), tokens.end(), Util::delete_fun<Token>());
-	} catch (std::exception &) {
-		std::for_each(tokens.begin(), tokens.end(), Util::delete_fun<Token>());
-		throw;
+		// This collection does not own the memory for the tokens, but we need to call their d'tor
+        std::for_each(tokens.begin(), tokens.end(), Util::destructor_fun<Token>());
+
+    } catch (std::exception &) {
+        std::for_each(tokens.begin(), tokens.end(), Util::destructor_fun<Token>());
+        throw;
 	}
 }
 

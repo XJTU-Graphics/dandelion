@@ -51,7 +51,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <assimp/fast_atof.h>
 #include <assimp/ParsingUtils.h>
 
-namespace Assimp    {
+namespace Assimp {
 
 inline bool IsHex(char s) {
     return (s>='0' && s<='9') || (s>='a' && s<='f') || (s>='A' && s<='F');
@@ -93,9 +93,7 @@ public:
     }
 
     /** Destructor. */
-    ~FileSystemFilter() {
-        // empty
-    }
+    ~FileSystemFilter() = default;
 
     // -------------------------------------------------------------------
     /** Tests for the existence of a file at the given path. */
@@ -299,7 +297,7 @@ private:
         }
 
         const char separator = getOsSeparator();
-        for (it = in.begin(); it != in.end(); ++it) {
+        for (it = in.begin(); it < in.end(); ++it) {
             const size_t remaining = std::distance(in.end(), it);
             // Exclude :// and \\, which remain untouched.
             // https://sourceforge.net/tracker/?func=detail&aid=3031725&group_id=226462&atid=1067632

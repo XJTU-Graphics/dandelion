@@ -3,7 +3,7 @@
 Open Asset Import Library (assimp)
 ---------------------------------------------------------------------------
 
-Copyright (c) 2006-2022, assimp team
+Copyright (c) 2006-2025, assimp team
 
 All rights reserved.
 
@@ -482,37 +482,43 @@ bool Importer::ValidateFlags(unsigned int pFlags) const {
 }
 
 // ------------------------------------------------------------------------------------------------
-const aiScene* Importer::ReadFileFromMemory( const void* pBuffer,
-    size_t pLength,
-    unsigned int pFlags,
-    const char* pHint /*= ""*/) {
+const aiScene* Importer::ReadFileFromMemory(const void* pBuffer, size_t pLength, unsigned int pFlags, const char* pHint ) {
     ai_assert(nullptr != pimpl);
 
-    ASSIMP_BEGIN_EXCEPTION_REGION();
-    if (!pHint) {
-        pHint = "";
-    }
-
-    if (!pBuffer || !pLength || strlen(pHint) > MaxLenHint ) {
-        pimpl->mErrorString = "Invalid parameters passed to ReadFileFromMemory()";
-        return nullptr;
-    }
-
-    // prevent deletion of the previous IOHandler
     IOSystem* io = pimpl->mIOHandler;
-    pimpl->mIOHandler = nullptr;
+    try {
+        if (pHint == nullptr) {
+            pHint = "";
+        }
+        if (!pBuffer || !pLength || strlen(pHint) > MaxLenHint ) {
+            pimpl->mErrorString = "Invalid parameters passed to ReadFileFromMemory()";
+            return nullptr;
+        }
+        // prevent deletion of the previous IOHandler
+        pimpl->mIOHandler = nullptr;
 
-    SetIOHandler(new MemoryIOSystem((const uint8_t*)pBuffer,pLength,io));
+        SetIOHandler(new MemoryIOSystem((const uint8_t*)pBuffer,pLength,io));
 
-    // read the file and recover the previous IOSystem
-    static const size_t BufSize(Importer::MaxLenHint + 28);
-    char fbuff[BufSize];
-    ai_snprintf(fbuff, BufSize, "%s.%s",AI_MEMORYIO_MAGIC_FILENAME,pHint);
+        // read the file and recover the previous IOSystem
+        static const size_t BufSize(Importer::MaxLenHint + 28);
+        char fbuff[BufSize];
+        ai_snprintf(fbuff, BufSize, "%s.%s",AI_MEMORYIO_MAGIC_FILENAME,pHint);
 
-    ReadFile(fbuff,pFlags);
-    SetIOHandler(io);
+        ReadFile(fbuff,pFlags);
+        SetIOHandler(io);
+    } catch(const DeadlyImportError &e) {
+        pimpl->mErrorString = e.what();
+        pimpl->mException = std::current_exception();
+        SetIOHandler(io);
+        return ExceptionSwallower<const aiScene*>()();                                                                                                    \
+    } catch(...) {
+        pimpl->mErrorString = "Unknown exception";
+        pimpl->mException = std::current_exception();
+        SetIOHandler(io);
+        return ExceptionSwallower<const aiScene*>()();                                                                                                    \
 
-    ASSIMP_END_EXCEPTION_REGION_WITH_ERROR_STRING(const aiScene*, pimpl->mErrorString, pimpl->mException);
+    }
+
     return pimpl->mScene;
 }
 
@@ -631,24 +637,10 @@ const aiScene* Importer::ReadFile( const char* _pFile, unsigned int pFlags) {
             std::set<std::string> extensions;
             pimpl->mImporter[a]->GetExtensionList(extensions);
 
-            // CAUTION: Do not just search for the extension!
-            // GetExtension() returns the part after the *last* dot, but some extensions have dots
-            // inside them, e.g. ogre.mesh.xml. Compare the entire end of the string.
-            for (std::set<std::string>::const_iterator it = extensions.cbegin(); it != extensions.cend(); ++it) {
-
-                // Yay for C++<20 not having std::string::ends_with()
-                std::string extension = "." + *it;
-                if (extension.length() <= pFile.length()) {
-                    // Possible optimization: Fetch the lowercase filename!
-                    if (0 == ASSIMP_stricmp(pFile.c_str() + pFile.length() - extension.length(), extension.c_str())) {
-                        ImporterAndIndex candidate = { pimpl->mImporter[a], a };
-                        possibleImporters.push_back(candidate);
-                        break;
-                    }
-                }
-
+            if (BaseImporter::HasExtension(pFile, extensions)) {
+                ImporterAndIndex candidate = { pimpl->mImporter[a], a };
+                possibleImporters.push_back(candidate);
             }
-
         }
 
         // If just one importer supports this extension, pick it and close the case.
@@ -779,6 +771,7 @@ const aiScene* Importer::ReadFile( const char* _pFile, unsigned int pFlags) {
 #else
         pimpl->mErrorString = std::string("std::exception: ") + e.what();
 #endif
+        pimpl->mException = std::current_exception();
 
         ASSIMP_LOG_ERROR(pimpl->mErrorString);
         delete pimpl->mScene; pimpl->mScene = nullptr;
@@ -856,11 +849,7 @@ const aiScene* Importer::ApplyPostProcessing(unsigned int pFlags) {
             break;
         }
 #ifdef ASSIMP_BUILD_DEBUG
-
-#ifdef ASSIMP_BUILD_NO_VALIDATEDS_PROCESS
-        continue;
-#endif  // no validation
-
+#ifndef ASSIMP_BUILD_NO_VALIDATEDS_PROCESS
         // If the extra verbose mode is active, execute the ValidateDataStructureStep again - after each step
         if (pimpl->bExtraVerbose)   {
             ASSIMP_LOG_DEBUG("Verbose Import: re-validating data structures");
@@ -872,6 +861,7 @@ const aiScene* Importer::ApplyPostProcessing(unsigned int pFlags) {
                 break;
             }
         }
+#endif  // no validation
 #endif // ! DEBUG
     }
     pimpl->mProgressHandler->UpdatePostProcess( static_cast<int>(pimpl->mPostProcessingSteps.size()),
@@ -947,6 +937,7 @@ const aiScene* Importer::ApplyCustomizedPostProcessing( BaseProcess *rootProcess
         profiler->EndRegion( "postprocess" );
     }
 
+#ifndef ASSIMP_BUILD_NO_VALIDATEDS_PROCESS
     // If the extra verbose mode is active, execute the ValidateDataStructureStep again - after each step
     if ( pimpl->bExtraVerbose || requestValidation  ) {
         ASSIMP_LOG_DEBUG( "Verbose Import: revalidating data structures" );
@@ -957,6 +948,7 @@ const aiScene* Importer::ApplyCustomizedPostProcessing( BaseProcess *rootProcess
             ASSIMP_LOG_ERROR( "Verbose Import: failed to revalidate data structures" );
         }
     }
+#endif // no validation
 
     // clear any data allocated by post-process steps
     pimpl->mPPShared->Clean();
@@ -1118,7 +1110,7 @@ bool Importer::SetPropertyMatrix(const char* szName, const aiMatrix4x4& value) {
 // Set a configuration property
 bool Importer::SetPropertyPointer(const char* szName, void* value) {
     ai_assert(nullptr != pimpl);
-    
+
     bool existing;
     ASSIMP_BEGIN_EXCEPTION_REGION();
         existing = SetGenericProperty<void*>(pimpl->mPointerProperties, szName,value);
@@ -1162,7 +1154,7 @@ aiMatrix4x4 Importer::GetPropertyMatrix(const char* szName, const aiMatrix4x4& i
 // Get a configuration property
 void* Importer::GetPropertyPointer(const char* szName, void* iErrorReturn /*= nullptr*/) const {
     ai_assert(nullptr != pimpl);
-    
+
     return GetGenericProperty<void*>(pimpl->mPointerProperties,szName,iErrorReturn);
 }
 

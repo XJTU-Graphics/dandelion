@@ -3,7 +3,7 @@
 Open Asset Import Library (assimp)
 ---------------------------------------------------------------------------
 
-Copyright (c) 2006-2022, assimp team
+Copyright (c) 2006-2025, assimp team
 
 All rights reserved.
 
@@ -46,7 +46,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef ASSIMP_BUILD_NO_B3D_IMPORTER
 
 // internal headers
-#include "AssetLib/B3D/B3DImporter.h"
+#include "B3DImporter.h"
 #include "PostProcessing/ConvertToLHProcess.h"
 #include "PostProcessing/TextureTransform.h"
 
@@ -59,10 +59,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <memory>
 
-using namespace Assimp;
+namespace Assimp {
 using namespace std;
 
-static const aiImporterDesc desc = {
+static constexpr aiImporterDesc desc = {
     "BlitzBasic 3D Importer",
     "",
     "",
@@ -79,9 +79,9 @@ static const aiImporterDesc desc = {
 #pragma warning(disable : 4018)
 #endif
 
-//#define DEBUG_B3D
+// #define DEBUG_B3D
 
-template<typename T>
+template <typename T>
 void DeleteAllBarePointers(std::vector<T> &x) {
     for (auto p : x) {
         delete p;
@@ -116,7 +116,7 @@ void B3DImporter::InternReadFile(const std::string &pFile, aiScene *pScene, IOSy
     std::unique_ptr<IOStream> file(pIOHandler->Open(pFile));
 
     // Check whether we can read from the file
-    if (file.get() == nullptr) {
+    if (file == nullptr) {
         throw DeadlyImportError("Failed to open B3D file ", pFile, ".");
     }
 
@@ -150,7 +150,7 @@ AI_WONT_RETURN void B3DImporter::Fail(const string &str) {
 
 // ------------------------------------------------------------------------------------------------
 int B3DImporter::ReadByte() {
-    if (_pos > _buf.size()) {
+    if (_pos >= _buf.size()) {
         Fail("EOF");
     }
 
@@ -253,7 +253,7 @@ size_t B3DImporter::ChunkSize() {
 template <class T>
 T *B3DImporter::to_array(const vector<T> &v) {
     if (v.empty()) {
-        return 0;
+        return nullptr;
     }
     T *p = new T[v.size()];
     for (size_t i = 0; i < v.size(); ++i) {
@@ -266,7 +266,7 @@ T *B3DImporter::to_array(const vector<T> &v) {
 template <class T>
 T **unique_to_array(vector<std::unique_ptr<T>> &v) {
     if (v.empty()) {
-        return 0;
+        return nullptr;
     }
     T **p = new T *[v.size()];
     for (size_t i = 0; i < v.size(); ++i) {
@@ -329,7 +329,7 @@ void B3DImporter::ReadBRUS() {
             mat->AddProperty(&i, 1, AI_MATKEY_TWOSIDED);
         }
 
-        //Textures
+        // Textures
         for (int i = 0; i < n_texs; ++i) {
             int texid = ReadInt();
             if (texid < -1 || (texid >= 0 && texid >= static_cast<int>(_textures.size()))) {
@@ -372,7 +372,7 @@ void B3DImporter::ReadVRTS() {
         }
 
         if (_vflags & 2) {
-            ReadQuat(); //skip v 4bytes...
+            ReadQuat(); // skip v 4bytes...
         }
 
         for (int j = 0; j < _tcsets; ++j) {
@@ -418,7 +418,6 @@ void B3DImporter::ReadTRIS(int v0) {
             ASSIMP_LOG_ERROR("Bad triangle index: i0=", i0, ", i1=", i1, ", i2=", i2);
 #endif
             Fail("Bad triangle index");
-            continue;
         }
         face->mNumIndices = 3;
         face->mIndices = new unsigned[3];
@@ -617,7 +616,7 @@ void B3DImporter::ReadBB3D(aiScene *scene) {
             } else if (chunk == "BRUS") {
                 ReadBRUS();
             } else if (chunk == "NODE") {
-                ReadNODE(0);
+                ReadNODE(nullptr);
             }
             ExitChunk();
         }
@@ -642,7 +641,7 @@ void B3DImporter::ReadBB3D(aiScene *scene) {
             int n_tris = mesh->mNumFaces;
             int n_verts = mesh->mNumVertices = n_tris * 3;
 
-            aiVector3D *mv = mesh->mVertices = new aiVector3D[n_verts], *mn = 0, *mc = 0;
+            aiVector3D *mv = mesh->mVertices = new aiVector3D[n_verts], *mn = nullptr, *mc = nullptr;
             if (_vflags & 1) {
                 mn = mesh->mNormals = new aiVector3D[n_verts];
             }
@@ -705,22 +704,22 @@ void B3DImporter::ReadBB3D(aiScene *scene) {
         }
     }
 
-    //nodes
+    // nodes
     scene->mRootNode = _nodes[0];
     _nodes.clear(); // node ownership now belongs to scene
 
-    //material
+    // material
     if (!_materials.size()) {
         _materials.emplace_back(std::unique_ptr<aiMaterial>(new aiMaterial));
     }
     scene->mNumMaterials = static_cast<unsigned int>(_materials.size());
     scene->mMaterials = unique_to_array(_materials);
 
-    //meshes
+    // meshes
     scene->mNumMeshes = static_cast<unsigned int>(_meshes.size());
     scene->mMeshes = unique_to_array(_meshes);
 
-    //animations
+    // animations
     if (_animations.size() == 1 && _nodeAnims.size()) {
 
         aiAnimation *anim = _animations.back().get();
@@ -738,5 +737,7 @@ void B3DImporter::ReadBB3D(aiScene *scene) {
     FlipWindingOrderProcess flip;
     flip.Execute(scene);
 }
+
+} // namespace Assimp
 
 #endif // !! ASSIMP_BUILD_NO_B3D_IMPORTER

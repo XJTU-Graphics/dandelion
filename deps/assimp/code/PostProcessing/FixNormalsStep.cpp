@@ -3,7 +3,7 @@
 Open Asset Import Library (assimp)
 ---------------------------------------------------------------------------
 
-Copyright (c) 2006-2022, assimp team
+Copyright (c) 2006-2025, assimp team
 
 
 
@@ -56,26 +56,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using namespace Assimp;
 
-
-// ------------------------------------------------------------------------------------------------
-// Constructor to be privately used by Importer
-FixInfacingNormalsProcess::FixInfacingNormalsProcess() = default;
-
-// ------------------------------------------------------------------------------------------------
-// Destructor, private as well
-FixInfacingNormalsProcess::~FixInfacingNormalsProcess() = default;
-
 // ------------------------------------------------------------------------------------------------
 // Returns whether the processing step is present in the given flag field.
-bool FixInfacingNormalsProcess::IsActive( unsigned int pFlags) const
-{
+bool FixInfacingNormalsProcess::IsActive( unsigned int pFlags) const {
     return (pFlags & aiProcess_FixInfacingNormals) != 0;
 }
 
 // ------------------------------------------------------------------------------------------------
 // Executes the post processing step on the given imported data.
-void FixInfacingNormalsProcess::Execute( aiScene* pScene)
-{
+void FixInfacingNormalsProcess::Execute( aiScene* pScene) {
     ASSIMP_LOG_DEBUG("FixInfacingNormalsProcess begin");
 
     bool bHas( false );

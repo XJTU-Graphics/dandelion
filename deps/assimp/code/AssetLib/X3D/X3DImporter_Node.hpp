@@ -4,7 +4,6 @@ Open Asset Import Library (assimp)
 
 Copyright (c) 2006-2019, assimp team
 
-
 All rights reserved.
 
 Redistribution and use of this software in source and binary forms,
@@ -108,9 +107,7 @@ struct X3DNodeElementBase {
     std::list<X3DNodeElementBase *> Children;
     X3DElemType Type;
 
-    virtual ~X3DNodeElementBase() {
-        // empty
-    }
+    virtual ~X3DNodeElementBase() = default;
 
 protected:
     X3DNodeElementBase(X3DElemType type, X3DNodeElementBase *pParent) :
@@ -367,9 +364,7 @@ struct X3DNodeElementMeta : X3DNodeElementBase {
     std::string Name; ///< Name of metadata object.
     std::string Reference;
 
-    virtual ~X3DNodeElementMeta() {
-        // empty
-    }
+    virtual ~X3DNodeElementMeta() = default;
 
 protected:
     X3DNodeElementMeta(X3DElemType type, X3DNodeElementBase *parent) :

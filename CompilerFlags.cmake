@@ -12,12 +12,6 @@ if (APPLE)
     )
 endif()
 
-# Disable the deprecated-non-prototype warning for zlib
-if (${CMAKE_C_COMPILER_ID} MATCHES "Clang")
-    target_compile_options(zlibstatic
-        PRIVATE $<$<COMPILE_LANGUAGE:C>:-Wno-deprecated-non-prototype>
-    )
-endif()
 if (MSVC)
     # Disable C4996 for std::fopen
     # Disable C4458 because we usually declare local variables with the same name
