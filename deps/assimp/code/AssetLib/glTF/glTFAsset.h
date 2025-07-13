@@ -2,7 +2,7 @@
 Open Asset Import Library (assimp)
 ----------------------------------------------------------------------
 
-Copyright (c) 2006-2022, assimp team
+Copyright (c) 2006-2025, assimp team
 
 All rights reserved.
 
@@ -51,12 +51,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #if !defined(ASSIMP_BUILD_NO_GLTF_IMPORTER) && !defined(ASSIMP_BUILD_NO_GLTF1_IMPORTER)
 
-#include "glTFCommon.h"
+#include "AssetLib/glTFCommon/glTFCommon.h"
 #include <assimp/Exceptional.h>
-#include <algorithm>
 #include <list>
-#include <map>
-#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -103,7 +100,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // clang-format on
 
-#include "AssetLib/glTF/glTFCommon.h"
+#include "AssetLib/glTFCommon/glTFCommon.h"
 
 namespace glTF {
 
@@ -260,7 +257,7 @@ public:
         VEC4,
         MAT2,
         MAT3,
-        MAT4 
+        MAT4
     };
 
     inline static Value FromString(const char *str) {
@@ -288,8 +285,8 @@ private:
     };
 
     template <int N>
-    struct data { 
-        static const Info infos[NUM_VALUES]; 
+    struct data {
+        static const Info infos[NUM_VALUES];
     };
 };
 
@@ -297,11 +294,11 @@ private:
 template <int N>
 const AttribType::Info AttribType::data<N>::infos[AttribType::NUM_VALUES] = {
     { "SCALAR", 1 },
-    { "VEC2", 2 }, 
-    { "VEC3", 3 }, 
-    { "VEC4", 4 }, 
-    { "MAT2", 4 }, 
-    { "MAT3", 9 }, 
+    { "VEC2", 2 },
+    { "VEC3", 3 },
+    { "VEC4", 4 },
+    { "MAT2", 4 },
+    { "MAT3", 9 },
     { "MAT4", 16 }
 };
 
@@ -374,7 +371,7 @@ struct Accessor : public Object {
         }
 
         inline bool IsValid() const {
-            return data != 0;
+            return data != nullptr;
         }
     };
 
@@ -513,21 +510,22 @@ struct Camera : public Object {
     };
 
     Type type;
+    struct Perspective {
+        float aspectRatio; //!<The floating - point aspect ratio of the field of view. (0 = undefined = use the canvas one)
+        float yfov; //!<The floating - point vertical field of view in radians. (required)
+        float zfar; //!<The floating - point distance to the far clipping plane. (required)
+        float znear; //!< The floating - point distance to the near clipping plane. (required)
+    };
 
+    struct Ortographic {
+        float xmag; //! The floating-point horizontal magnification of the view. (required)
+        float ymag; //! The floating-point vertical magnification of the view. (required)
+        float zfar; //! The floating-point distance to the far clipping plane. (required)
+        float znear; //! The floating-point distance to the near clipping plane. (required)
+    };
     union {
-        struct {
-            float aspectRatio; //!<The floating - point aspect ratio of the field of view. (0 = undefined = use the canvas one)
-            float yfov; //!<The floating - point vertical field of view in radians. (required)
-            float zfar; //!<The floating - point distance to the far clipping plane. (required)
-            float znear; //!< The floating - point distance to the near clipping plane. (required)
-        } perspective;
-
-        struct {
-            float xmag; //! The floating-point horizontal magnification of the view. (required)
-            float ymag; //! The floating-point vertical magnification of the view. (required)
-            float zfar; //! The floating-point distance to the far clipping plane. (required)
-            float znear; //! The floating-point distance to the near clipping plane. (required)
-        } ortographic;
+        struct Perspective perspective;
+        struct Ortographic ortographic;
     };
 
     Camera() = default;
@@ -629,9 +627,7 @@ struct Mesh : public Object {
         SExtension(const EType pType) :
                 Type(pType) {}
 
-        virtual ~SExtension() {
-            // empty
-        }
+        virtual ~SExtension() = default;
     };
 
 #ifdef ASSIMP_IMPORTER_GLTF_USE_OPEN3DGC
@@ -657,9 +653,7 @@ struct Mesh : public Object {
             // empty
         }
 
-        virtual ~SCompression_Open3DGC() {
-            // empty
-        }
+        virtual ~SCompression_Open3DGC() = default;
     };
 #endif
 
@@ -873,7 +867,7 @@ class LazyDict : public LazyDictBase {
     Ref<T> Add(T *obj);
 
 public:
-    LazyDict(Asset &asset, const char *dictId, const char *extId = 0);
+    LazyDict(Asset &asset, const char *dictId, const char *extId = nullptr);
     ~LazyDict();
 
     Ref<T> Get(const char *id);
@@ -970,17 +964,17 @@ public:
     Ref<Scene> scene;
 
 public:
-    Asset(IOSystem *io = 0) :
-            mIOSystem(io), 
-            asset(), 
-            accessors(*this, "accessors"), 
-            animations(*this, "animations"), 
-            buffers(*this, "buffers"), 
-            bufferViews(*this, "bufferViews"), 
-            cameras(*this, "cameras"), 
-            images(*this, "images"), 
-            materials(*this, "materials"), 
-            meshes(*this, "meshes"), 
+    Asset(IOSystem *io = nullptr) :
+            mIOSystem(io),
+            asset(),
+            accessors(*this, "accessors"),
+            animations(*this, "animations"),
+            buffers(*this, "buffers"),
+            bufferViews(*this, "bufferViews"),
+            cameras(*this, "cameras"),
+            images(*this, "images"),
+            materials(*this, "materials"),
+            meshes(*this, "meshes"),
             nodes(*this, "nodes"),
             samplers(*this, "samplers"),
             scenes(*this, "scenes"),

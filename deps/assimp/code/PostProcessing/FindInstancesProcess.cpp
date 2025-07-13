@@ -3,7 +3,7 @@
 Open Asset Import Library (assimp)
 ---------------------------------------------------------------------------
 
-Copyright (c) 2006-2022, assimp team
+Copyright (c) 2006-2025, assimp team
 
 
 
@@ -57,10 +57,6 @@ using namespace Assimp;
 FindInstancesProcess::FindInstancesProcess()
 :   configSpeedFlag (false)
 {}
-
-// ------------------------------------------------------------------------------------------------
-// Destructor, private as well
-FindInstancesProcess::~FindInstancesProcess() = default;
 
 // ------------------------------------------------------------------------------------------------
 // Returns whether the processing step is present in the given flag field.

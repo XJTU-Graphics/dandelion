@@ -23,8 +23,9 @@ int main(int argc, char* argv[])
     spdlog::set_level(spdlog::level::info);
     spdlog::set_pattern("[%n] [%^%l%$] %v");
     spdlog::set_default_logger(spdlog::stdout_color_mt("Test"));
-    std::tm now = fmt::localtime(std::time(nullptr));
-    spdlog::info("Dandelion 3D Unit Test, started at {:%Y-%m-%d %H:%M:%S%z}", now);
+    std::time_t current_timestamp = std::time(nullptr);
+    std::tm *now = std::localtime(&current_timestamp);
+    spdlog::info("Dandelion 3D Unit Test, started at {:%Y-%m-%d %H:%M:%S%z}", *now);
 
     GLFWwindow* window = nullptr;
     glfwInit();

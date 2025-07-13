@@ -27,13 +27,13 @@
 - GLFW 3.3.8, Zlib License
 - GLAD (OpenGL Core Profile, version >= 3.3), MIT & Apache License
 - Eigen (commit 12068cbcdb835d7bd88b09d8439d2171e856be06), Mozilla Public License
-- Assimp 5.2.5, Open Assert Import Library License
-- Dear ImGui 1.89.3 (docking branch), MIT License
+- Assimp 6.0.2, Open Assert Import Library License
+- Dear ImGui 1.92.1 (docking branch), MIT License
 - stb\_image 2.30, MIT License & Public Domain
-- stb\_image\_write 1.16 (modified for AppleClang compatibility), MIT License & Public Domain
-- spdlog 1.14.1, MIT License
-- {fmt} 11.0.2, {fmt}'s License
+- spdlog 1.15.3, MIT License
+- {fmt} 11.2.0, {fmt}'s License
 - portable-file-dialogs (commit 7f852d88a480020d7f91957cbcefe514fc95000c), WTFPL License
+- Catch2 3.8.1, BOOST Software License
 
 在 Linux 平台上，为了编译 GLFW ，你可能需要按照 [Compiling GLFW](https://www.glfw.org/docs/latest/compile_guide.html) 的要求安装相应的依赖库。除此以外，所有的依赖项均被包含于 *deps* 子目录中，不需要额外下载或安装。由于我们对一些库进行了修复移植或裁剪，也请不要轻易尝试替换 *deps* 目录下的第三方库，它们和官方发布的相应版本可能并不完全一样。
 
@@ -53,8 +53,8 @@
 \section requests 工具需求
 
 - 支持 C++ 20 标准的编译器
-  - 最低要求 Visual Studio 2022、GNU GCC 11、Clang 14 。由于我们开启的警告等级很高，更低版本的编译器可能会产生错误的警告。
-  - 推荐使用 Visual Studio 2022、GNU GCC 12+、Clang 15+ ，推荐使用最新的稳定版本。
+  - 最低要求 Visual Studio 2019、GNU GCC 11、Clang 14 。由于我们开启的警告等级很高，更低版本的编译器可能会产生错误的警告。
+  - 推荐使用 Visual Studio 2022、GNU GCC 12+、Clang 15+ ，可以使用最新的稳定版本。
 - CMake 3.14 及以上（推荐使用最新的稳定版本）
 
 在 Windows 平台上，从官方网站下载安装足够新的 Visual Studio 和 CMake 即可；在 Linux 平台上可以用包管理器安装编译器和 CMake；在 macOS 平台上，我们推荐安装 Xcode 命令行工具（不是 Xcode IDE），并使用 Homebrew 安装 CMake。

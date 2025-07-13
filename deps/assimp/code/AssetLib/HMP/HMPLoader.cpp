@@ -3,7 +3,7 @@
 Open Asset Import Library (assimp)
 ---------------------------------------------------------------------------
 
-Copyright (c) 2006-2022, assimp team
+Copyright (c) 2006-2025, assimp team
 
 All rights reserved.
 
@@ -44,7 +44,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef ASSIMP_BUILD_NO_HMP_IMPORTER
 
 // internal headers
-#include "AssetLib/HMP/HMPLoader.h"
+#include "HMPLoader.h"
 #include "AssetLib/MD2/MD2FileData.h"
 
 #include <assimp/StringUtils.h>
@@ -57,7 +57,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using namespace Assimp;
 
-static const aiImporterDesc desc = {
+static constexpr aiImporterDesc desc = {
     "3D GameStudio Heightmap (HMP) Importer",
     "",
     "",
@@ -81,7 +81,7 @@ HMPImporter::~HMPImporter() = default;
 // ------------------------------------------------------------------------------------------------
 // Returns whether the class can handle the format of the given file.
 bool HMPImporter::CanRead(const std::string &pFile, IOSystem *pIOHandler, bool /*checkSig*/) const {
-    static const uint32_t tokens[] = {
+    static constexpr uint32_t tokens[] = {
         AI_HMP_MAGIC_NUMBER_LE_4,
         AI_HMP_MAGIC_NUMBER_LE_5,
         AI_HMP_MAGIC_NUMBER_LE_7
@@ -104,7 +104,7 @@ void HMPImporter::InternReadFile(const std::string &pFile,
     std::unique_ptr<IOStream> file(mIOHandler->Open(pFile));
 
     // Check whether we can read from the file
-    if (file.get() == nullptr) {
+    if (file == nullptr) {
         throw DeadlyImportError("Failed to open HMP file ", pFile, ".");
     }
 
@@ -115,7 +115,9 @@ void HMPImporter::InternReadFile(const std::string &pFile,
         throw DeadlyImportError("HMP File is too small.");
 
     // Allocate storage and copy the contents of the file to a memory buffer
-    mBuffer = new uint8_t[fileSize];
+    auto deleter=[this](uint8_t* ptr){ delete[] ptr; mBuffer = nullptr; };
+    std::unique_ptr<uint8_t[], decltype(deleter)> buffer(new uint8_t[fileSize], deleter);
+    mBuffer = buffer.get();
     file->Read((void *)mBuffer, 1, fileSize);
     iFileSize = (unsigned int)fileSize;
 
@@ -143,9 +145,6 @@ void HMPImporter::InternReadFile(const std::string &pFile,
         // Print the magic word to the logger
         std::string szBuffer = ai_str_toprintable((const char *)&iMagic, sizeof(iMagic));
 
-        delete[] mBuffer;
-        mBuffer = nullptr;
-
         // We're definitely unable to load this file
         throw DeadlyImportError("Unknown HMP subformat ", pFile,
                                 ". Magic word (", szBuffer, ") is not known");
@@ -153,9 +152,6 @@ void HMPImporter::InternReadFile(const std::string &pFile,
 
     // Set the AI_SCENE_FLAGS_TERRAIN bit
     pScene->mFlags |= AI_SCENE_FLAGS_TERRAIN;
-
-    delete[] mBuffer;
-    mBuffer = nullptr;
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -167,8 +163,14 @@ void HMPImporter::ValidateHeader_HMP457() {
                                 "120 bytes, this file is smaller)");
     }
 
+    if (!std::isfinite(pcHeader->ftrisize_x) || !std::isfinite(pcHeader->ftrisize_y))
+        throw DeadlyImportError("Size of triangles in either x or y direction is not finite");
+
     if (!pcHeader->ftrisize_x || !pcHeader->ftrisize_y)
-        throw DeadlyImportError("Size of triangles in either  x or y direction is zero");
+        throw DeadlyImportError("Size of triangles in either x or y direction is zero");
+
+    if (!std::isfinite(pcHeader->fnumverts_x))
+        throw DeadlyImportError("Number of triangles in x direction is not finite");
 
     if (pcHeader->fnumverts_x < 1.0f || (pcHeader->numverts / pcHeader->fnumverts_x) < 1.0f)
         throw DeadlyImportError("Number of triangles in either x or y direction is zero");
@@ -327,7 +329,7 @@ void HMPImporter::CreateMaterial(const unsigned char *szCurrent,
         ReadFirstSkin(pcHeader->numskins, szCurrent, &szCurrent);
         *szCurrentOut = szCurrent;
         return;
-    } 
+    }
 
     // generate a default material
     const int iMode = (int)aiShadingMode_Gouraud;
@@ -445,11 +447,11 @@ void HMPImporter::ReadFirstSkin(unsigned int iNumSkins, const unsigned char *szC
     szCursor += sizeof(uint32_t);
 
     // allocate an output material
-    aiMaterial *pcMat = new aiMaterial();
+    std::unique_ptr<aiMaterial> pcMat(new aiMaterial());
 
     // read the skin, this works exactly as for MDL7
     ParseSkinLump_3DGS_MDL7(szCursor, &szCursor,
-            pcMat, iType, iWidth, iHeight);
+            pcMat.get(), iType, iWidth, iHeight);
 
     // now we need to skip any other skins ...
     for (unsigned int i = 1; i < iNumSkins; ++i) {
@@ -468,7 +470,7 @@ void HMPImporter::ReadFirstSkin(unsigned int iNumSkins, const unsigned char *szC
     // setup the material ...
     pScene->mNumMaterials = 1;
     pScene->mMaterials = new aiMaterial *[1];
-    pScene->mMaterials[0] = pcMat;
+    pScene->mMaterials[0] = pcMat.release();
 
     *szCursorOut = szCursor;
 }
@@ -484,11 +486,11 @@ void HMPImporter::GenerateTextureCoords(const unsigned int width, const unsigned
     if (uv == nullptr) {
         return;
     }
-    
+
     if (height == 0.0f || width == 0.0) {
         return;
     }
-    
+
     const float fY = (1.0f / height) + (1.0f / height) / height;
     const float fX = (1.0f / width) + (1.0f / width) / width;
 

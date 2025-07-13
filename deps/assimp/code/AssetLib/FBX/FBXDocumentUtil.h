@@ -58,12 +58,11 @@ namespace Util {
 
 /* DOM/Parse error reporting - does not return */
 AI_WONT_RETURN void DOMError(const std::string& message, const Token& token) AI_WONT_RETURN_SUFFIX;
-AI_WONT_RETURN void DOMError(const std::string& message, const Element* element = NULL) AI_WONT_RETURN_SUFFIX;
+AI_WONT_RETURN void DOMError(const std::string &message, const Element *element = nullptr) AI_WONT_RETURN_SUFFIX;
 
 // does return
 void DOMWarning(const std::string& message, const Token& token);
-void DOMWarning(const std::string& message, const Element* element = NULL);
-
+void DOMWarning(const std::string &message, const Element *element = nullptr);
 
 // fetch a property table and the corresponding property template
 std::shared_ptr<const PropertyTable> GetPropertyTable(const Document& doc,
@@ -115,4 +114,4 @@ inline const T* ProcessSimpleConnection(const Connection& con,
 } //!FBX
 } //!Assimp
 
-#endif
+#endif // ASSIMP_BUILD_NO_FBX_IMPORTER

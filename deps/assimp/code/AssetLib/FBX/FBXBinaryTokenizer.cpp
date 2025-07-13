@@ -2,8 +2,7 @@
 Open Asset Import Library (assimp)
 ----------------------------------------------------------------------
 
-Copyright (c) 2006-2022, assimp team
-
+Copyright (c) 2006-2025, assimp team
 
 All rights reserved.
 
@@ -51,6 +50,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "FBXUtil.h"
 #include <assimp/defs.h>
 #include <stdint.h>
+#include <cstdint>
 #include <assimp/Exceptional.h>
 #include <assimp/ByteSwapper.h>
 #include <assimp/DefaultLogger.hpp>
@@ -59,58 +59,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace Assimp {
 namespace FBX {
 
-//enum Flag
-//{
-//   e_unknown_0 = 1 << 0,
-//   e_unknown_1 = 1 << 1,
-//   e_unknown_2 = 1 << 2,
-//   e_unknown_3 = 1 << 3,
-//   e_unknown_4 = 1 << 4,
-//   e_unknown_5 = 1 << 5,
-//   e_unknown_6 = 1 << 6,
-//   e_unknown_7 = 1 << 7,
-//   e_unknown_8 = 1 << 8,
-//   e_unknown_9 = 1 << 9,
-//   e_unknown_10 = 1 << 10,
-//   e_unknown_11 = 1 << 11,
-//   e_unknown_12 = 1 << 12,
-//   e_unknown_13 = 1 << 13,
-//   e_unknown_14 = 1 << 14,
-//   e_unknown_15 = 1 << 15,
-//   e_unknown_16 = 1 << 16,
-//   e_unknown_17 = 1 << 17,
-//   e_unknown_18 = 1 << 18,
-//   e_unknown_19 = 1 << 19,
-//   e_unknown_20 = 1 << 20,
-//   e_unknown_21 = 1 << 21,
-//   e_unknown_22 = 1 << 22,
-//   e_unknown_23 = 1 << 23,
-//   e_flag_field_size_64_bit = 1 << 24, // Not sure what is
-//   e_unknown_25 = 1 << 25,
-//   e_unknown_26 = 1 << 26,
-//   e_unknown_27 = 1 << 27,
-//   e_unknown_28 = 1 << 28,
-//   e_unknown_29 = 1 << 29,
-//   e_unknown_30 = 1 << 30,
-//   e_unknown_31 = 1 << 31
-//};
-//
-//bool check_flag(uint32_t flags, Flag to_check)
-//{
-//	return (flags & to_check) != 0;
-//}
 // ------------------------------------------------------------------------------------------------
-Token::Token(const char* sbegin, const char* send, TokenType type, size_t offset)
-    :
-    #ifdef DEBUG
-    contents(sbegin, static_cast<size_t>(send-sbegin)),
-    #endif
-    sbegin(sbegin)
-    , send(send)
-    , type(type)
-    , line(offset)
-    , column(BINARY_MARKER)
-{
+Token::Token(const char* sbegin, const char* send, TokenType type, size_t offset) :
+        #ifdef DEBUG
+        contents(sbegin, static_cast<size_t>(send-sbegin)),
+        #endif
+        sbegin(sbegin),
+        send(send),
+        type(type),
+        line(offset),
+        column(BINARY_MARKER) {
     ai_assert(sbegin);
     ai_assert(send);
 
@@ -139,6 +97,7 @@ size_t Offset(const char* begin, const char* cursor) {
 }
 
 // ------------------------------------------------------------------------------------------------
+AI_WONT_RETURN void TokenizeError(const std::string& message, const char* begin, const char* cursor) AI_WONT_RETURN_SUFFIX;
 void TokenizeError(const std::string& message, const char* begin, const char* cursor) {
     TokenizeError(message, Offset(begin, cursor));
 }
@@ -341,8 +300,7 @@ void ReadData(const char*& sbegin_out, const char*& send_out, const char* input,
 
 
 // ------------------------------------------------------------------------------------------------
-bool ReadScope(TokenList& output_tokens, const char* input, const char*& cursor, const char* end, bool const is64bits)
-{
+bool ReadScope(TokenList &output_tokens, StackAllocator &token_allocator, const char *input, const char *&cursor, const char *end, bool const is64bits) {
     // the first word contains the offset at which this block ends
 	const uint64_t end_offset = is64bits ? ReadDoubleWord(input, cursor, end) : ReadWord(input, cursor, end);
 
@@ -408,7 +366,7 @@ bool ReadScope(TokenList& output_tokens, const char* input, const char*& cursor,
 
         // XXX this is vulnerable to stack overflowing ..
         while(Offset(input, cursor) < end_offset - sentinel_block_length) {
-			ReadScope(output_tokens, input, cursor, input + end_offset - sentinel_block_length, is64bits);
+            ReadScope(output_tokens, token_allocator, input, cursor, input + end_offset - sentinel_block_length, is64bits);
         }
         output_tokens.push_back(new_Token(cursor, cursor + 1, TokenType_CLOSE_BRACKET, Offset(input, cursor) ));
 
@@ -431,8 +389,7 @@ bool ReadScope(TokenList& output_tokens, const char* input, const char*& cursor,
 
 // ------------------------------------------------------------------------------------------------
 // TODO: Test FBX Binary files newer than the 7500 version to check if the 64 bits address behaviour is consistent
-void TokenizeBinary(TokenList& output_tokens, const char* input, size_t length)
-{
+void TokenizeBinary(TokenList &output_tokens, const char *input, size_t length, StackAllocator &token_allocator) {
 	ai_assert(input);
 	ASSIMP_LOG_DEBUG("Tokenizing binary FBX file");
 
@@ -465,7 +422,7 @@ void TokenizeBinary(TokenList& output_tokens, const char* input, size_t length)
     try
     {
         while (cursor < end ) {
-		    if (!ReadScope(output_tokens, input, cursor, input + length, is64bits)) {
+            if (!ReadScope(output_tokens, token_allocator, input, cursor, input + length, is64bits)) {
                 break;
             }
         }

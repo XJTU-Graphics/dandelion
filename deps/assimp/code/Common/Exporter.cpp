@@ -3,7 +3,7 @@
 Open Asset Import Library (assimp)
 ---------------------------------------------------------------------------
 
-Copyright (c) 2006-2022, assimp team
+Copyright (c) 2006-2025, assimp team
 
 All rights reserved.
 
@@ -159,10 +159,8 @@ static void setupExporterArray(std::vector<Exporter::ExportFormatEntry> &exporte
 #endif
 
 #ifndef ASSIMP_BUILD_NO_OBJ_EXPORTER
-	exporters.emplace_back("obj", "Wavefront OBJ format", "obj", &ExportSceneObj,
-			aiProcess_GenSmoothNormals /*| aiProcess_PreTransformVertices */);
-	exporters.emplace_back("objnomtl", "Wavefront OBJ format without material file", "obj", &ExportSceneObjNoMtl,
-			aiProcess_GenSmoothNormals /*| aiProcess_PreTransformVertices */);
+	exporters.emplace_back("obj", "Wavefront OBJ format", "obj", &ExportSceneObj);
+	exporters.emplace_back("objnomtl", "Wavefront OBJ format without material file", "obj", &ExportSceneObjNoMtl);
 #endif
 
 #ifndef ASSIMP_BUILD_NO_STL_EXPORTER
@@ -225,7 +223,7 @@ static void setupExporterArray(std::vector<Exporter::ExportFormatEntry> &exporte
 #endif
 
 #ifndef ASSIMP_BUILD_NO_PBRT_EXPORTER
-	exporters.emplace_back("pbrt", "pbrt-v4 scene description file", "pbrt", &ExportScenePbrt, aiProcess_Triangulate | aiProcess_SortByPType);
+	exporters.emplace_back("pbrt", "pbrt-v4 scene description file", "pbrt", &ExportScenePbrt, aiProcess_ConvertToLeftHanded | aiProcess_Triangulate | aiProcess_SortByPType);
 #endif
 
 #ifndef ASSIMP_BUILD_NO_ASSJSON_EXPORTER
@@ -595,7 +593,7 @@ bool ExportProperties::SetPropertyCallback(const char *szName, const std::functi
 }
 
 std::function<void *(void *)> ExportProperties::GetPropertyCallback(const char *szName) const {
-    return GetGenericProperty<std::function<void *(void *)>>(mCallbackProperties, szName, 0);
+    return GetGenericProperty<std::function<void *(void *)>>(mCallbackProperties, szName, nullptr);
 }
 
 bool ExportProperties::HasPropertyCallback(const char *szName) const {

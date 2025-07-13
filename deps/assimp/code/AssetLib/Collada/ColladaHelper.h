@@ -2,7 +2,7 @@
 Open Asset Import Library (assimp)
 ----------------------------------------------------------------------
 
-Copyright (c) 2006-2022, assimp team
+Copyright (c) 2006-2025, assimp team
 
 All rights reserved.
 
@@ -666,7 +666,7 @@ struct ChannelEntry {
     const Collada::Accessor *mTimeAccessor; ///> Collada accessor to the time values
     const Collada::Data *mTimeData; ///> Source data array for the time values
     const Collada::Accessor *mValueAccessor; ///> Collada accessor to the key value values
-    const Collada::Data *mValueData; ///> Source datat array for the key value values
+    const Collada::Data *mValueData; ///> Source data array for the key value values
 
     ChannelEntry() :
             mChannel(),

@@ -1,10 +1,8 @@
-
 /*
 Open Asset Import Library (assimp)
 ----------------------------------------------------------------------
 
-Copyright (c) 2006-2022, assimp team
-
+Copyright (c) 2006-2025, assimp team
 
 All rights reserved.
 
@@ -63,23 +61,19 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <assimp/StringComparison.h>
 
 #include <cctype>
+#include <memory>
+#include <utility>
 
 // zlib is needed for compressed blend files
 #ifndef ASSIMP_BUILD_NO_COMPRESSED_BLEND
 #include "Common/Compression.h"
-/* #ifdef ASSIMP_BUILD_NO_OWN_ZLIB
-#    include <zlib.h>
-#  else
-#    include "../contrib/zlib/zlib.h"
-#  endif*/
 #endif
 
 namespace Assimp {
 
 template <>
 const char *LogFunctions<BlenderImporter>::Prefix() {
-    static auto prefix = "BLEND: ";
-    return prefix;
+    return "BLEND: ";
 }
 
 } // namespace Assimp
@@ -88,7 +82,7 @@ using namespace Assimp;
 using namespace Assimp::Blender;
 using namespace Assimp::Formatter;
 
-static const aiImporterDesc blenderDesc = {
+static constexpr aiImporterDesc blenderDesc = {
     "Blender 3D Importer (http://www.blender3d.org)",
     "",
     "",
@@ -114,15 +108,12 @@ BlenderImporter::~BlenderImporter() {
     delete modifier_cache;
 }
 
-static const char * const Tokens[] = { "BLENDER" };
+static constexpr char Token[] = "BLENDER";
 
 // ------------------------------------------------------------------------------------------------
 // Returns whether the class can handle the format of the given file.
 bool BlenderImporter::CanRead(const std::string &pFile, IOSystem *pIOHandler, bool /*checkSig*/) const {
-    // note: this won't catch compressed files
-    static const char *tokens[] = { "<BLENDER", "blender" };
-
-    return SearchFileHeaderForToken(pIOHandler, pFile, tokens, AI_COUNT_OF(tokens));
+    return ParseMagicToken(pFile, pIOHandler).error.empty();
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -141,67 +132,25 @@ void BlenderImporter::SetupProperties(const Importer * /*pImp*/) {
 // Imports the given file into the given scene structure.
 void BlenderImporter::InternReadFile(const std::string &pFile,
         aiScene *pScene, IOSystem *pIOHandler) {
-#ifndef ASSIMP_BUILD_NO_COMPRESSED_BLEND
-    std::vector<char> uncompressed;
-#endif
-
     FileDatabase file;
-    std::shared_ptr<IOStream> stream(pIOHandler->Open(pFile, "rb"));
-    if (!stream) {
-        ThrowException("Could not open file for reading");
+    StreamOrError streamOrError = ParseMagicToken(pFile, pIOHandler);
+    if (!streamOrError.error.empty()) {
+        ThrowException(streamOrError.error);
     }
+    std::shared_ptr<IOStream> stream = std::move(streamOrError.stream);
 
-    char magic[8] = { 0 };
-    stream->Read(magic, 7, 1);
-    if (strcmp(magic, Tokens[0])) {
-        // Check for presence of the gzip header. If yes, assume it is a
-        // compressed blend file and try uncompressing it, else fail. This is to
-        // avoid uncompressing random files which our loader might end up with.
-#ifdef ASSIMP_BUILD_NO_COMPRESSED_BLEND
-        ThrowException("BLENDER magic bytes are missing, is this file compressed (Assimp was built without decompression support)?");
-#else
-        if (magic[0] != 0x1f || static_cast<uint8_t>(magic[1]) != 0x8b) {
-            ThrowException("BLENDER magic bytes are missing, couldn't find GZIP header either");
-        }
+    char version[4] = { 0 };
+    file.i64bit = (stream->Read(version, 1, 1), version[0] == '-');
+    file.little = (stream->Read(version, 1, 1), version[0] == 'v');
 
-        LogDebug("Found no BLENDER magic word but a GZIP header, might be a compressed file");
-        if (magic[2] != 8) {
-            ThrowException("Unsupported GZIP compression method");
-        }
+    stream->Read(version, 3, 1);
+    version[3] = '\0';
 
-        // http://www.gzip.org/zlib/rfc-gzip.html#header-trailer
-        stream->Seek(0L, aiOrigin_SET);
-        std::shared_ptr<StreamReaderLE> reader = std::shared_ptr<StreamReaderLE>(new StreamReaderLE(stream));
-
-        size_t total = 0;
-        Compression compression;
-        if (compression.open(Compression::Format::Binary, Compression::FlushMode::NoFlush, 16 + Compression::MaxWBits)) {
-            total = compression.decompress((unsigned char *)reader->GetPtr(), reader->GetRemainingSize(), uncompressed);
-            compression.close();
-        }
-
-        // replace the input stream with a memory stream
-        stream.reset(new MemoryIOStream(reinterpret_cast<uint8_t *>(uncompressed.data()), total));
-
-        // .. and retry
-        stream->Read(magic, 7, 1);
-        if (strcmp(magic, "BLENDER")) {
-            ThrowException("Found no BLENDER magic word in decompressed GZIP file");
-        }
-#endif
-    }
-
-    file.i64bit = (stream->Read(magic, 1, 1), magic[0] == '-');
-    file.little = (stream->Read(magic, 1, 1), magic[0] == 'v');
-
-    stream->Read(magic, 3, 1);
-    magic[3] = '\0';
-
-    LogInfo("Blender version is ", magic[0], ".", magic + 1,
+    LogInfo("Blender version is ", version[0], ".", version + 1,
             " (64bit: ", file.i64bit ? "true" : "false",
             ", little endian: ", file.little ? "true" : "false", ")");
 
-    ParseBlendFile(file, stream);
+    ParseBlendFile(file, std::move(stream));
 
     Scene scene;
     ExtractScene(scene, file);
@@ -218,7 +167,7 @@ void BlenderImporter::ParseBlendFile(FileDatabase &out, std::shared_ptr<IOStream
 
     out.entries.reserve(128);
     { // even small BLEND files tend to consist of many file blocks
-        SectionParser parser(*out.reader.get(), out.i64bit);
+        SectionParser parser(*out.reader, out.i64bit);
 
         // first parse the file in search for the DNA and insert all other sections into the database
         while ((parser.Next(), 1)) {
@@ -408,7 +357,7 @@ void BlenderImporter::ResolveImage(aiMaterial *out, const Material *mat, const M
     // check if the file contents are bundled with the BLEND file
     if (img->packedfile) {
         name.data[0] = '*';
-        name.length = 1 + ASSIMP_itoa10(name.data + 1, static_cast<unsigned int>(MAXLEN - 1), static_cast<int32_t>(conv_data.textures->size()));
+        name.length = 1 + ASSIMP_itoa10(name.data + 1, static_cast<unsigned int>(AI_MAXLEN - 1), static_cast<int32_t>(conv_data.textures->size()));
 
         conv_data.textures->push_back(new aiTexture());
         aiTexture *curTex = conv_data.textures->back();
@@ -482,7 +431,7 @@ void BlenderImporter::AddSentinelTexture(aiMaterial *out, const Material *mat, c
     (void)conv_data;
 
     aiString name;
-    name.length = ai_snprintf(name.data, MAXLEN, "Procedural,num=%i,type=%s", conv_data.sentinel_cnt++,
+    name.length = ai_snprintf(name.data, AI_MAXLEN, "Procedural,num=%i,type=%s", conv_data.sentinel_cnt++,
             GetTextureTypeDisplayString(tex->tex->type));
     out->AddProperty(&name, AI_MATKEY_TEXTURE_DIFFUSE(
                                     conv_data.next_texture[aiTextureType_DIFFUSE]++));
@@ -544,8 +493,9 @@ void BlenderImporter::BuildDefaultMaterial(Blender::ConversionData &conv_data) {
             if (index == static_cast<unsigned int>(-1)) {
                 // Setup a default material.
                 std::shared_ptr<Material> p(new Material());
-                ai_assert(::strlen(AI_DEFAULT_MATERIAL_NAME) < sizeof(p->id.name) - 2);
-                strcpy(p->id.name + 2, AI_DEFAULT_MATERIAL_NAME);
+                const size_t len = ::strlen(AI_DEFAULT_MATERIAL_NAME);
+                ai_assert(len < sizeof(p->id.name) - 2);
+                memcpy(p->id.name + 2, AI_DEFAULT_MATERIAL_NAME, len);
 
                 // Note: MSVC11 does not zero-initialize Material here, although it should.
                 // Thus all relevant fields should be explicitly initialized. We cannot add
@@ -1335,6 +1285,57 @@ aiNode *BlenderImporter::ConvertNode(const Scene &in, const Object *obj, Convers
     modifier_cache->ApplyModifiers(*node, conv_data, in, *obj);
 
     return node.release();
+}
+
+BlenderImporter::StreamOrError BlenderImporter::ParseMagicToken(const std::string &pFile, IOSystem *pIOHandler) const {
+    std::shared_ptr<IOStream> stream(pIOHandler->Open(pFile, "rb"));
+    if (stream == nullptr) {
+        return {{}, {}, "Could not open file for reading"};
+    }
+
+    char magic[8] = { 0 };
+    stream->Read(magic, 7, 1);
+    if (strcmp(magic, Token) == 0) {
+        return {stream, {}, {}};
+    }
+
+    // Check for presence of the gzip header. If yes, assume it is a
+    // compressed blend file and try uncompressing it, else fail. This is to
+    // avoid uncompressing random files which our loader might end up with.
+#ifdef ASSIMP_BUILD_NO_COMPRESSED_BLEND
+    return {{}, {}, "BLENDER magic bytes are missing, is this file compressed (Assimp was built without decompression support)?"};
+#else
+    if (magic[0] != 0x1f || static_cast<uint8_t>(magic[1]) != 0x8b) {
+        return {{}, {}, "BLENDER magic bytes are missing, couldn't find GZIP header either"};
+    }
+
+    LogDebug("Found no BLENDER magic word but a GZIP header, might be a compressed file");
+    if (magic[2] != 8) {
+        return {{}, {}, "Unsupported GZIP compression method"};
+    }
+
+    // http://www.gzip.org/zlib/rfc-gzip.html#header-trailer
+    stream->Seek(0L, aiOrigin_SET);
+    std::shared_ptr<StreamReaderLE> reader = std::shared_ptr<StreamReaderLE>(new StreamReaderLE(stream));
+
+    size_t total = 0;
+    Compression compression;
+    auto uncompressed = std::make_shared<std::vector<char>>();
+    if (compression.open(Compression::Format::Binary, Compression::FlushMode::NoFlush, 16 + Compression::MaxWBits)) {
+        total = compression.decompress((unsigned char *)reader->GetPtr(), reader->GetRemainingSize(), *uncompressed);
+        compression.close();
+    }
+
+    // replace the input stream with a memory stream
+    stream = std::make_shared<MemoryIOStream>(reinterpret_cast<uint8_t *>(uncompressed->data()), total);
+
+    // .. and retry
+    stream->Read(magic, 7, 1);
+    if (strcmp(magic, Token) == 0) {
+        return {stream, uncompressed, {}};
+    }
+    return {{}, {}, "Found no BLENDER magic word in decompressed GZIP file"};
+#endif
 }
 
 #endif // ASSIMP_BUILD_NO_BLEND_IMPORTER

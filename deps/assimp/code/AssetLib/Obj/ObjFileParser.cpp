@@ -3,7 +3,7 @@
 Open Asset Import Library (assimp)
 ---------------------------------------------------------------------------
 
-Copyright (c) 2006-2022, assimp team
+Copyright (c) 2006-2025, assimp team
 
 All rights reserved.
 
@@ -52,7 +52,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cstdlib>
 #include <memory>
 #include <utility>
-#include <string_view>
 
 namespace Assimp {
 
@@ -64,6 +63,7 @@ ObjFileParser::ObjFileParser() :
         m_pModel(nullptr),
         m_uiLine(0),
         m_buffer(),
+        mEnd(&m_buffer[Buffersize]),
         m_pIO(nullptr),
         m_progress(nullptr),
         m_originalObjFileName() {
@@ -97,8 +97,6 @@ ObjFileParser::ObjFileParser(IOStreamBuffer<char> &streamBuffer, const std::stri
     parseFile(streamBuffer);
 }
 
-ObjFileParser::~ObjFileParser() = default;
-
 void ObjFileParser::setBuffer(std::vector<char> &buffer) {
     m_DataIt = buffer.begin();
     m_DataItEnd = buffer.end();
@@ -113,14 +111,15 @@ void ObjFileParser::parseFile(IOStreamBuffer<char> &streamBuffer) {
     //const unsigned int updateProgressEveryBytes = 100 * 1024;
     const unsigned int bytesToProcess = static_cast<unsigned int>(streamBuffer.size());
     const unsigned int progressTotal = bytesToProcess;
-    unsigned int processed = 0;
-    size_t lastFilePos(0);
+    unsigned int processed = 0u;
+    size_t lastFilePos = 0u;
 
     bool insideCstype = false;
     std::vector<char> buffer;
     while (streamBuffer.getNextDataLine(buffer, '\\')) {
         m_DataIt = buffer.begin();
         m_DataItEnd = buffer.end();
+        mEnd = &buffer[buffer.size() - 1] + 1;
 
         // Handle progress reporting
         const size_t filePos(streamBuffer.getFilePos());
@@ -130,7 +129,7 @@ void ObjFileParser::parseFile(IOStreamBuffer<char> &streamBuffer) {
             m_progress->UpdateFileRead(processed, progressTotal);
         }
 
-        // handle cstype section end (http://paulbourke.net/dataformats/obj/)
+        // handle c-stype section end (http://paulbourke.net/dataformats/obj/)
         if (insideCstype) {
             switch (*m_DataIt) {
             case 'e': {
@@ -156,8 +155,16 @@ void ObjFileParser::parseFile(IOStreamBuffer<char> &streamBuffer) {
                     // read in vertex definition (homogeneous coords)
                     getHomogeneousVector3(m_pModel->mVertices);
                 } else if (numComponents == 6) {
+                    // fill previous omitted vertex-colors by default
+                    if (m_pModel->mVertexColors.size() < m_pModel->mVertices.size()) {
+                        m_pModel->mVertexColors.resize(m_pModel->mVertices.size(), aiVector3D(0, 0, 0));
+                    }
                     // read vertex and vertex-color
                     getTwoVectors3(m_pModel->mVertices, m_pModel->mVertexColors);
+                }
+                // append omitted vertex-colors as default for the end if any vertex-color exists
+                if (!m_pModel->mVertexColors.empty() && m_pModel->mVertexColors.size() < m_pModel->mVertices.size()) {
+                    m_pModel->mVertexColors.resize(m_pModel->mVertices.size(), aiVector3D(0, 0, 0));
                 }
             } else if (*m_DataIt == 't') {
                 // read in texture coordinate ( 2D or 3D )
@@ -236,7 +243,7 @@ void ObjFileParser::parseFile(IOStreamBuffer<char> &streamBuffer) {
             getNameNoSpace(m_DataIt, m_DataItEnd, name);
             insideCstype = name == "cstype";
             goto pf_skip_line;
-        } break;
+        }
 
         default: {
         pf_skip_line:
@@ -293,18 +300,19 @@ size_t ObjFileParser::getNumComponentsInDataDefinition() {
         } else if (IsLineEnd(*tmp)) {
             end_of_definition = true;
         }
-        if (!SkipSpaces(&tmp)) {
+        if (!SkipSpaces(&tmp, mEnd) || *tmp == '#') {
             break;
         }
         const bool isNum(IsNumeric(*tmp) || isNanOrInf(tmp));
-        SkipToken(tmp);
+        SkipToken(tmp, mEnd);
         if (isNum) {
             ++numComponents;
         }
-        if (!SkipSpaces(&tmp)) {
+        if (!SkipSpaces(&tmp, mEnd) || *tmp == '#') {
             break;
         }
     }
+
     return numComponents;
 }
 
@@ -440,10 +448,10 @@ void ObjFileParser::getFace(aiPrimitiveType type) {
     const bool vt = (!m_pModel->mTextureCoord.empty());
     const bool vn = (!m_pModel->mNormals.empty());
     int iPos = 0;
-    while (m_DataIt != m_DataItEnd) {
+    while (m_DataIt < m_DataItEnd) {
         int iStep = 1;
 
-        if (IsLineEnd(*m_DataIt)) {
+        if (IsLineEnd(*m_DataIt) || *m_DataIt == '#') {
             break;
         }
 
@@ -456,9 +464,20 @@ void ObjFileParser::getFace(aiPrimitiveType type) {
             iPos = 0;
         } else {
             //OBJ USES 1 Base ARRAYS!!!!
-            const char *token = &(*m_DataIt);
-            const int iVal = ::atoi(token);
-            
+            int iVal;
+            auto end = m_DataIt;
+            // find either the buffer end or the '\0'
+            while (end < m_DataItEnd && *end != '\0')
+                ++end;
+            // avoid temporary string allocation if there is a zero
+            if (end != m_DataItEnd) {
+                iVal = ::atoi(&(*m_DataIt));
+            } else {
+                // otherwise make a zero terminated copy, which is safe to pass to atoi
+                std::string number(&(*m_DataIt), m_DataItEnd - m_DataIt);
+                iVal = ::atoi(number.c_str());
+            }
+
             // increment iStep position based off of the sign and # of digits
             int tmp = iVal;
             if (iVal < 0) {
@@ -468,8 +487,9 @@ void ObjFileParser::getFace(aiPrimitiveType type) {
                 ++iStep;
             }
 
-            if (iPos == 1 && !vt && vn)
+            if (iPos == 1 && !vt && vn) {
                 iPos = 2; // skip texture coords for normals if there are no tex coords
+            }
 
             if (iVal > 0) {
                 // Store parsed index
@@ -557,14 +577,17 @@ void ObjFileParser::getMaterialDesc() {
 
     // Get name
     std::string strName(pStart, &(*m_DataIt));
-    strName = trim_whitespaces(strName);
-    if (strName.empty())
+    strName = ai_trim(strName);
+    if (strName.empty()) {
         skip = true;
+    }
 
-    // If the current mesh has the same material, we simply ignore that 'usemtl' command
+    // If the current mesh has the same material, we will ignore that 'usemtl' command
     // There is no need to create another object or even mesh here
-    if (m_pModel->mCurrentMaterial && m_pModel->mCurrentMaterial->MaterialName == aiString(strName)) {
-        skip = true;
+    if (!skip) {
+        if (m_pModel->mCurrentMaterial && m_pModel->mCurrentMaterial->MaterialName == aiString(strName)) {
+            skip = true;
+        }
     }
 
     if (!skip) {
@@ -586,7 +609,8 @@ void ObjFileParser::getMaterialDesc() {
         }
 
         if (needsNewMesh(strName)) {
-            createMesh(strName);
+            auto newMeshName = m_pModel->mActiveGroup.empty() ? strName : m_pModel->mActiveGroup;
+            createMesh(newMeshName);
         }
 
         m_pModel->mCurrentMesh->m_uiMaterialIndex = getMaterialIndex(strName);
@@ -636,13 +660,13 @@ void ObjFileParser::getMaterialLib() {
     } else {
         absName = strMatName;
     }
-
-    IOStream *pFile = m_pIO->Open(absName);
+	
+	std::unique_ptr<IOStream> pFile(m_pIO->Open(absName));
     if (nullptr == pFile) {
         ASSIMP_LOG_ERROR("OBJ: Unable to locate material file ", strMatName);
         std::string strMatFallbackName = m_originalObjFileName.substr(0, m_originalObjFileName.length() - 3) + "mtl";
         ASSIMP_LOG_INFO("OBJ: Opening fallback material file ", strMatFallbackName);
-        pFile = m_pIO->Open(strMatFallbackName);
+        pFile.reset(m_pIO->Open(strMatFallbackName));
         if (!pFile) {
             ASSIMP_LOG_ERROR("OBJ: Unable to locate fallback material file ", strMatFallbackName);
             m_DataIt = skipLine<DataArrayIt>(m_DataIt, m_DataItEnd, m_uiLine);
@@ -655,8 +679,8 @@ void ObjFileParser::getMaterialLib() {
     // material files if the model doesn't use any materials, so we
     // allow that.
     std::vector<char> buffer;
-    BaseImporter::TextFileToBuffer(pFile, buffer, BaseImporter::ALLOW_EMPTY);
-    m_pIO->Close(pFile);
+    BaseImporter::TextFileToBuffer(pFile.get(), buffer, BaseImporter::ALLOW_EMPTY);
+    //m_pIO->Close(pFile);
 
     // Importing the material library
     ObjFileMtlImporter mtlImporter(buffer, strMatName, m_pModel.get());

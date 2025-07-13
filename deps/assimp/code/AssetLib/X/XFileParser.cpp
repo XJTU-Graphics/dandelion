@@ -3,7 +3,7 @@
 Open Asset Import Library (assimp)
 ---------------------------------------------------------------------------
 
-Copyright (c) 2006-2022, assimp team
+Copyright (c) 2006-2025, assimp team
 
 All rights reserved.
 
@@ -183,7 +183,7 @@ XFileParser::XFileParser(const std::vector<char> &pBuffer) :
             P1 += ofs;
             est_out += MSZIP_BLOCK; // one decompressed block is 327861 in size
         }
-        
+
         // Allocate storage and terminating zero and do the actual uncompressing
         Compression compression;
         uncompressed.resize(est_out + 1);
@@ -839,7 +839,6 @@ void XFileParser::ParseDataObjectAnimationKey(AnimBone *pAnimBone) {
 
         default:
             ThrowException("Unknown key type ", keyType, " in animation.");
-            break;
         } // end switch
 
         // key separator

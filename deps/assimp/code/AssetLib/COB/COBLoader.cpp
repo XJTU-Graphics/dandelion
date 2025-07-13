@@ -2,7 +2,7 @@
 Open Asset Import Library (assimp)
 ----------------------------------------------------------------------
 
-Copyright (c) 2006-2022, assimp team
+Copyright (c) 2006-2025, assimp team
 
 All rights reserved.
 
@@ -45,8 +45,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifndef ASSIMP_BUILD_NO_COB_IMPORTER
 
-#include "AssetLib/COB/COBLoader.h"
-#include "AssetLib/COB/COBScene.h"
+#include "COBLoader.h"
+#include "COBScene.h"
 #include "PostProcessing/ConvertToLHProcess.h"
 
 #include <assimp/LineSplitter.h>
@@ -61,11 +61,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <memory>
 
-using namespace Assimp;
+namespace Assimp {
 using namespace Assimp::COB;
 using namespace Assimp::Formatter;
 
-static const float units[] = {
+static constexpr float units[] = {
     1000.f,
     100.f,
     1.f,
@@ -76,7 +76,7 @@ static const float units[] = {
     1.f / 1609.344f
 };
 
-static const aiImporterDesc desc = {
+static constexpr aiImporterDesc desc = {
     "TrueSpace Object Importer",
     "",
     "",
@@ -88,14 +88,6 @@ static const aiImporterDesc desc = {
     0,
     "cob scn"
 };
-
-// ------------------------------------------------------------------------------------------------
-// Constructor to be privately used by Importer
-COBImporter::COBImporter() = default;
-
-// ------------------------------------------------------------------------------------------------
-// Destructor, private as well
-COBImporter::~COBImporter() = default;
 
 // ------------------------------------------------------------------------------------------------
 // Returns whether the class can handle the format of the given file.
@@ -158,7 +150,7 @@ void COBImporter::InternReadFile(const std::string &pFile, aiScene *pScene, IOSy
     // sort faces by material indices
     for (std::shared_ptr<Node> &n : scene.nodes) {
         if (n->type == Node::TYPE_MESH) {
-            Mesh &mesh = (Mesh &)(*n.get());
+            Mesh &mesh = (Mesh &)(*n);
             for (Face &f : mesh.faces) {
                 mesh.temp_map[f.material].push_back(&f);
             }
@@ -168,7 +160,7 @@ void COBImporter::InternReadFile(const std::string &pFile, aiScene *pScene, IOSy
     // count meshes
     for (std::shared_ptr<Node> &n : scene.nodes) {
         if (n->type == Node::TYPE_MESH) {
-            Mesh &mesh = (Mesh &)(*n.get());
+            Mesh &mesh = (Mesh &)(*n);
             if (mesh.vertex_positions.size() && mesh.texture_coords.size()) {
                 pScene->mNumMeshes += static_cast<unsigned int>(mesh.temp_map.size());
             }
@@ -211,7 +203,7 @@ void COBImporter::InternReadFile(const std::string &pFile, aiScene *pScene, IOSy
         }
     }
 
-    pScene->mRootNode = BuildNodes(*root.get(), scene, pScene);
+    pScene->mRootNode = BuildNodes(*root, scene, pScene);
     //flip normals after import
     FlipWindingOrderProcess flip;
     flip.Execute(pScene);
@@ -236,7 +228,7 @@ aiNode *COBImporter::BuildNodes(const Node &root, const Scene &scin, aiScene *fi
         const Mesh &ndmesh = (const Mesh &)(root);
         if (ndmesh.vertex_positions.size() && ndmesh.texture_coords.size()) {
 
-            typedef std::pair<const unsigned int, Mesh::FaceRefList> Entry;
+            using Entry = std::pair<const unsigned int, Mesh::FaceRefList>;
             for (const Entry &reflist : ndmesh.temp_map) {
                 { // create mesh
                     size_t n = 0;
@@ -380,9 +372,11 @@ aiNode *COBImporter::BuildNodes(const Node &root, const Scene &scin, aiScene *fi
     }
 
     // add children recursively
-    nd->mChildren = new aiNode *[root.temp_children.size()]();
-    for (const Node *n : root.temp_children) {
-        (nd->mChildren[nd->mNumChildren++] = BuildNodes(*n, scin, fill))->mParent = nd;
+    if (!root.temp_children.empty()) {
+        nd->mChildren = new aiNode *[root.temp_children.size()]();
+        for (const Node *n : root.temp_children) {
+            (nd->mChildren[nd->mNumChildren++] = BuildNodes(*n, scin, fill))->mParent = nd;
+        }
     }
 
     return nd;
@@ -481,8 +475,9 @@ void COBImporter::ReadBasicNodeInfo_Ascii(Node &msh, LineSplitter &splitter, con
         } else if (splitter.match_start("Transform")) {
             for (unsigned int y = 0; y < 4 && ++splitter; ++y) {
                 const char *s = splitter->c_str();
+                const char *end = s + splitter->size();
                 for (unsigned int x = 0; x < 4; ++x) {
-                    SkipSpaces(&s);
+                    SkipSpaces(&s, end);
                     msh.transform[y][x] = fast_atof(&s);
                 }
             }
@@ -494,12 +489,12 @@ void COBImporter::ReadBasicNodeInfo_Ascii(Node &msh, LineSplitter &splitter, con
 
 // ------------------------------------------------------------------------------------------------
 template <typename T>
-void COBImporter::ReadFloat3Tuple_Ascii(T &fill, const char **in) {
+void COBImporter::ReadFloat3Tuple_Ascii(T &fill, const char **in, const char *end) {
     const char *rgb = *in;
     for (unsigned int i = 0; i < 3; ++i) {
-        SkipSpaces(&rgb);
+        SkipSpaces(&rgb, end);
         if (*rgb == ',') ++rgb;
-        SkipSpaces(&rgb);
+        SkipSpaces(&rgb, end);
 
         fill[i] = fast_atof(&rgb);
     }
@@ -546,7 +541,7 @@ void COBImporter::ReadMat1_Ascii(Scene &out, LineSplitter &splitter, const Chunk
     }
 
     const char *rgb = splitter[1];
-    ReadFloat3Tuple_Ascii(mat.rgb, &rgb);
+    ReadFloat3Tuple_Ascii(mat.rgb, &rgb, splitter.getEnd());
 
     ++splitter;
     if (!splitter.match_start("alpha ")) {
@@ -625,20 +620,21 @@ void COBImporter::ReadLght_Ascii(Scene &out, LineSplitter &splitter, const Chunk
     }
 
     const char *rgb = splitter[1];
-    ReadFloat3Tuple_Ascii(msh.color, &rgb);
+    const char *end = splitter.getEnd();
+    ReadFloat3Tuple_Ascii(msh.color, &rgb, end);
 
-    SkipSpaces(&rgb);
+    SkipSpaces(&rgb, end);
     if (strncmp(rgb, "cone angle", 10) != 0) {
         ASSIMP_LOG_WARN("Expected `cone angle` entity in `color` line in `Lght` chunk ", nfo.id);
     }
-    SkipSpaces(rgb + 10, &rgb);
+    SkipSpaces(rgb + 10, &rgb, end);
     msh.angle = fast_atof(&rgb);
 
-    SkipSpaces(&rgb);
+    SkipSpaces(&rgb, end);
     if (strncmp(rgb, "inner angle", 11) != 0) {
         ASSIMP_LOG_WARN("Expected `inner angle` entity in `color` line in `Lght` chunk ", nfo.id);
     }
-    SkipSpaces(rgb + 11, &rgb);
+    SkipSpaces(rgb + 11, &rgb, end);
     msh.inner_angle = fast_atof(&rgb);
 
     // skip the rest for we can't handle this kind of physically-based lighting information.
@@ -711,14 +707,14 @@ void COBImporter::ReadPolH_Ascii(Scene &out, LineSplitter &splitter, const Chunk
 
             for (unsigned int cur = 0; cur < cnt && ++splitter; ++cur) {
                 const char *s = splitter->c_str();
-
+                const char *end = splitter.getEnd();
                 aiVector3D &v = msh.vertex_positions[cur];
 
-                SkipSpaces(&s);
+                SkipSpaces(&s, end);
                 v.x = fast_atof(&s);
-                SkipSpaces(&s);
+                SkipSpaces(&s, end);
                 v.y = fast_atof(&s);
-                SkipSpaces(&s);
+                SkipSpaces(&s, end);
                 v.z = fast_atof(&s);
             }
         } else if (splitter.match_start("Texture Vertices")) {
@@ -727,12 +723,13 @@ void COBImporter::ReadPolH_Ascii(Scene &out, LineSplitter &splitter, const Chunk
 
             for (unsigned int cur = 0; cur < cnt && ++splitter; ++cur) {
                 const char *s = splitter->c_str();
+                const char *end = splitter.getEnd();
 
                 aiVector2D &v = msh.texture_coords[cur];
 
-                SkipSpaces(&s);
+                SkipSpaces(&s, end);
                 v.x = fast_atof(&s);
-                SkipSpaces(&s);
+                SkipSpaces(&s, end);
                 v.y = fast_atof(&s);
             }
         } else if (splitter.match_start("Faces")) {
@@ -757,8 +754,9 @@ void COBImporter::ReadPolH_Ascii(Scene &out, LineSplitter &splitter, const Chunk
                 face.material = strtoul10(splitter[6]);
 
                 const char *s = (++splitter)->c_str();
+                const char *end = splitter.getEnd();
                 for (size_t i = 0; i < face.indices.size(); ++i) {
-                    if (!SkipSpaces(&s)) {
+                    if (!SkipSpaces(&s, end)) {
                         ThrowException("Expected EOL token in Face entry");
                     }
                     if ('<' != *s++) {
@@ -868,7 +866,7 @@ void COBImporter::ReadBinaryFile(Scene &out, StreamReaderLE *reader) {
         return;
     }
 
-    while (1) {
+    while (true) {
         std::string type;
         type += reader->GetI1();
         type += reader->GetI1();
@@ -1054,7 +1052,7 @@ void COBImporter::ReadMat1_Binary(COB::Scene &out, StreamReaderLE &reader, const
     id[0] = reader.GetI1(), id[1] = reader.GetI1();
 
     if (id[0] == 'e' && id[1] == ':') {
-        mat.tex_env.reset(new Texture());
+        mat.tex_env = std::make_shared<Texture>();
 
         reader.GetI1();
         ReadString_Binary(mat.tex_env->path, reader);
@@ -1064,7 +1062,7 @@ void COBImporter::ReadMat1_Binary(COB::Scene &out, StreamReaderLE &reader, const
     }
 
     if (id[0] == 't' && id[1] == ':') {
-        mat.tex_color.reset(new Texture());
+        mat.tex_color = std::make_shared<Texture>();
 
         reader.GetI1();
         ReadString_Binary(mat.tex_color->path, reader);
@@ -1080,7 +1078,7 @@ void COBImporter::ReadMat1_Binary(COB::Scene &out, StreamReaderLE &reader, const
     }
 
     if (id[0] == 'b' && id[1] == ':') {
-        mat.tex_bump.reset(new Texture());
+        mat.tex_bump = std::make_shared<Texture>();
 
         reader.GetI1();
         ReadString_Binary(mat.tex_bump->path, reader);
@@ -1170,6 +1168,8 @@ void COBImporter::ReadUnit_Binary(COB::Scene &out, StreamReaderLE &reader, const
         }
     }
     ASSIMP_LOG_WARN("`Unit` chunk ", nfo.id, " is a child of ", nfo.parent_id, " which does not exist");
+}
+
 }
 
 #endif // ASSIMP_BUILD_NO_COB_IMPORTER

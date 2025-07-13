@@ -2,7 +2,7 @@
 Open Asset Import Library (assimp)
 ----------------------------------------------------------------------
 
-Copyright (c) 2006-2022, assimp team
+Copyright (c) 2006-2025, assimp team
 
 All rights reserved.
 
@@ -162,8 +162,11 @@ void AnimResolver::UpdateAnimRangeSetup() {
         const double my_last = (*it).keys.back().time;
 
         const double delta = my_last - my_first;
-        const size_t old_size = (*it).keys.size();
+        if (delta == 0.0) {
+            continue;
+        }
 
+        const size_t old_size = (*it).keys.size();
         const float value_delta = (*it).keys.back().value - (*it).keys.front().value;
 
         // NOTE: We won't handle reset, linear and constant here.
@@ -176,8 +179,7 @@ void AnimResolver::UpdateAnimRangeSetup() {
         case LWO::PrePostBehaviour_Oscillate: {
             const double start_time = delta - std::fmod(my_first - first, delta);
             std::vector<LWO::Key>::iterator n = std::find_if((*it).keys.begin(), (*it).keys.end(),
-                                                    [start_time](double t) { return start_time > t; }),
-                                            m;
+                                                    [start_time](double t) { return start_time > t; }), m;
 
             size_t ofs = 0;
             if (n != (*it).keys.end()) {
@@ -210,7 +212,7 @@ void AnimResolver::UpdateAnimRangeSetup() {
             unsigned int tt = 1;
             for (const double tmp = delta * (num + 1); cur_minus <= tmp; cur_minus += delta, ++tt) {
                 m = (delta == tmp ? (*it).keys.begin() : n - (old_size + 1));
-                for (; m != n; --n) {
+                for (; m < n; --n) {
                     (*n).time -= cur_minus;
 
                     // offset repeat? add delta offset to key value
@@ -463,7 +465,7 @@ void AnimResolver::GetKeys(std::vector<aiVectorKey> &out,
     cur_z = envl_z->keys.begin();
 
     end_x = end_y = end_z = false;
-    while (1) {
+    while (true) {
 
         aiVectorKey fill;
 

@@ -1,7 +1,7 @@
 /*-----------------------------------------------------------------------------------------------
 The MIT License (MIT)
 
-Copyright (c) 2014-2020 Kim Kulling
+Copyright (c) 2014-2025 Kim Kulling
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -30,7 +30,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <sstream>
 
 #ifdef _WIN32
-#include <windows.h>
+#   ifndef WIN32_LEAN_AND_MEAN
+#     define WIN32_LEAN_AND_MEAN
+#   endif
+#   include <windows.h>
 #endif // _WIN32
 
 BEGIN_ODDLPARSER_NS
@@ -71,12 +74,11 @@ const char *getTypeToken(Value::ValueType type) {
     return Grammar::PrimitiveTypeToken[(size_t)type];
 }
 
-static void logInvalidTokenError(char *in, const std::string &exp, OpenDDLParser::logCallback callback) {
-    if (callback) {
-        std::string full(in);
-        std::string part(full.substr(0, 50));
+static void logInvalidTokenError(const std::string &in, const std::string &exp, OpenDDLParser::logCallback callback) {
+    if (callback) {\
+        std::string part(in.substr(0, 50));
         std::stringstream stream;
-        stream << "Invalid token \"" << *in << "\" "
+        stream << "Invalid token \"" << in << "\" "
                << "(expected \"" << exp << "\") "
                << "in: \"" << part << "\"";
         callback(ddl_error_msg, stream.str());
@@ -147,7 +149,7 @@ void OpenDDLParser::logToStream(FILE *f, LogSeverity severity, const std::string
 
 OpenDDLParser::logCallback OpenDDLParser::StdLogCallback (FILE *destination) {
     using namespace std::placeholders;
-    return std::bind(logToStream, destination ? destination : stderr, _1, _2);
+    return [capture0 = destination ? destination : stderr](auto && PH1, auto && PH2) { logToStream(capture0, std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2)); };
 }
 
 void OpenDDLParser::setLogCallback(logCallback callback) {
@@ -287,8 +289,8 @@ char *OpenDDLParser::parseHeader(char *in, char *end) {
         if (nullptr != name && nullptr != node && nullptr != name->m_id->m_buffer) {
             const std::string nodeName(name->m_id->m_buffer);
             node->setName(nodeName);
-            delete name;
         }
+        delete name;
 
         Property *first(nullptr);
         in = lookForNextToken(in, end);
@@ -303,7 +305,7 @@ char *OpenDDLParser::parseHeader(char *in, char *end) {
                 }
 
                 if (*in != Grammar::CommaSeparator[0] && *in != Grammar::ClosePropertyToken[0]) {
-                    logInvalidTokenError(in, Grammar::ClosePropertyToken, m_logCallback);
+                    logInvalidTokenError(std::string(in, end), Grammar::ClosePropertyToken, m_logCallback);
                     return nullptr;
                 }
 
@@ -338,20 +340,24 @@ char *OpenDDLParser::parseStructure(char *in, char *end) {
 
     bool error(false);
     in = lookForNextToken(in, end);
-    if (*in == *Grammar::OpenBracketToken) {
-        // loop over all children ( data and nodes )
-        do {
-            in = parseStructureBody(in, end, error);
-            if (in == nullptr) {
-                return nullptr;
+    if (in != end) {
+        if (*in == *Grammar::OpenBracketToken) {
+            // loop over all children ( data and nodes )
+            do {
+                in = parseStructureBody(in, end, error);
+                if (in == nullptr) {
+                    return nullptr;
+                }
+            } while (in  != end &&
+                     *in != *Grammar::CloseBracketToken);
+            if (in != end) {
+                ++in;
             }
-        } while (*in != *Grammar::CloseBracketToken);
-        ++in;
-    } else {
-        ++in;
-        logInvalidTokenError(in, std::string(Grammar::OpenBracketToken), m_logCallback);
-        error = true;
-        return nullptr;
+        } else {
+            logInvalidTokenError(std::string(in, end), std::string(Grammar::OpenBracketToken), m_logCallback);
+            error = true;
+            return nullptr;
+        }
     }
     in = lookForNextToken(in, end);
 
@@ -418,8 +424,8 @@ char *OpenDDLParser::parseStructureBody(char *in, char *end, bool &error) {
         }
 
         in = lookForNextToken(in, end);
-        if (*in != '}') {
-            logInvalidTokenError(in, std::string(Grammar::CloseBracketToken), m_logCallback);
+        if (in == end || *in != '}') {
+            logInvalidTokenError(std::string(in, end), std::string(Grammar::CloseBracketToken), m_logCallback);
             return nullptr;
         } else {
             //in++;
@@ -455,7 +461,7 @@ DDLNode *OpenDDLParser::top() {
         return nullptr;
     }
 
-    DDLNode *top(m_stack.back());
+    DDLNode *top = m_stack.back();
     return top;
 }
 
@@ -647,12 +653,15 @@ char *OpenDDLParser::parseBooleanLiteral(char *in, char *end, Value **boolean) {
 
     in = lookForNextToken(in, end);
     char *start(in);
+
+    size_t len(0);
     while (!isSeparator(*in) && in != end) {
         ++in;
+        ++len;
     }
-    int res = ::strncmp(Grammar::BoolTrue, start, strlen(Grammar::BoolTrue));
+    int res = ::strncmp(Grammar::BoolTrue, start, len);
     if (0 != res) {
-        res = ::strncmp(Grammar::BoolFalse, start, strlen(Grammar::BoolFalse));
+        res = ::strncmp(Grammar::BoolFalse, start, len);
         if (0 != res) {
             *boolean = nullptr;
             return in;
@@ -733,7 +742,7 @@ char *OpenDDLParser::parseFloatingLiteral(char *in, char *end, Value **floating,
 
     in = lookForNextToken(in, end);
     char *start(in);
-    while (!isSeparator(*in) && in != end) {
+    while (in != end && !isSeparator(*in)) {
         ++in;
     }
 
@@ -838,6 +847,13 @@ char *OpenDDLParser::parseHexaLiteral(char *in, char *end, Value **data) {
     int value(0);
     while (pos > 0) {
         int v = hex2Decimal(*start);
+        if (v < 0) {
+            while (isEndofLine(*in)) {
+                ++in;
+            }
+            return in;
+        }
+            
         --pos;
         value = (value << 4) | v;
         ++start;
@@ -901,10 +917,10 @@ char *OpenDDLParser::parseDataList(char *in, char *end, Value::ValueType type, V
     }
 
     in = lookForNextToken(in, end);
-    if (*in == '{') {
+    if (in != end && *in == '{') {
         ++in;
         Value *current(nullptr), *prev(nullptr);
-        while ('}' != *in) {
+        while (in != end && '}' != *in) {
             current = nullptr;
             in = lookForNextToken(in, end);
             if (Value::ValueType::ddl_ref == type) {
@@ -962,11 +978,12 @@ char *OpenDDLParser::parseDataList(char *in, char *end, Value::ValueType type, V
             }
 
             in = getNextSeparator(in, end);
-            if (',' != *in && Grammar::CloseBracketToken[0] != *in && !isSpace(*in)) {
+            if (in == end || (',' != *in && Grammar::CloseBracketToken[0] != *in && !isSpace(*in))) {
                 break;
             }
         }
-        ++in;
+        if (in != end)
+            ++in;
     }
 
     return in;
