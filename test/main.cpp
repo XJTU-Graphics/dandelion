@@ -25,7 +25,7 @@ int main(int argc, char* argv[])
     spdlog::set_default_logger(spdlog::stdout_color_mt("Test"));
     std::time_t current_timestamp = std::time(nullptr);
     std::tm *now = std::localtime(&current_timestamp);
-    spdlog::info("Dandelion 3D Unit Test, started at {:%Y-%m-%d %H:%M:%S%z}", *now);
+    spdlog::info("Dandelion 3D Unit Test, started at {:%Y-%m-%d %H:%M:%S}", *now);
 
     GLFWwindow* window = nullptr;
     glfwInit();
