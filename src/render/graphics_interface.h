@@ -213,11 +213,11 @@ struct Context
     static std::queue<FragmentShaderPayload> rasterizer_output_queue;
 
     /*! \~chinese 标识顶点着色器是否全部执行完毕。 */
-    static bool vertex_finish;
+    volatile static bool vertex_finish;
     /*! \~chinese 标识三角形是否全部被光栅化。 */
-    static bool rasterizer_finish;
+    volatile static bool rasterizer_finish;
     /*! \~chinese 标识片元着色器是否全部执行完毕。 */
-    static bool fragment_finish;
+    volatile static bool fragment_finish;
 
     /*! \~chinese 渲染使用的 frame buffer 。 */
     static FrameBuffer frame_buffer;

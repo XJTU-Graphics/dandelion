@@ -87,8 +87,6 @@ public:
     /*! \~chinese 光栅化渲染器的渲染调用接口*/
     void render(const Scene& scene);
 
-    /*! \~chinese 多线程光栅化渲染器的渲染调用接口*/
-    // void render_mt(const Scene& scene);
     float& width;
     float& height;
     int n_vertex_threads;

@@ -18,7 +18,7 @@ using time_point = std::chrono::time_point<steady_clock, duration>;
 using Eigen::Vector3f;
 using Eigen::Vector4f;
 
-// vertex processor & rasterizer & fragement processor can visit
+// vertex processor & rasterizer & fragment processor can visit
 // all the static variables below from Uniforms structure
 Eigen::Matrix4f Uniforms::MVP;
 Eigen::Matrix4f Uniforms::inv_trans_M;
@@ -38,9 +38,9 @@ std::mutex Context::rasterizer_queue_mutex;
 std::queue<VertexShaderPayload> Context::vertex_shader_output_queue;
 std::queue<FragmentShaderPayload> Context::rasterizer_output_queue;
 
-bool Context::vertex_finish     = false;
-bool Context::rasterizer_finish = false;
-bool Context::fragment_finish   = false;
+volatile bool Context::vertex_finish     = false;
+volatile bool Context::rasterizer_finish = false;
+volatile bool Context::fragment_finish   = false;
 
 FrameBuffer Context::frame_buffer(Uniforms::width, Uniforms::height);
 
@@ -121,8 +121,7 @@ void RasterizerRenderer::render(const Scene& scene)
                         Vector3f(normals[3 * idx], normals[3 * idx + 1], normals[3 * idx + 2]));
                 }
             }
-            vertex_processor.input_vertices(Eigen::Vector4f(0, 0, 0, -1.0f),
-                                            Eigen::Vector3f::Zero());
+            vertex_processor.input_vertices(Vector4f(0, 0, 0, -1.0f), Vector3f::Zero());
             for (auto& worker : workers) {
                 if (worker.joinable()) {
                     worker.join();
@@ -134,8 +133,7 @@ void RasterizerRenderer::render(const Scene& scene)
     time_point end_time         = steady_clock::now();
     duration rendering_duration = end_time - begin_time;
 
-    this->logger->info("rendering (single thread) takes {:.6f} seconds",
-                       rendering_duration.count());
+    this->logger->info("rendering takes {:.6f} seconds", rendering_duration.count());
 
     for (long unsigned int i = 0; i < Context::frame_buffer.depth_buffer.size(); i++) {
         rendering_res.push_back(
@@ -158,7 +156,7 @@ void VertexProcessor::input_vertices(const Vector4f& positions, const Vector3f& 
 
 void VertexProcessor::worker_thread()
 {
-    while (true) {
+    while (!Context::vertex_finish) {
         VertexShaderPayload payload;
         {
             if (vertex_queue.empty()) {
@@ -185,7 +183,7 @@ void VertexProcessor::worker_thread()
 
 void FragmentProcessor::worker_thread()
 {
-    while (true) {
+    while (!Context::fragment_finish) {
         FragmentShaderPayload fragment;
         {
             if (Context::rasterizer_finish && Context::rasterizer_output_queue.empty()) {
