@@ -109,7 +109,7 @@ jobs:
       - name: Generate build file
         run: |
           mkdir -p build
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=$(echo ${{ matrix.build_type }} | awk '{ print toupper( substr( $0, 1, 1 ) ) substr( $0, 2 ); }') -D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache
       
       - name: Build Dandelion
         run: cmake --build build --parallel $(sysctl -n hw.activecpu)
