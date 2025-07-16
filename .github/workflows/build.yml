@@ -42,7 +42,7 @@ jobs:
           gh release edit nightly -R ${{ github.repository }} --title "Nightly build [${CURRENT_NIGHTLY_HASH}]"
 
       - id: save_pr_branch
-      - name: Save PR branch information
+        name: Save PR branch information
         if: github.event_name == 'pull_request'
         run: |
           mkdir -p ./branch-info
@@ -51,7 +51,7 @@ jobs:
           echo "${{ github.event.pull_request.number }}" > ./branch-info/pr-number.txt
 
       - id: upload_branch_info
-      - name: Upload branch information artifact
+        name: Upload branch information artifact
         if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@v4
         with:
