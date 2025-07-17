@@ -23,24 +23,12 @@ jobs:
       run:
         shell: powershell
     steps:
-      - name: Download branch information
-        uses: actions/download-artifact@v4
-        continue-on-error: true
-        with:
-          name: pr-branch-info-${{ github.event.workflow_run.id }}
-          path: ./branch-info/
-
       - name: Determine branch to checkout
         id: determine_branch
         run: |
-          if (Test-Path "./branch-info/pr-branch.txt") {
-            $branch = Get-Content "./branch-info/pr-branch.txt"
-            Write-Output "branch=$branch" >> $Env:GITHUB_OUTPUT
-            Write-Output "Using PR branch: $branch"
-          } else {
-            Write-Output "branch=main" >> $Env:GITHUB_OUTPUT
-            Write-Output "Using default branch: main"
-          }
+          $branch = "${{ github.event.workflow_run.head_branch }}"
+          Write-Output "branch=$branch" >> $Env:GITHUB_OUTPUT
+          Write-Output "Using branch: $branch"
 
       - name: Checkout code
         uses: actions/checkout@v4
@@ -72,24 +60,12 @@ jobs:
       matrix:
         build_type: [debug, release]
     steps:
-      - name: Download branch information
-        uses: actions/download-artifact@v4
-        continue-on-error: true
-        with:
-          name: pr-branch-info-${{ github.event.workflow_run.id }}
-          path: ./branch-info/
-
       - name: Determine branch to checkout
         id: determine_branch
         run: |
-          if [ -f "./branch-info/pr-branch.txt" ]; then
-            branch=$(cat "./branch-info/pr-branch.txt")
-            echo "branch=$branch" >> $GITHUB_OUTPUT
-            echo "Using PR branch: $branch"
-          else
-            echo "branch=main" >> $GITHUB_OUTPUT
-            echo "Using default branch: main"
-          fi
+          branch="${{ github.event.workflow_run.head_branch }}"
+          echo "branch=$branch" >> $GITHUB_OUTPUT
+          echo "Using branch: $branch"
 
       - name: Checkout code
         uses: actions/checkout@v4
@@ -200,23 +176,11 @@ jobs:
       run:
         shell: bash
     steps:
-      - name: Download branch information
-        uses: actions/download-artifact@v4
-        continue-on-error: true
-        with:
-          name: pr-branch-info-${{ github.event.workflow_run.id }}
-          path: ./branch-info/
-
       - name: Determine branch to checkout
         run: |
-          if [ -f "./branch-info/pr-branch.txt" ]; then
-            branch=$(cat "./branch-info/pr-branch.txt")
-            echo "BRANCH=$branch" >> $GITHUB_ENV
-            echo "Using PR branch: $branch"
-          else
-            echo "BRANCH=main" >> $GITHUB_ENV
-            echo "Using default branch: main"
-          fi
+          branch="${{ github.event.workflow_run.head_branch }}"
+          echo "BRANCH=$branch" >> $GITHUB_ENV
+          echo "Using branch: $branch"
 
       - name: Checkout dandelion-autobuild
         uses: actions/checkout@v4

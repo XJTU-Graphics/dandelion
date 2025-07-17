@@ -41,24 +41,6 @@ jobs:
           # update title
           gh release edit nightly -R ${{ github.repository }} --title "Nightly build [${CURRENT_NIGHTLY_HASH}]"
 
-      - id: save_pr_branch
-        name: Save PR branch information
-        if: github.event_name == 'pull_request'
-        run: |
-          mkdir -p ./branch-info
-          echo "${{ github.head_ref }}" > ./branch-info/pr-branch.txt
-          echo "${{ github.sha }}" > ./branch-info/pr-sha.txt
-          echo "${{ github.event.pull_request.number }}" > ./branch-info/pr-number.txt
-
-      - id: upload_branch_info
-        name: Upload branch information artifact
-        if: github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v4
-        with:
-          name: pr-branch-info-${{ github.run_id }}
-          path: ./branch-info/
-          retention-days: 1
-
   build_windows_x64_msvc:
     runs-on: windows-2022
     needs: pre_build
