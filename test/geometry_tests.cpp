@@ -28,7 +28,7 @@ using std::unordered_map;
 using std::vector;
 
 constexpr float threshold     = 1e-3f;
-constexpr float threshold_squ = 1e-6f;
+constexpr float threshold_squ = threshold * threshold;
 
 TEST_CASE("Loop Subdivision", "[geometry]")
 {
