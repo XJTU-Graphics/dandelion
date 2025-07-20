@@ -37,8 +37,9 @@ struct VertexShaderPayload
  * \ingroup rendering
  * \~chinese
  * \brief 片元着色器的输入单位。
- * 
- * “片元”相当于未着色的像素，每个片元数据中均包含为该片元着色所需的局部信息（全局信息则位于 `Uniforms` 中）。
+ *
+ * “片元”相当于未着色的像素，每个片元数据中均包含为该片元着色所需的局部信息（全局信息则位于
+ * `Uniforms` 中）。
  */
 struct FragmentShaderPayload
 {
@@ -77,8 +78,9 @@ VertexShaderPayload vertex_shader(const VertexShaderPayload& payload);
  * \param lights 当前场景中的所有光源
  * \param camera 离线渲染所用的相机
  */
-Eigen::Vector3f phong_fragment_shader(const FragmentShaderPayload& payload, const GL::Material& material,
-                                      const std::list<Light>& lights, const Camera& camera);
+Eigen::Vector3f phong_fragment_shader(const FragmentShaderPayload& payload,
+                                      const GL::Material& material, const std::list<Light>& lights,
+                                      const Camera& camera);
 
 /*!
  * \ingroup rendering
@@ -105,7 +107,7 @@ inline BufferType operator&(BufferType a, BufferType b)
  * \ingroup utils
  * \~chinese
  * \brief 自旋锁
- * 
+ *
  * 一个比较高效的自旋锁实现，做了局部自旋和主动退避优化。
  */
 class SpinLock
@@ -125,7 +127,7 @@ private:
  * \ingroup rendering
  * \~chinese
  * \brief 一个最简化的 Frame Buffer 。
- * 
+ *
  * 要渲染一帧，通常至少需要一个 color buffer 用于输出颜色、一个 depth buffer 用于记录深度。
  */
 class FrameBuffer
@@ -161,7 +163,8 @@ public:
      */
     void clear(BufferType buff);
 
-    /*! \~chinese color buffer 的存储元素为 Eigen::Vector3f,范围在 [0,255]，三个分量分别表示 (R,G,B) */
+    /*! \~chinese color buffer 的存储元素为 Eigen::Vector3f,范围在 [0,255]，三个分量分别表示 (R,G,B)
+     */
     std::vector<Eigen::Vector3f> color_buffer;
     /*! \~chinese depth buffer 也可以叫做 z-buffer，用于判断像素点相较于观察点的前后关系 */
     std::vector<float> depth_buffer;
@@ -213,11 +216,11 @@ struct Context
     static std::queue<FragmentShaderPayload> rasterizer_output_queue;
 
     /*! \~chinese 标识顶点着色器是否全部执行完毕。 */
-    static bool vertex_finish;
+    volatile static bool vertex_finish;
     /*! \~chinese 标识三角形是否全部被光栅化。 */
-    static bool rasterizer_finish;
+    volatile static bool rasterizer_finish;
     /*! \~chinese 标识片元着色器是否全部执行完毕。 */
-    static bool fragment_finish;
+    volatile static bool fragment_finish;
 
     /*! \~chinese 渲染使用的 frame buffer 。 */
     static FrameBuffer frame_buffer;

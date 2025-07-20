@@ -23,12 +23,10 @@ using std::tuple;
 
 void Rasterizer::worker_thread()
 {
-    while (true) {
+    while (!Context::rasterizer_finish) {
         VertexShaderPayload payload;
         Triangle triangle;
         {
-            // printf("vertex_finish = %d\n vertex_shader_output_queue.size = %ld\n",
-            // Context::vertex_finish, Context::vertex_shader_output_queue.size());
             if (Context::vertex_finish && Context::vertex_shader_output_queue.empty()) {
                 Context::rasterizer_finish = true;
                 return;

@@ -38,9 +38,9 @@ std::mutex Context::rasterizer_queue_mutex;
 std::queue<VertexShaderPayload> Context::vertex_shader_output_queue;
 std::queue<FragmentShaderPayload> Context::rasterizer_output_queue;
 
-bool Context::vertex_finish     = false;
-bool Context::rasterizer_finish = false;
-bool Context::fragment_finish   = false;
+volatile bool Context::vertex_finish     = false;
+volatile bool Context::rasterizer_finish = false;
+volatile bool Context::fragment_finish   = false;
 
 FrameBuffer Context::frame_buffer(Uniforms::width, Uniforms::height);
 
@@ -134,8 +134,7 @@ void RasterizerRenderer::render(const Scene& scene)
     time_point end_time         = steady_clock::now();
     duration rendering_duration = end_time - begin_time;
 
-    this->logger->info("rendering (single thread) takes {:.6f} seconds",
-                       rendering_duration.count());
+    this->logger->info("rendering takes {:.6f} seconds", rendering_duration.count());
 
     for (long unsigned int i = 0; i < Context::frame_buffer.depth_buffer.size(); i++) {
         rendering_res.push_back(
@@ -158,7 +157,7 @@ void VertexProcessor::input_vertices(const Vector4f& positions, const Vector3f& 
 
 void VertexProcessor::worker_thread()
 {
-    while (true) {
+    while (!Context::vertex_finish) {
         VertexShaderPayload payload;
         {
             if (vertex_queue.empty()) {
@@ -185,7 +184,7 @@ void VertexProcessor::worker_thread()
 
 void FragmentProcessor::worker_thread()
 {
-    while (true) {
+    while (!Context::fragment_finish) {
         FragmentShaderPayload fragment;
         {
             if (Context::rasterizer_finish && Context::rasterizer_output_queue.empty()) {
