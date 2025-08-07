@@ -77,9 +77,15 @@
 
 由于我们人力有限，Dandelion 仅支持 Debug 和 Release 两种构建类型，在不修改 *CMakeLists.txt* 的情况下，你也只能用这两个类型构建 Dandelion。这并不意味着 MinSizeRel 和 RelWithDebInfo 类型一定会构建出错，但我们不会在这两个模式下作任何测试。
 
+无论你是否认真阅读了上面的文档，在开始编译之前，请确保：
+- 系统满足要求
+- 编译器和 CMake 足够新
+- 如果是 Linux，安装了所需的额外依赖
+- 下载了 *dandelion-ray* 和 *dandelion-bvh* 两个静态库
+
 \subsection compilation-windows Windows
 
-由于 Dandelion 的源文件中包含 UTF-8 编码的中文，整个项目需要开启 `/utf-8` 选项编译，而 Windows 文件系统默认的中文编码是 GBK ，这可能导致兼容性问题（表现为“无访问权限”等）。因此，Dandelion 的源代码必须位于全英文路径下。
+由于 Dandelion 的源文件中包含 UTF-8 编码的中文，整个项目需要开启 `/utf-8` 选项编译，而 Windows 文件系统默认的中文编码是 GBK ，这可能导致兼容性问题（表现为“无访问权限”等）。因此，Dandelion 的源代码 **必须位于全英文路径下** 。
 
 打开终端，进入 dandelion 根目录并执行如下命令：
 
@@ -87,19 +93,19 @@
 > New-Item -ItemType "directory" build
 > Set-Location build
 > cmake -S .. -B .
-> cmake --build . --config Debug --target dandelion --parallel 8
+> cmake --build . --config Debug --target dandelion --parallel $env:NUMBER_OF_PROCESSORS
 ```
 
-完成后可以直接运行程序：（必须在 *build* 目录下执行命令，切换到 *Debug* 目录下会导致程序找不到资源文件））
+完成后可以直接运行程序：（必须在 *build* 目录下执行命令，切换到 *Debug* 目录下会导致程序找不到资源文件）
 
 ```powershell
 > .\Debug\dandelion.exe
 ```
 
-MSVC 和 MS Build 是 Multi-config 的构建工具，在调整构建类型时不需要重新配置 CMake 项目，只需修改参数重新编译：
+因为 MSBuild 是 Multi-config 的构建工具，所以调整构建类型时不需要重新配置 CMake 项目，只需修改参数重新编译：
 
 ```powershell
-> cmake --build . --config Release --target dandelion --parallel 8
+> cmake --build . --config Release --target dandelion --parallel $env:NUMBER_OF_PROCESSORS
 > .\Release\dandelion.exe
 ```
 
@@ -113,7 +119,7 @@ MSVC 和 MS Build 是 Multi-config 的构建工具，在调整构建类型时不
 $ mkdir build
 $ cd build
 $ cmake -S .. -B . -DCMAKE_BUILD_TYPE=Debug
-$ cmake --build . --parallel 8
+$ cmake --build . --parallel $(nproc)
 ```
 
 完成后可以直接运行程序：
@@ -126,7 +132,7 @@ GNU Make 是 Single-config 的构建工具，需要重新配置 CMake 项目才�
 
 ```bash
 $ cmake -S .. -B . -DCMAKE_BUILD_TYPE=Release
-$ cmake --build . --parallel 8
+$ cmake --build . --parallel $(nproc)
 ```
 
 调整 `cmake` 命令的参数可以调整编译设置。修改 `--parallel` 参数后接的数字可以调整编译器使用的线程数，建议和物理核心数量等同。
