@@ -1,16 +1,16 @@
 /*!
 
 \~english
-\page startup Start Up
+\page startup Contribute to Dandelion
 
 \~chinese
-\page startup 开始开发
+\page startup 参与贡献
 
-在开始编写代码前，请稍微花一点时间阅读以下的约定和帮助，这将有助于你更加顺利地参与到 Dandelion 的开发中。使用 Dandelion 做实验的同学可以不必遵守这些，直接开始实验。
+在开始编写代码前，请阅读以下的约定和帮助，以便更加顺利地参与到 Dandelion 的开发中。使用 Dandelion 做实验的同学可以不必遵守这些，直接开始实验。
 
 \section standard 项目规范
 
-开发过程中，除实现功能外，也请关注命名、注释（文档）、提交规范这三方面。
+开发过程中，除实现功能外还需要关注命名、注释（文档）、提交规范这三方面。
 
 - 命名
   - 禁止用拼音命名，可以用 [CodeIf](https://unbug.github.io/codelf) 这个工具来查找合适的变量名，实在不方便翻译成英文的直接用中文。
@@ -21,7 +21,7 @@
   - 宏一般用全大写命名。
 - 注释：在写完代码后，请尽量注释你认为其他人不能一眼看懂的类、函数。函数内部关于实现思路的注释没有任何格式规定，而 Doxygen 注释块请遵循这两条：
   - 对类和函数的注释应该是 Qt 风格的 Doxygen 注释块。每处英文注释开头请加上 `\~english` 指令、中文注释开头请加上 `\~chinese` 命令，否则 Doxygen 生成对应语言的文档时内容会不匹配。
-  - 如果时间紧张，可以仅写中文注释；但除非功能特别简单，还请务必写上注释，哪怕只是一个 `\brief`。
+  - 每个类或函数必须有 Doxygen 注释块，如果该类或函数功能特别简单，注释块可以简短。
 - 提交规范
   - 必须包含有意义的提交说明，不能什么都不写或者只写个 update on yyyy-mm-dd 这样无意义的句子。
   - 如果某次本地提交之后发现还需要修改一些细节内容，请尽量将没有特殊意义的修改与之前的提交合并，避免“改正了某个单词拼写”或“多加了一层大括号”成为一次单独的提交。
@@ -86,6 +86,10 @@ void foo()
 
 \section commit 提交更改
 
+\subsection non-member-submission 非组织成员
+
+请在 GitHub 上 Fork XJTU-Graphics/dandelion 项目，修改后提交 Pull Request 。Gitee 仅用作发布镜像，issue 很可能得不到回复，PR 则不会被接受。
+
 \subsection member-submission XJTU-Graphics 组织成员
 
 我们统一在 XJTU-Graphics/dandelion-dev 这个仓库下协作开发。为了减少混乱，请按照如下的流程新增功能或者修复 Bug：
@@ -125,10 +129,6 @@ void foo()
 - 通常不要使用 `merge` 命令，如果遇到严重冲突不知道该怎么解决，请与其他人讨论。
 - 在推送到远程仓库前，保证自己已经 rebase 到了最新的 `main` 分支上。
 
-\subsection non-member-submission 非组织成员
-
-请在 GitHub 上 Fork XJTU-Graphics/dandelion 项目，修改后提交 Pull Request 。Gitee 仅用作发布镜像，issue 很可能得不到回复，PR 则不会被接受。
-
 \section tools 开发工具
 
 \subsection code-format 代码格式
@@ -140,7 +140,7 @@ void foo()
 目前 vim / VS Code / Visual Studio 等开发工具中都有集成 clang-format 的插件，可以直接安装使用；也可以手动在命令行使用
 
 ```bash
-clang-format -style=file -i file
+clang-format -i file
 ```
 
 来格式化 `file` 这个文件。
