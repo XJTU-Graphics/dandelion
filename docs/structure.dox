@@ -2,27 +2,32 @@
 \~chinese
 \page structure 项目结构
 
-按照所实现的功能，Dandelion 的源代码被划分为若干模块（注意，非 C++ 20 引入的原生 module），每个模块的源代码存放于一个子目录中。整个项目的结构如下：
+按照所实现的功能，Dandelion 的源代码被划分为若干功能模块，每个功能模块的源代码存放于一个子目录中。整个项目的结构如下：
 
 ```
 dandelion
-├── CMakeLists.txt
+├── CMakeLists.txt      // 顶层的 CMakeLists，构建 dandelion 可执行文件
 ├── CREDITS
-├── deps        // 所有的依赖库
-│   ├── assimp
-│   └── ...
-├── docs        // 开发者文档源码
+├── CompilerFlags.cmake // 被所有 CMakeLists 共享的编译配置，主要用来处理不同平台的适配和警告
 ├── README.md
-├── resources   // 运行时所需的资源文件，包括图标、字体和 shader 源码
-└── src         // 源代码
-    ├── main.cpp
-    ├── geometry    // 几何处理模块
-    ├── simulation  // 物理模拟模块
-    ├── platform    // 平台相关模块
-    ├── render      // 离线渲染模块
-    ├── scene       // 场景模块
-    ├── ui          // UI 模块
-    └── utils       // 共享工具模块
+├── deps    // 第三方库
+├── docs    // 用于生成开发者文档的 dox 文件
+├── lib     // 用于构建静态库的 CMakeLists
+├── resources       // 一些运行时加载的资源文件
+├── src             // 源代码
+│   ├── geometry    //      几何处理，包括半边网格数据结构和一些几何算法
+│   ├── main.cpp    //      dandelion 的入口
+│   ├── platform    //      平台相关 API 的封装，包括 OpenGL 和原生窗口等
+│   ├── render      //      离线渲染，包括所有渲染器的实现
+│   ├── scene       //      场景表示
+│   ├── simulation  //      物理模拟相关的代码，主要是求解器
+│   ├── ui          //      应用 GUI
+│   └── utils       //      通用工具，包括日志、BVH 等
+└── test            // 单元测试
+    ├── CMakeLists.txt      // 构建单元测试的 CMakeLists
+    ├── basic_tests.cpp     // 测试三维变换
+    ├── geometry_tests.cpp  // 测试几何处理算法
+    └── main.cpp            // 单元测试程序的入口
 ```
 
 点击左侧导航栏上的 *专题* 页面可以显示模块简介，在 *专题* 页面上点击模块名则可以查看模块内的各种定义。
