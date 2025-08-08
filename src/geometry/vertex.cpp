@@ -9,8 +9,8 @@ Vertex::Vertex(size_t vertex_id) : id(vertex_id), halfedge(nullptr), is_new(fals
 
 size_t Vertex::degree() const
 {
-    const Halfedge* h = halfedge;
-    size_t counter    = 0;
+    const Halfedge* h       = halfedge;
+    size_t          counter = 0;
     do {
         const Face* f = h->face;
         if (!(f->is_boundary)) {
@@ -24,8 +24,8 @@ size_t Vertex::degree() const
 Vector3f Vertex::neighborhood_center() const
 {
     const Halfedge* h = halfedge;
-    Vector3f center(0.0f, 0.0f, 0.0f);
-    unsigned int n_neighbors = 0;
+    Vector3f        center(0.0f, 0.0f, 0.0f);
+    unsigned int    n_neighbors = 0;
     do {
         center += h->inv->from->pos;
         ++n_neighbors;
@@ -37,7 +37,7 @@ Vector3f Vertex::neighborhood_center() const
 Vector3f Vertex::normal() const
 {
     Halfedge* h = halfedge;
-    Vector3f normal(0.0f, 0.0f, 0.0f);
+    Vector3f  normal(0.0f, 0.0f, 0.0f);
     do {
         Vector3f area_weighted_normal = h->face->area_weighted_normal();
         normal += area_weighted_normal;

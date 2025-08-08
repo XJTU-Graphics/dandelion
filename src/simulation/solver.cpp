@@ -13,22 +13,22 @@ KineticState derivative(const KineticState& state)
 }
 
 // Function to perform a single Forward Euler step
-KineticState forward_euler_step([[maybe_unused]] const KineticState& previous,
-                                const KineticState& current)
+KineticState
+forward_euler_step([[maybe_unused]] const KineticState& previous, const KineticState& current)
 {
     return current;
 }
 
 // Function to perform a single Runge-Kutta step
-KineticState runge_kutta_step([[maybe_unused]] const KineticState& previous,
-                              const KineticState& current)
+KineticState
+runge_kutta_step([[maybe_unused]] const KineticState& previous, const KineticState& current)
 {
     return current;
 }
 
 // Function to perform a single Backward Euler step
-KineticState backward_euler_step([[maybe_unused]] const KineticState& previous,
-                                 const KineticState& current)
+KineticState
+backward_euler_step([[maybe_unused]] const KineticState& previous, const KineticState& current)
 {
     return current;
 }

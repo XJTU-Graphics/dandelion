@@ -36,6 +36,7 @@ void BVH::build()
     root = recursively_build(primitives);
     return;
 }
+
 // 删除bvh
 void BVH::recursively_delete(BVHNode* node)
 {
@@ -46,6 +47,7 @@ void BVH::recursively_delete(BVHNode* node)
     delete node;
     node = nullptr;
 }
+
 // 统计BVH树建立的节点个数
 size_t BVH::count_nodes(BVHNode* node)
 {
@@ -54,6 +56,7 @@ size_t BVH::count_nodes(BVHNode* node)
     else
         return count_nodes(node->left) + count_nodes(node->right) + 1;
 }
+
 // 递归建立BVH
 BVHNode* BVH::recursively_build(vector<size_t> faces_idx)
 {
@@ -71,9 +74,11 @@ BVHNode* BVH::recursively_build(vector<size_t> faces_idx)
     // recursively_build() & union_AABB(node->left->aabb, node->right->aabb)
     return node;
 }
+
 // 使用BVH求交
-optional<Intersection> BVH::intersect(const Ray& ray, [[maybe_unused]] const GL::Mesh& mesh,
-                                      const Eigen::Matrix4f obj_model)
+optional<Intersection> BVH::intersect(
+    const Ray& ray, [[maybe_unused]] const GL::Mesh& mesh, const Eigen::Matrix4f obj_model
+)
 {
     model = obj_model;
     optional<Intersection> isect;
@@ -84,6 +89,7 @@ optional<Intersection> BVH::intersect(const Ray& ray, [[maybe_unused]] const GL:
     isect = ray_node_intersect(root, ray);
     return isect;
 }
+
 // 发射的射线与当前节点求交，并递归获取最终的求交结果
 optional<Intersection> BVH::ray_node_intersect(BVHNode* node, const Ray& ray) const
 {
@@ -96,9 +102,9 @@ optional<Intersection> BVH::ray_node_intersect(BVHNode* node, const Ray& ray) co
     // The node intersection is performed in the model coordinate system.
     // Therefore, the ray needs to be transformed into the model coordinate system.
     // The intersection attributes returned are all in the model coordinate system.
-    // Therefore, They are need to be converted to the world coordinate system.    
+    // Therefore, They are need to be converted to the world coordinate system.
     // If the model shrinks, the value of t will also change.
     // The change of t can be solved by intersection point changing simultaneously
-            
+
     return isect;
 }

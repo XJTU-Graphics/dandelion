@@ -20,8 +20,8 @@ using std::string;
 using std::unordered_map;
 using std::vector;
 
-HalfedgeMesh::EdgeRecord::EdgeRecord(unordered_map<Vertex*, Matrix4f>& vertex_quadrics, Edge* e)
-    : edge(e)
+HalfedgeMesh::EdgeRecord::EdgeRecord(unordered_map<Vertex*, Matrix4f>& vertex_quadrics, Edge* e) :
+    edge(e)
 {
     (void)vertex_quadrics;
     optimal_pos = Vector3f(0.0f, 0.0f, 0.0f);
@@ -57,8 +57,9 @@ void HalfedgeMesh::loop_subdivide()
     if (check_result.has_value()) {
         return;
     }
-    logger->info("subdivide object {} (ID: {}) with Loop Subdivision strategy", object.name,
-                 object.id);
+    logger->info(
+        "subdivide object {} (ID: {}) with Loop Subdivision strategy", object.name, object.id
+    );
     logger->info("original mesh: {} vertices, {} faces in total", vertices.size, faces.size);
     // Each vertex and edge of the original mesh can be associated with a vertex
     // in the new (subdivided) mesh.
@@ -110,9 +111,9 @@ void HalfedgeMesh::simplify()
     logger->info("simplify object {} (ID: {})", object.name, object.id);
     logger->info("original mesh: {} vertices, {} faces", vertices.size, faces.size);
     unordered_map<Vertex*, Matrix4f> vertex_quadrics;
-    unordered_map<Face*, Matrix4f> face_quadrics;
+    unordered_map<Face*, Matrix4f>   face_quadrics;
     unordered_map<Edge*, EdgeRecord> edge_records;
-    set<EdgeRecord> edge_queue;
+    set<EdgeRecord>                  edge_queue;
 
     // Compute initial quadrics for each face by simply writing the plane equation
     // for the face in homogeneous coordinates. These quadrics should be stored
@@ -144,8 +145,9 @@ void HalfedgeMesh::isotropic_remesh()
     if (check_result.has_value()) {
         return;
     }
-    logger->info("remesh the object {} (ID: {}) with strategy Isotropic Remeshing", object.name,
-                 object.id);
+    logger->info(
+        "remesh the object {} (ID: {}) with strategy Isotropic Remeshing", object.name, object.id
+    );
     logger->info("original mesh: {} vertices, {} faces", vertices.size, faces.size);
     // Compute the mean edge length.
 
@@ -158,7 +160,7 @@ void HalfedgeMesh::isotropic_remesh()
     // -> Now flip each edge if it improves vertex degree
     // -> Finally, apply some tangential smoothing to the vertex positions
     static const size_t iteration_limit = 5;
-    set<Edge*> selected_edges;
+    set<Edge*>          selected_edges;
     for (size_t i = 0; i != iteration_limit; ++i) {
         // Split long edges.
 

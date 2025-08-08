@@ -33,10 +33,11 @@ Group::Group(const string& group_name) : name(group_name)
 bool Group::load(const string& file_path)
 {
     Assimp::Importer importer;
-    const aiScene* scene =
-        importer.ReadFile(file_path, aiProcess_CalcTangentSpace | aiProcess_Triangulate |
-                                         aiProcess_JoinIdenticalVertices |
-                                         aiProcess_GenSmoothNormals | aiProcess_DropNormals);
+    const aiScene*   scene = importer.ReadFile(
+        file_path, aiProcess_CalcTangentSpace | aiProcess_Triangulate
+                       | aiProcess_JoinIdenticalVertices | aiProcess_GenSmoothNormals
+                       | aiProcess_DropNormals
+    );
     if (scene == nullptr)
         return false;
 
@@ -51,18 +52,18 @@ bool Group::load(const string& file_path)
     objects.reserve(n_meshes);
     logger->info("load into group \"{}\"", this->name);
     for (size_t mesh_id = 0; mesh_id < n_meshes; ++mesh_id) {
-        const aiMesh* mesh         = scene->mMeshes[mesh_id];
-        const aiFace* faces        = mesh->mFaces;
-        const aiVector3D* vertices = mesh->mVertices;
-        const aiVector3D* normals  = mesh->mNormals;
-        size_t n_vertices          = mesh->mNumVertices;
-        size_t n_faces             = mesh->mNumFaces;
-        string name(mesh->mName.C_Str());
+        const aiMesh*             mesh       = scene->mMeshes[mesh_id];
+        const aiFace*             faces      = mesh->mFaces;
+        const aiVector3D*         vertices   = mesh->mVertices;
+        const aiVector3D*         normals    = mesh->mNormals;
+        size_t                    n_vertices = mesh->mNumVertices;
+        size_t                    n_faces    = mesh->mNumFaces;
+        string                    name(mesh->mName.C_Str());
         set<pair<size_t, size_t>> edges;
         logger->info("the {}-th mesh has {} faces", mesh_id + 1, n_faces);
 
         objects.push_back(make_unique<Object>(name));
-        Object& object                             = *(objects.back());
+        Object&                    object          = *(objects.back());
         GL::ArrayBuffer<float, 3>& object_vertices = object.mesh.vertices;
         GL::ArrayBuffer<float, 3>& object_normals  = object.mesh.normals;
         GL::ElementArrayBuffer<2>& object_edges    = object.mesh.edges;
@@ -90,18 +91,18 @@ bool Group::load(const string& file_path)
             }
         }
         // Load edges into the object's GL::Mesh.
-        for (const auto& edge : edges) {
+        for (const auto& edge: edges) {
             object_edges.append((unsigned int)edge.first, (unsigned int)edge.second);
         }
         // Load material if it exists.
         static const string default_material_name("DefaultMaterial");
-        const aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
-        string material_name(material->GetName().C_Str());
+        const aiMaterial*   material = scene->mMaterials[mesh->mMaterialIndex];
+        string              material_name(material->GetName().C_Str());
         // Assimp's default material should not be used.
         if (material_name != default_material_name) {
             GL::Material& object_material = object.mesh.material;
-            aiColor3D color;
-            float shininess;
+            aiColor3D     color;
+            float         shininess;
             if (material->Get(AI_MATKEY_COLOR_AMBIENT, color) == AI_SUCCESS) {
                 object_material.ambient = Vector3f(color.r, color.g, color.b);
             }
@@ -115,11 +116,15 @@ bool Group::load(const string& file_path)
                 object_material.shininess = shininess;
             }
         }
-        logger->info("summary: {} vertices, {} edges, {} faces", mesh->mNumVertices, edges.size(),
-                     object.mesh.faces.count());
+        logger->info(
+            "summary: {} vertices, {} edges, {} faces", mesh->mNumVertices, edges.size(),
+            object.mesh.faces.count()
+        );
         object.rebuild_BVH();
-        logger->info("The BVH structure of {} (ID: {}) has {} boxes", object.name, object.id,
-                     object.bvh->count_nodes(object.bvh->root));
+        logger->info(
+            "The BVH structure of {} (ID: {}) has {} boxes", object.name, object.id,
+            object.bvh->count_nodes(object.bvh->root)
+        );
         object.modified = true;
     }
 

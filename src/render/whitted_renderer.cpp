@@ -22,7 +22,7 @@ using time_point = std::chrono::time_point<steady_clock, duration>;
 using Eigen::Vector3f;
 
 // 最大的反射次数
-constexpr int MAX_DEPTH        = 5;
+constexpr int   MAX_DEPTH      = 5;
 constexpr float INFINITY_FLOAT = std::numeric_limits<float>::max();
 // 考虑物体与光线相交点的偏移值
 constexpr float EPSILON = 0.00001f;
@@ -52,9 +52,9 @@ void update_progress(float progress)
     std::cout.flush();
 }
 
-WhittedRenderer::WhittedRenderer(RenderEngine& engine)
-    : width(engine.width), height(engine.height), n_threads(engine.n_threads), use_bvh(false),
-      rendering_res(engine.rendering_res)
+WhittedRenderer::WhittedRenderer(RenderEngine& engine) :
+    width(engine.width), height(engine.height), n_threads(engine.n_threads), use_bvh(false),
+    rendering_res(engine.rendering_res)
 {
     logger = get_logger("Whitted Renderer");
 }
@@ -68,7 +68,7 @@ void WhittedRenderer::render(Scene& scene)
 
     // initialize frame buffer
     std::vector<Vector3f> framebuffer(static_cast<size_t>(width * height));
-    for (auto& v : framebuffer) {
+    for (auto& v: framebuffer) {
         v = Vector3f(0.0f, 0.0f, 0.0f);
     }
 
@@ -76,8 +76,9 @@ void WhittedRenderer::render(Scene& scene)
     for (int j = 0; j < height; j++) {
         for (int i = 0; i < width; i++) {
             // generate ray
-            Ray ray = generate_ray(static_cast<int>(width), static_cast<int>(height), i, j,
-                                   scene.camera, 1.0f);
+            Ray ray = generate_ray(
+                static_cast<int>(width), static_cast<int>(height), i, j, scene.camera, 1.0f
+            );
             // cast ray
             framebuffer[idx++] = cast_ray(ray, scene, 0);
         }
@@ -93,8 +94,8 @@ void WhittedRenderer::render(Scene& scene)
         rendering_res.push_back(color_res[1]);
         rendering_res.push_back(color_res[2]);
     }
-    time_point end_time         = steady_clock::now();
-    duration rendering_duration = end_time - begin_time;
+    time_point end_time           = steady_clock::now();
+    duration   rendering_duration = end_time - begin_time;
     logger->info("rendering takes {:.6f} seconds", rendering_duration.count());
 }
 
@@ -110,17 +111,17 @@ float WhittedRenderer::fresnel(const Vector3f& I, const Vector3f& N, const float
 }
 
 // 如果相交返回Intersection结构体，如果不相交则返回false
-std::optional<std::tuple<Intersection, GL::Material>> WhittedRenderer::trace(const Ray& ray,
-                                                                             const Scene& scene)
+std::optional<std::tuple<Intersection, GL::Material>>
+WhittedRenderer::trace(const Ray& ray, const Scene& scene)
 {
     // this line below is just for compiling and can be deleted
     (void)ray;
 
     std::optional<Intersection> payload;
-    Eigen::Matrix4f M;
-    GL::Material material;
-    for (const auto& group : scene.groups) {
-        for (const auto& object : group->objects) {
+    Eigen::Matrix4f             M;
+    GL::Material                material;
+    for (const auto& group: scene.groups) {
+        for (const auto& object: group->objects) {
 
             // this line below is just for compiling and can be deleted
             (void)object;

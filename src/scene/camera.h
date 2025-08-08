@@ -21,6 +21,7 @@
 struct Camera
 {
 public:
+
     Camera() = delete;
     /*!
      * \~chinese
@@ -31,8 +32,10 @@ public:
      * \param fov_y_degrees 高度方向（Y 方向）的视角大小，单位是角度
      * \param aspect_ratio 宽高比，即视角的宽度 / 高度
      */
-    Camera(const Eigen::Vector3f& position, const Eigen::Vector3f& target, float near_plane = 0.1f,
-           float far_plane = 10.0f, float fov_y_degrees = 45.0f, float aspect_ratio = 1.33f);
+    Camera(
+        const Eigen::Vector3f& position, const Eigen::Vector3f& target, float near_plane = 0.1f,
+        float far_plane = 10.0f, float fov_y_degrees = 45.0f, float aspect_ratio = 1.33f
+    );
     ~Camera() = default;
     /*! \~chinese 获取该相机的 View 矩阵，对应观察变换。 */
     Eigen::Matrix4f view();

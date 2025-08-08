@@ -47,8 +47,9 @@ struct Halfedge : LinkedListNode<Halfedge>
     /*! \~chinese 仅供 `HalfedgeMesh::new_halfedge` 调用，其他任何情况下都不应该直接使用。 */
     Halfedge(std::size_t halfedge_id);
     /*! \~chinese 一次性设置半边的所有属性，各参数含义与同名属性一致。 */
-    void set_neighbors(Halfedge* next, Halfedge* prev, Halfedge* inv, Vertex* from, Edge* edge,
-                       Face* face);
+    void set_neighbors(
+        Halfedge* next, Halfedge* prev, Halfedge* inv, Vertex* from, Edge* edge, Face* face
+    );
     /*!
      * \~chinese
      * \brief 这条半边是否属于一个虚拟的边界面。
@@ -219,6 +220,7 @@ enum class HalfedgeMeshFailure
 class HalfedgeMesh
 {
 public:
+
     /*! \~chinese 指定一个 `GL::Mesh` 作为参照，构造半边网格。 */
     HalfedgeMesh(Object& object);
     /*! \~chinese 全局只有一个半边网格实例，因此不允许复制构造。 */
@@ -324,6 +326,7 @@ public:
     std::optional<HalfedgeMeshFailure> error_info;
 
 private:
+
     /*!
      * \~chinese
      * \brief 在曲面简化算法中用到的工具类。
@@ -343,6 +346,7 @@ private:
         /*! \~chinese 执行曲面简化算法时坍缩这条边的代价（带来的误差）。 */
         float cost;
     };
+
     /*! \~chinese 排序 `EdgeRecord` 所需的比较运算符重载。 */
     friend bool operator<(const EdgeRecord& a, const EdgeRecord& b);
     /*! \~chinese 创建一条半边。 */

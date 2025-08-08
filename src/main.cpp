@@ -18,7 +18,7 @@ int main()
 
     // Log the start time point.
     std::time_t current_timestamp = std::time(nullptr);
-    std::tm *now = std::localtime(&current_timestamp);
+    std::tm*    now               = std::localtime(&current_timestamp);
     spdlog::info("Dandelion 3D, started at {:%Y-%m-%d %H:%M:%S}", *now);
 
     Platform platform;

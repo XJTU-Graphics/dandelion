@@ -13,10 +13,12 @@ using Eigen::Matrix4f;
 using Eigen::Vector3f;
 using Eigen::Vector4f;
 
-Camera::Camera(const Eigen::Vector3f& position, const Eigen::Vector3f& target, float near_plane,
-               float far_plane, float fov_y_degrees, float aspect_ratio)
-    : position(position), target(target), near_plane(near_plane), far_plane(far_plane),
-      fov_y_degrees(fov_y_degrees), aspect_ratio(aspect_ratio)
+Camera::Camera(
+    const Eigen::Vector3f& position, const Eigen::Vector3f& target, float near_plane,
+    float far_plane, float fov_y_degrees, float aspect_ratio
+) :
+    position(position), target(target), near_plane(near_plane), far_plane(far_plane),
+    fov_y_degrees(fov_y_degrees), aspect_ratio(aspect_ratio)
 {
     world_up.x() = 0.0f;
     world_up.y() = 1.0f;

@@ -23,6 +23,7 @@
 class Shader
 {
 public:
+
     Shader(const std::shared_ptr<spdlog::logger>& logger);
     ~Shader();
     bool load_vertex_shader(const char* file_path);
@@ -37,13 +38,14 @@ public:
      * \returns 是否设置成功
      */
     template<typename T>
-    bool set_uniform(const char* name, const T& value) const;
+    bool         set_uniform(const char* name, const T& value) const;
     unsigned int id;
 
 private:
+
     std::shared_ptr<spdlog::logger> logger;
-    std::unique_ptr<char[]> vertex_shader_source;
-    std::unique_ptr<char[]> fragment_shader_source;
+    std::unique_ptr<char[]>         vertex_shader_source;
+    std::unique_ptr<char[]>         fragment_shader_source;
 };
 
 #endif // DANDELION_PLATFORM_SHADER_HPP

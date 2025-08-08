@@ -39,6 +39,7 @@
 class Object
 {
 public:
+
     Object(const std::string& object_name);
     ///@{
     /*! \~chinese 禁止复制物体。 */
@@ -96,8 +97,8 @@ public:
     bool modified;
     ///@{
     /*! \~chinese 物体的位姿属性，用于构造它的模型变换矩阵 (Model Transform Matrix)。 */
-    Eigen::Vector3f center;
-    Eigen::Vector3f scaling;
+    Eigen::Vector3f    center;
+    Eigen::Vector3f    scaling;
     Eigen::Quaternionf rotation;
     ///@}
     /*! \~chinese 物体的速度。 */
@@ -131,6 +132,7 @@ public:
     GL::LineSet BVH_boxes;
 
 private:
+
     void refresh_BVH_boxes(BVHNode* node);
     /*! \~chinese 下一个可用的物体 ID 。 */
     static std::size_t next_available_id;

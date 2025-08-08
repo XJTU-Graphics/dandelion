@@ -17,6 +17,7 @@
 class Triangle
 {
 public:
+
     /*! \~chinese 三角形三个顶点的世界坐标，v0,v1,v2 逆时针顺序排布 */
     Eigen::Vector4f world_pos[3];
     /*! \~chinese 三角形三个顶点的视口坐标，v0,v1,v2 逆时针顺序排布 */

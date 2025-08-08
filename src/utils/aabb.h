@@ -21,13 +21,14 @@
 class AABB
 {
 public:
+
     /*! \~chinese x,y,z最小的点以及最大的点，两个点即能确定一个AABB */
     Eigen::Vector3f p_min, p_max;
 
     AABB();
-    AABB(const Eigen::Vector3f& p) : p_min(p), p_max(p)
-    {
-    }
+
+    AABB(const Eigen::Vector3f& p) : p_min(p), p_max(p) {}
+
     AABB(const Eigen::Vector3f& p1, const Eigen::Vector3f& p2);
 
     /*! \~chinese 返回p_max和p_min的距离，即AABB對角线的长度 */
@@ -53,8 +54,8 @@ public:
      * \param inv_dir (1/dir.x, 1/dir.y, 1/dir.z)，乘法比除法快
      * \param dir_is_neg 判断x,y,z方向是否为负，为负则交换t_min和t_max
      */
-    bool intersect(const Ray& ray, const Eigen::Vector3f& inv_dir,
-                   const std::array<int, 3>& dir_is_neg);
+    bool
+    intersect(const Ray& ray, const Eigen::Vector3f& inv_dir, const std::array<int, 3>& dir_is_neg);
 };
 
 /*! \~chinese

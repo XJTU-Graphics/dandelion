@@ -80,8 +80,8 @@ Ray generate_ray(int width, int height, int x, int y, Camera& camera, float dept
  * \returns 一个 `std::optional` 对象，若相交，则此对象有值 (`has_value() == true`)；不相交则返回
  * `std::nullopt` 。
  */
-std::optional<Intersection> ray_triangle_intersect(const Ray& ray, const GL::Mesh& mesh,
-                                                   size_t index);
+std::optional<Intersection>
+ray_triangle_intersect(const Ray& ray, const GL::Mesh& mesh, size_t index);
 
 /*!
  * \ingroup rendering
@@ -99,7 +99,7 @@ std::optional<Intersection> ray_triangle_intersect(const Ray& ray, const GL::Mes
  * \returns 一个 `std::optional` 对象，若相交，则此对象有值 (`has_value() == true`)；不相交则返回
  * `std::nullopt` 。
  */
-std::optional<Intersection> naive_intersect(const Ray& ray, const GL::Mesh& mesh,
-                                            const Eigen::Matrix4f model);
+std::optional<Intersection>
+naive_intersect(const Ray& ray, const GL::Mesh& mesh, const Eigen::Matrix4f model);
 
 #endif // DANDELION_UTILS_RAY_H

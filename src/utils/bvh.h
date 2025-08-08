@@ -50,6 +50,7 @@ struct SortNode
 class BVH
 {
 public:
+
     /*!
      * \~chinese
      * \brief BVH加速结构的构造函数
@@ -76,8 +77,8 @@ public:
      * \param mesh 当前的mesh
      * \param obj_model 当前mesh所在object的model矩阵
      */
-    std::optional<Intersection> intersect(const Ray& ray, const GL::Mesh& mesh,
-                                          const Eigen::Matrix4f obj_model);
+    std::optional<Intersection>
+    intersect(const Ray& ray, const GL::Mesh& mesh, const Eigen::Matrix4f obj_model);
 
     /*!
      * \~chinese

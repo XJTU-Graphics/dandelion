@@ -142,9 +142,9 @@ inline constexpr T sign(T x)
 template<typename T>
 inline std::tuple<T, T, T> quaternion_to_ZYX_euler(T w, T x, T y, T z)
 {
-    const T test          = x * z + w * y;
+    const T     test      = x * z + w * y;
     constexpr T threshold = static_cast<T>(0.5 - 1e-6);
-    T x_rad, y_rad, z_rad;
+    T           x_rad, y_rad, z_rad;
     if (std::abs(test) > threshold) {
         x_rad = static_cast<T>(0.0);
         y_rad = sign(test) * pi<T>() / static_cast<T>(2.0);

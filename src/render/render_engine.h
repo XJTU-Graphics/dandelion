@@ -44,6 +44,7 @@ enum class RendererType
 class RenderEngine
 {
 public:
+
     RenderEngine();
 
     /*! \~chinese 渲染的结果（以无符号字符型变量进行存储）*/
@@ -81,8 +82,11 @@ public:
 class RasterizerRenderer
 {
 public:
-    RasterizerRenderer(RenderEngine& engine, int num_vertex_threads, int num_rasterizer_threads,
-                       int num_fragment_threads);
+
+    RasterizerRenderer(
+        RenderEngine& engine, int num_vertex_threads, int num_rasterizer_threads,
+        int num_fragment_threads
+    );
 
     /*! \~chinese 光栅化渲染器的渲染调用接口*/
     void render(const Scene& scene);
@@ -91,9 +95,9 @@ public:
     // void render_mt(const Scene& scene);
     float& width;
     float& height;
-    int n_vertex_threads;
-    int n_rasterizer_threads;
-    int n_fragment_threads;
+    int    n_vertex_threads;
+    int    n_rasterizer_threads;
+    int    n_fragment_threads;
 
     // initialize vertex processor
     VertexProcessor vertex_processor;
@@ -107,6 +111,7 @@ public:
     std::vector<unsigned char>& rendering_res;
 
 private:
+
     std::shared_ptr<spdlog::logger> logger;
 };
 
@@ -118,19 +123,21 @@ private:
 class WhittedRenderer
 {
 public:
+
     WhittedRenderer(RenderEngine& engine);
     /*! \~chinese whitted-style渲染器的渲染调用接口 */
     void render(Scene& scene);
     /*! \~chinese 镜面反射的阈值 */
     static constexpr float mirror_threshold = 1000.0f;
-    float& width;
-    float& height;
-    int& n_threads;
+    float&                 width;
+    float&                 height;
+    int&                   n_threads;
     /*! \~chinese 是否使用 BVH 进行加速*/
-    bool use_bvh;
+    bool                        use_bvh;
     std::vector<unsigned char>& rendering_res;
 
 private:
+
     /*!
      * \~chinese
      * \brief 菲涅尔方程根据观察角度计算反射光线的所占百分比
@@ -150,7 +157,7 @@ private:
      * \param scene 当前渲染的场景
      * \param depth 最大反射次数
      */
-    Eigen::Vector3f cast_ray(const Ray& ray, const Scene& scene, int depth);
+    Eigen::Vector3f                 cast_ray(const Ray& ray, const Scene& scene, int depth);
     std::shared_ptr<spdlog::logger> logger;
 };
 

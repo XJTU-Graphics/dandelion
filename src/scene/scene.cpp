@@ -13,7 +13,7 @@
 #include <assimp/scene.h>
 #include <assimp/material.h>
 #ifdef _WIN32
-#include <Windows.h>
+    #include <Windows.h>
 #endif
 #include <glad/glad.h>
 
@@ -25,29 +25,29 @@
 namespace fs = std::filesystem;
 using Eigen::Matrix4f;
 using Eigen::Vector3f;
+using std::chrono::steady_clock;
 using std::make_unique;
 using std::size_t;
 using std::string;
-using std::chrono::steady_clock;
 using time_point = std::chrono::time_point<std::chrono::steady_clock>;
 using duration   = std::chrono::duration<float>;
 using std::chrono::duration_cast;
 using namespace std::chrono_literals;
 
-Scene::Scene()
-    : selected_object(nullptr), camera(Vector3f(5.0f, 5.0f, 5.0f), Vector3f(0.0f, 0.0f, 0.0f)),
-      during_animation(false), arrows("Scene arrows", GL::Mesh::highlight_wireframe_color)
+Scene::Scene() :
+    selected_object(nullptr), camera(Vector3f(5.0f, 5.0f, 5.0f), Vector3f(0.0f, 0.0f, 0.0f)),
+    during_animation(false), arrows("Scene arrows", GL::Mesh::highlight_wireframe_color)
 {
     logger = get_logger("Scene");
 }
 
 void Scene::render_ground(const Shader& shader)
 {
-    static constexpr float far_distance = 1e3;
-    static constexpr float baseline_gap = 1.0f;
-    static bool initialized             = false;
-    static size_t n_baselines           = 1000;
-    static GL::VertexArrayObject baselines;
+    static constexpr float           far_distance = 1e3;
+    static constexpr float           baseline_gap = 1.0f;
+    static bool                      initialized  = false;
+    static size_t                    n_baselines  = 1'000;
+    static GL::VertexArrayObject     baselines;
     static GL::ArrayBuffer<float, 3> vertices(GL_STATIC_DRAW, vertex_position_location);
     static GL::ArrayBuffer<float, 3> colors(GL_STATIC_DRAW, vertex_color_location);
 
@@ -103,10 +103,10 @@ void Scene::render_ground(const Shader& shader)
 
 void Scene::render_camera(const Shader& shader)
 {
-    static GL::VertexArrayObject camera_vao;
+    static GL::VertexArrayObject     camera_vao;
     static GL::ArrayBuffer<float, 3> camera_vertices(GL_DYNAMIC_DRAW, vertex_position_location);
     static GL::ElementArrayBuffer<2> camera_edges(GL_DYNAMIC_DRAW);
-    static bool initialized = false;
+    static bool                      initialized = false;
     if (!initialized) {
         camera_edges.append(0u, 1u);
         camera_edges.append(0u, 2u);
@@ -150,9 +150,9 @@ void Scene::render_camera(const Shader& shader)
 
 void Scene::render_lights(const Shader& shader)
 {
-    static GL::VertexArrayObject light_vao;
+    static GL::VertexArrayObject     light_vao;
     static GL::ArrayBuffer<float, 3> light_vertices(GL_DYNAMIC_DRAW, vertex_position_location);
-    static bool initialized = false;
+    static bool                      initialized = false;
     if (!initialized) {
         light_vertices.append(0.0f, 0.0f, 0.0f);
         light_vertices.append(0.1f, 0.0f, 0.0f);
@@ -174,7 +174,7 @@ void Scene::render_lights(const Shader& shader)
     shader.set_uniform("color_per_vertex", false);
     shader.set_uniform("use_global_color", true);
     shader.set_uniform("global_color", GL::Mesh::default_wireframe_color);
-    for (auto& light : lights) {
+    for (auto& light: lights) {
         Matrix4f model          = Matrix4f::Identity();
         model.block<3, 1>(0, 3) = light.position;
         shader.set_uniform("model", model);
@@ -186,10 +186,10 @@ void Scene::render_lights(const Shader& shader)
 bool Scene::load(const string& file_path)
 {
     fs::path path(file_path);
-    string group_name = path.stem().string();
+    string   group_name = path.stem().string();
     groups.push_back(make_unique<Group>(group_name));
-    Group& group = *(groups.back());
-    bool success = group.load(file_path);
+    Group& group   = *(groups.back());
+    bool   success = group.load(file_path);
     if (!success) {
         logger->warn("fail to load the specified file into current scene");
         groups.erase(groups.end() - 1);
@@ -205,8 +205,8 @@ void Scene::start_simulation()
         return;
     }
     all_objects.clear();
-    for (const auto& group : groups) {
-        for (const auto& object : group->objects) {
+    for (const auto& group: groups) {
+        for (const auto& object: group->objects) {
             object->backup     = {object->center, object->velocity, object->force / object->mass};
             object->prev_state = object->backup;
             all_objects.push_back(object.get());
@@ -226,8 +226,8 @@ void Scene::reset_simulation()
     if (during_animation) {
         stop_simulation();
     }
-    for (auto& group : groups) {
-        for (auto& object : group->objects) {
+    for (auto& group: groups) {
+        for (auto& object: group->objects) {
             object->center   = object->backup.position;
             object->velocity = object->backup.velocity;
         }
@@ -249,12 +249,13 @@ void Scene::render(const Shader& shader, WorkingMode mode)
         halfedge_mesh.reset(nullptr);
         logger->info("re-build BVH for the edited object");
         selected_object->rebuild_BVH();
-        logger->info("The BVH structure of {} (ID: {}) has {} boxes", selected_object->name,
-                     selected_object->id,
-                     selected_object->bvh->count_nodes(selected_object->bvh->root));
+        logger->info(
+            "The BVH structure of {} (ID: {}) has {} boxes", selected_object->name,
+            selected_object->id, selected_object->bvh->count_nodes(selected_object->bvh->root)
+        );
     }
-    for (auto& group : groups) {
-        for (auto& object : group->objects) {
+    for (auto& group: groups) {
+        for (auto& object: group->objects) {
             bool selected = selected_object != nullptr && object.get() == selected_object;
             if (mode == WorkingMode::MODEL && selected && !halfedge_mesh) {
                 logger->debug("construct a halfedge mesh for object {}", object->name);
@@ -283,8 +284,9 @@ void Scene::render(const Shader& shader, WorkingMode mode)
         }
         if (selected_object != nullptr) {
             arrows.clear();
-            arrows.add_arrow(selected_object->center,
-                             selected_object->center + selected_object->velocity);
+            arrows.add_arrow(
+                selected_object->center, selected_object->center + selected_object->velocity
+            );
             arrows.to_gpu();
             glDisable(GL_DEPTH_TEST);
             shader.set_uniform("model", I4f);

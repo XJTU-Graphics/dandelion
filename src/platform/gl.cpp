@@ -48,9 +48,10 @@ void VertexArrayObject::draw(GLenum mode, int first, size_t count)
     glBindVertexArray(0);
 }
 
-Material::Material(const Vector3f& K_ambient, const Vector3f& K_diffuse, const Vector3f& K_specular,
-                   float shininess)
-    : ambient(K_ambient), diffuse(K_diffuse), specular(K_specular), shininess(shininess)
+Material::Material(
+    const Vector3f& K_ambient, const Vector3f& K_diffuse, const Vector3f& K_specular,
+    float shininess
+) : ambient(K_ambient), diffuse(K_diffuse), specular(K_specular), shininess(shininess)
 {
 }
 
@@ -59,10 +60,9 @@ const Vector3f Mesh::default_face_color(RGB_COLOR(255, 255, 255));
 const Vector3f Mesh::highlight_wireframe_color(RGB_COLOR(115, 206, 244));
 const Vector3f Mesh::highlight_face_color(RGB_COLOR(115, 206, 244));
 
-Mesh::Mesh()
-    : vertices(GL_DYNAMIC_DRAW, vertex_position_location),
-      normals(GL_DYNAMIC_DRAW, vertex_normal_location), edges(GL_DYNAMIC_DRAW),
-      faces(GL_DYNAMIC_DRAW)
+Mesh::Mesh() :
+    vertices(GL_DYNAMIC_DRAW, vertex_position_location),
+    normals(GL_DYNAMIC_DRAW, vertex_normal_location), edges(GL_DYNAMIC_DRAW), faces(GL_DYNAMIC_DRAW)
 {
     VAO.bind();
     vertices.bind();
@@ -71,10 +71,10 @@ Mesh::Mesh()
     VAO.release();
 }
 
-Mesh::Mesh(Mesh&& other)
-    : VAO(std::move(other.VAO)), vertices(std::move(other.vertices)),
-      normals(std::move(other.normals)), edges(std::move(other.edges)),
-      faces(std::move(other.faces)), material(std::move(other.material))
+Mesh::Mesh(Mesh&& other) :
+    VAO(std::move(other.VAO)), vertices(std::move(other.vertices)),
+    normals(std::move(other.normals)), edges(std::move(other.edges)), faces(std::move(other.faces)),
+    material(std::move(other.material))
 {
     VAO.bind();
     vertices.bind();
@@ -134,8 +134,10 @@ void Mesh::to_gpu()
     VAO.release();
 }
 
-void Mesh::render(const Shader& shader, unsigned int element_flags, bool face_shading,
-                  const Vector3f& global_color)
+void Mesh::render(
+    const Shader& shader, unsigned int element_flags, bool face_shading,
+    const Vector3f& global_color
+)
 {
     VAO.bind();
     if (element_flags & faces_flag) {
@@ -173,9 +175,9 @@ void Mesh::render(const Shader& shader, unsigned int element_flags, bool face_sh
     VAO.release();
 }
 
-LineSet::LineSet(const string& name, Vector3f color)
-    : line_color(color), vertices(GL_DYNAMIC_DRAW, vertex_position_location),
-      lines(GL_DYNAMIC_DRAW), name(name)
+LineSet::LineSet(const string& name, Vector3f color) :
+    line_color(color), vertices(GL_DYNAMIC_DRAW, vertex_position_location), lines(GL_DYNAMIC_DRAW),
+    name(name)
 {
     VAO.bind();
     vertices.bind();
@@ -186,9 +188,9 @@ LineSet::LineSet(const string& name, Vector3f color)
     VAO.release();
 }
 
-LineSet::LineSet(LineSet&& other)
-    : VAO(std::move(other.VAO)), vertices(std::move(other.vertices)), lines(std::move(other.lines)),
-      name(std::move(other.name))
+LineSet::LineSet(LineSet&& other) :
+    VAO(std::move(other.VAO)), vertices(std::move(other.vertices)), lines(std::move(other.lines)),
+    name(std::move(other.name))
 {
     VAO.bind();
     vertices.bind();
@@ -207,35 +209,36 @@ void LineSet::add_line_segment(const Vector3f& a, const Vector3f& b)
     lines.append(index, index + 1);
 }
 
-constexpr size_t n_arrow_vertices                             = 6;
-const static array<Vector3f, n_arrow_vertices> arrow_vertices = {
+constexpr size_t                               n_arrow_vertices = 6;
+const static array<Vector3f, n_arrow_vertices> arrow_vertices   = {
     Vector3f(0.0f, 0.0f, 0.0f),   Vector3f(1.0f, 0.0f, 0.0f),  Vector3f(0.8f, 0.02f, 0.0f),
-    Vector3f(0.8f, -0.02f, 0.0f), Vector3f(0.8f, 0.0f, 0.02f), Vector3f(0.8f, 0.0f, -0.02f)};
+    Vector3f(0.8f, -0.02f, 0.0f), Vector3f(0.8f, 0.0f, 0.02f), Vector3f(0.8f, 0.0f, -0.02f)
+};
 const static array<size_t, 10> arrow_lines = {0, 1, 1, 2, 1, 3, 1, 4, 1, 5};
-const static Vector3f base_direction(1.0f, 0.0f, 0.0f);
+const static Vector3f          base_direction(1.0f, 0.0f, 0.0f);
 
 void LineSet::add_arrow(const Vector3f& from, const Vector3f& to)
 {
-    const Vector3f direction   = (to - from).normalized();
-    const Quaternionf rotation = Quaternionf::FromTwoVectors(base_direction, direction);
-    const float length         = (to - from).norm();
-    const size_t index_base    = vertices.count();
-    for (const Vector3f& v : arrow_vertices) {
+    const Vector3f    direction  = (to - from).normalized();
+    const Quaternionf rotation   = Quaternionf::FromTwoVectors(base_direction, direction);
+    const float       length     = (to - from).norm();
+    const size_t      index_base = vertices.count();
+    for (const Vector3f& v: arrow_vertices) {
         const Vector3f v_transformed = length * (rotation * v) + from;
         vertices.append(v_transformed.x(), v_transformed.y(), v_transformed.z());
     }
-    for (const size_t index : arrow_lines) {
+    for (const size_t index: arrow_lines) {
         lines.data.push_back((unsigned int)(index_base + index));
     }
 }
 
 void LineSet::update_arrow(size_t index, const Vector3f& from, const Vector3f& to)
 {
-    const Vector3f direction   = (to - from).normalized();
-    const Quaternionf rotation = Quaternionf::FromTwoVectors(base_direction, direction);
-    const float length         = (to - from).norm();
-    size_t i                   = index * n_arrow_vertices;
-    for (const Vector3f& v : arrow_vertices) {
+    const Vector3f    direction = (to - from).normalized();
+    const Quaternionf rotation  = Quaternionf::FromTwoVectors(base_direction, direction);
+    const float       length    = (to - from).norm();
+    size_t            i         = index * n_arrow_vertices;
+    for (const Vector3f& v: arrow_vertices) {
         const Vector3f v_transformed = length * (rotation * v) + from;
         vertices.update(i, v_transformed);
         ++i;
@@ -244,9 +247,9 @@ void LineSet::update_arrow(size_t index, const Vector3f& from, const Vector3f& t
 
 void LineSet::add_AABB(const Eigen::Vector3f& p_min, const Eigen::Vector3f& p_max)
 {
-    const float x[2]              = {p_min.x(), p_max.x()};
-    const float y[2]              = {p_min.y(), p_max.y()};
-    const float z[2]              = {p_min.z(), p_max.z()};
+    const float        x[2]       = {p_min.x(), p_max.x()};
+    const float        y[2]       = {p_min.y(), p_max.y()};
+    const float        z[2]       = {p_min.z(), p_max.z()};
     const unsigned int base_index = static_cast<unsigned int>(vertices.count());
     for (int i = 0; i < 2; ++i) {
         for (int j = 0; j < 2; ++j) {

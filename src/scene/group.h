@@ -26,6 +26,7 @@
 class Group
 {
 public:
+
     /*! \~chinese 创建一个组只需要指定组名，加载模型数据要显式调用 `load` 方法。 */
     Group(const std::string& group_name);
     ///@{
@@ -44,8 +45,9 @@ public:
     std::string name;
 
 private:
+
     /*! \~chinese 下一个可用的组 ID 。 */
-    static std::size_t next_available_id;
+    static std::size_t              next_available_id;
     std::shared_ptr<spdlog::logger> logger;
 };
 

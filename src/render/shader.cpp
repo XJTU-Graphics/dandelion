@@ -3,8 +3,8 @@
 #include <cstdio>
 
 #ifdef _WIN32
-#undef min
-#undef max
+    #undef min
+    #undef max
 #endif
 
 using Eigen::Vector3f;
@@ -24,8 +24,10 @@ VertexShaderPayload vertex_shader(const VertexShaderPayload& payload)
     return output_payload;
 }
 
-Vector3f phong_fragment_shader(const FragmentShaderPayload& payload, const GL::Material& material,
-                               const std::list<Light>& lights, const Camera& camera)
+Vector3f phong_fragment_shader(
+    const FragmentShaderPayload& payload, const GL::Material& material,
+    const std::list<Light>& lights, const Camera& camera
+)
 {
     // these lines below are just for compiling and can be deleted
     (void)payload;

@@ -35,9 +35,11 @@ float sign(Eigen::Vector2f p1, Eigen::Vector2f p2, Eigen::Vector2f p3);
 class Rasterizer
 {
 public:
+
     void worker_thread();
 
 private:
+
     /*!
      * \~chinese
      * \brief 将指定三角形光栅化为片元。
@@ -49,8 +51,8 @@ private:
     /*! \~chinese 判断像素坐标 (x,y) 是否在给定三个顶点的三角形内 */
     static bool inside_triangle(int x, int y, const Eigen::Vector4f* vertices);
     /*! \~chinese 计算像素坐标 (x,y) 在给定三个顶点的三角形内的重心坐标 */
-    static std::tuple<float, float, float> compute_barycentric_2d(float x, float y,
-                                                                  const Eigen::Vector4f* v);
+    static std::tuple<float, float, float>
+    compute_barycentric_2d(float x, float y, const Eigen::Vector4f* v);
     /*!
      * \~chinese
      * \brief 对顶点的任意属性（如world space坐标，法线向量）利用屏幕空间进行插值
@@ -62,10 +64,11 @@ private:
      * \param weight 三个顶点的 w 坐标 (`Vector3f{v[0].w(), v[1].w(), v[2].w()}`)
      * \param Z 1 / (alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
      */
-    static Eigen::Vector3f interpolate(float alpha, float beta, float gamma,
-                                       const Eigen::Vector3f& vert1, const Eigen::Vector3f& vert2,
-                                       const Eigen::Vector3f& vert3, const Eigen::Vector3f& weight,
-                                       const float& Z);
+    static Eigen::Vector3f interpolate(
+        float alpha, float beta, float gamma, const Eigen::Vector3f& vert1,
+        const Eigen::Vector3f& vert2, const Eigen::Vector3f& vert3, const Eigen::Vector3f& weight,
+        const float& Z
+    );
 };
 
 #endif // DANDELION_RENDER_RASTERIZER_H

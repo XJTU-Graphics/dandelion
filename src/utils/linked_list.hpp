@@ -42,10 +42,13 @@ struct LinkedListNode
 template<typename Node>
 class LinkedList
 {
-    static_assert(std::is_base_of_v<LinkedListNode<Node>, Node>,
-                  "Type Node must inherit from LinkedListNode<Node>");
+    static_assert(
+        std::is_base_of_v<LinkedListNode<Node>, Node>,
+        "Type Node must inherit from LinkedListNode<Node>"
+    );
 
 public:
+
     LinkedList();
     ~LinkedList();
     /*! \~chinese 链表头指针（非头节点，数据有意义）。 */

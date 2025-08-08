@@ -30,6 +30,7 @@ template<typename Scalar, int n_dim>
 struct fmt::formatter<Eigen::Matrix<Scalar, n_dim, 1>> : formatter<Scalar>
 {
     static_assert(n_dim > 0, "Dimension of a vector must be positive");
+
     fmt::appender format(const Eigen::Matrix<Scalar, n_dim, 1>& v, format_context& ctx) const
     {
         fmt::appender iter = fmt::format_to(ctx.out(), "(");
@@ -80,7 +81,9 @@ template<typename Scalar, int n_dim>
 struct fmt::formatter<Eigen::Matrix<Scalar, n_dim, n_dim, 0, n_dim, n_dim>> : formatter<Scalar>
 {
     static_assert(n_dim > 0, "Dimension of a square matrix must be positive");
-    fmt::appender format(const Eigen::Matrix<Scalar, n_dim, n_dim, 0, n_dim, n_dim>& m, format_context& ctx) const
+
+    fmt::appender
+    format(const Eigen::Matrix<Scalar, n_dim, n_dim, 0, n_dim, n_dim>& m, format_context& ctx) const
     {
         fmt::appender iter = fmt::format_to(ctx.out(), "\n");
         for (int row = 0; row < n_dim - 1; ++row) {

@@ -10,7 +10,7 @@
 
 // MSVC defines the macro RGB, undefine it.
 #ifdef _WIN32
-#undef RGB
+    #undef RGB
 #endif
 /*!
  * \ingroup utils
@@ -61,8 +61,9 @@ enum class WorkingMode
  * 这个常量数组指定允许拾取物体（直接在屏幕上点击选取物体）的工作模式，
  * 当前为布局模式（用于操纵物体）和物理模拟模式（用于修改物理属性）。
  */
-constexpr WorkingMode picking_enabled_modes[] = {WorkingMode::LAYOUT, WorkingMode::MODEL,
-                                                 WorkingMode::SIMULATE};
+constexpr WorkingMode picking_enabled_modes[] = {
+    WorkingMode::LAYOUT, WorkingMode::MODEL, WorkingMode::SIMULATE
+};
 
 /*!
  * \~chinese
@@ -72,7 +73,7 @@ constexpr WorkingMode picking_enabled_modes[] = {WorkingMode::LAYOUT, WorkingMod
  */
 inline bool check_picking_enabled(WorkingMode mode)
 {
-    for (auto enabled_mode : picking_enabled_modes) {
+    for (auto enabled_mode: picking_enabled_modes) {
         if (mode == enabled_mode) {
             return true;
         }

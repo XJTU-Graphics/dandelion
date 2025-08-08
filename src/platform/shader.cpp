@@ -6,7 +6,7 @@
 
 #include <Eigen/Core>
 #ifdef _WIN32
-#include <Windows.h>
+    #include <Windows.h>
 #endif
 #include <glad/glad.h>
 
@@ -45,7 +45,7 @@ bool Shader::load_vertex_shader(const char* file_path)
     size_t size                   = static_cast<size_t>(fs::file_size(vertex_shader_path));
     vertex_shader_source          = make_unique<char[]>(size + 1);
     std::FILE* vertex_shader_file = fopen(vertex_shader_path.string().c_str(), "r");
-    size_t bytes_read             = fread(vertex_shader_source.get(), size, 1, vertex_shader_file);
+    size_t     bytes_read         = fread(vertex_shader_source.get(), size, 1, vertex_shader_file);
     fclose(vertex_shader_file);
     if (bytes_read == (size_t)0) {
         logger->warn("The vertex shader file is empty!");
@@ -70,7 +70,7 @@ bool Shader::load_fragment_shader(const char* file_path)
     size_t size                     = static_cast<size_t>(fs::file_size(fragment_shader_path));
     fragment_shader_source          = make_unique<char[]>(size + 1);
     std::FILE* fragment_shader_file = fopen(fragment_shader_path.string().c_str(), "r");
-    size_t bytes_read = fread(fragment_shader_source.get(), size, 1, fragment_shader_file);
+    size_t     bytes_read = fread(fragment_shader_source.get(), size, 1, fragment_shader_file);
     fclose(fragment_shader_file);
     if (bytes_read == (size_t)0) {
         logger->warn("The fragment shader file is empty!");
@@ -82,11 +82,11 @@ bool Shader::load_fragment_shader(const char* file_path)
 
 bool Shader::compile()
 {
-    static constexpr unsigned int no_shader = static_cast<unsigned int>(-1);
-    unsigned int vertex_shader = no_shader, fragment_shader = no_shader;
-    int success;
-    unique_ptr<char[]> compile_info = make_unique<char[]>(512);
-    const char* shader_code         = vertex_shader_source.get();
+    static constexpr unsigned int no_shader     = static_cast<unsigned int>(-1);
+    unsigned int                  vertex_shader = no_shader, fragment_shader = no_shader;
+    int                           success;
+    unique_ptr<char[]>            compile_info = make_unique<char[]>(512);
+    const char*                   shader_code  = vertex_shader_source.get();
 
     vertex_shader = glCreateShader(GL_VERTEX_SHADER);
     shader_code   = vertex_shader_source.get();
@@ -107,8 +107,9 @@ bool Shader::compile()
     glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &success);
     if (!success) {
         glGetShaderInfoLog(fragment_shader, 512, nullptr, compile_info.get());
-        logger->warn("Fragment shader {} compilation failed: {}", fragment_shader,
-                     compile_info.get());
+        logger->warn(
+            "Fragment shader {} compilation failed: {}", fragment_shader, compile_info.get()
+        );
         goto end_of_compilation;
     }
     logger->debug("Fragment shader {} compiled successfully.", fragment_shader);

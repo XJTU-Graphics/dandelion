@@ -25,7 +25,7 @@ void Rasterizer::worker_thread()
 {
     while (!Context::rasterizer_finish) {
         VertexShaderPayload payload;
-        Triangle triangle;
+        Triangle            triangle;
         {
             if (Context::vertex_finish && Context::vertex_shader_output_queue.empty()) {
                 Context::rasterizer_finish = true;
@@ -91,14 +91,16 @@ tuple<float, float, float> Rasterizer::compute_barycentric_2d(float x, float y, 
 }
 
 // 对顶点的某一属性插值
-Vector3f Rasterizer::interpolate(float alpha, float beta, float gamma, const Eigen::Vector3f& vert1,
-                                 const Eigen::Vector3f& vert2, const Eigen::Vector3f& vert3,
-                                 const Eigen::Vector3f& weight, const float& Z)
+Vector3f Rasterizer::interpolate(
+    float alpha, float beta, float gamma, const Eigen::Vector3f& vert1,
+    const Eigen::Vector3f& vert2, const Eigen::Vector3f& vert3, const Eigen::Vector3f& weight,
+    const float& Z
+)
 {
     Vector3f interpolated_res;
     for (int i = 0; i < 3; i++) {
-        interpolated_res[i] = alpha * vert1[i] / weight[0] + beta * vert2[i] / weight[1] +
-                              gamma * vert3[i] / weight[2];
+        interpolated_res[i] = alpha * vert1[i] / weight[0] + beta * vert2[i] / weight[1]
+                            + gamma * vert3[i] / weight[2];
     }
     interpolated_res *= Z;
     return interpolated_res;

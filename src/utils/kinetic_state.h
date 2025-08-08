@@ -30,8 +30,10 @@ extern float time_step;
 struct KineticState
 {
     KineticState() = default;
-    KineticState(const Eigen::Vector3f& position, const Eigen::Vector3f& velocity,
-                 const Eigen::Vector3f& acceleration);
+    KineticState(
+        const Eigen::Vector3f& position, const Eigen::Vector3f& velocity,
+        const Eigen::Vector3f& acceleration
+    );
     Eigen::Vector3f position;
     Eigen::Vector3f velocity;
     Eigen::Vector3f acceleration;

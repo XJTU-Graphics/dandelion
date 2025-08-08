@@ -1,5 +1,5 @@
 #ifdef _WIN32
-#include <Windows.h>
+    #include <Windows.h>
 #endif
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -27,7 +27,7 @@ DebugOptions::DebugOptions() : show_picking_ray(false), show_BVH(false)
 
 Menubar::Menubar(DebugOptions& debug_options) : debug_options(debug_options)
 {
-    int width, height, n_channels;
+    int            width, height, n_channels;
     unsigned char* icon_data;
     icon_data = stbi_load("./resources/icons/dandelion_64.png", &width, &height, &n_channels, 4);
     glGenTextures(1, &gl_icon_texture);
@@ -54,7 +54,8 @@ void Menubar::render(Scene& scene)
         if (ImGui::BeginMenu("File")) {
             if (ImGui::MenuItem("Import File as a Group")) {
                 pfd::open_file file_dialog = pfd::open_file(
-                    "Choose a file", ".", {"3D Scene / Object", "*.obj *.fbx *.dae"});
+                    "Choose a file", ".", {"3D Scene / Object", "*.obj *.fbx *.dae"}
+                );
                 vector<string> result = file_dialog.result();
                 if (!result.empty()) {
                     scene.load(result[0].c_str());
@@ -79,8 +80,9 @@ void Menubar::render(Scene& scene)
             ImGui::EndMenu();
         }
         menubar_height = ImGui::GetWindowHeight();
-        ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "FPS: %d",
-                           (int)ImGui::GetIO().Framerate);
+        ImGui::TextColored(
+            ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "FPS: %d", (int)ImGui::GetIO().Framerate
+        );
         ImGui::EndMainMenuBar();
     }
     if (open_debug_options_panel) {

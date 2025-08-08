@@ -34,9 +34,8 @@ Ray generate_ray(int width, int height, int x, int y, Camera& camera, float dept
     (void)depth;
     // these lines above are just for compiling and can be deleted
 
-
     // The ratio between the specified plane (width x height)'s depth and the image plane's depth.
-    
+
     // Transfer the view-space position to world space.
     Vector3f world_pos;
     return {camera.position, (world_pos - camera.position).normalized()};
@@ -50,7 +49,7 @@ optional<Intersection> ray_triangle_intersect(const Ray& ray, const GL::Mesh& me
     (void)index;
     // these lines above are just for compiling and can be deleted
     Intersection result;
-    
+
     if (result.t - infinity < -eps) {
         return result;
     } else {

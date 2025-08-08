@@ -38,6 +38,7 @@
 class Controller
 {
 public:
+
     /*!
      * \~chinese
      * \brief 获取 `Controller` 类的唯一实例。
@@ -119,6 +120,7 @@ public:
     ///@}
 
 private:
+
     /*!
      * \~chinese
      * \brief 选择一个元素。

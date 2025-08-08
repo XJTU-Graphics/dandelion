@@ -39,9 +39,9 @@ struct overloaded : Ts...
 template<class... Ts>
 overloaded(Ts...) -> overloaded<Ts...>;
 
-HalfedgeMesh::HalfedgeMesh(Object& object)
-    : inconsistent_element(monostate()), global_inconsistent(false), object(object),
-      mesh(object.mesh), halfedge_arrows("Halfedge Mesh")
+HalfedgeMesh::HalfedgeMesh(Object& object) :
+    inconsistent_element(monostate()), global_inconsistent(false), object(object),
+    mesh(object.mesh), halfedge_arrows("Halfedge Mesh")
 {
     logger                  = get_logger("Halfedge Mesh");
     const size_t n_vertices = mesh.vertices.count();
@@ -76,7 +76,7 @@ HalfedgeMesh::HalfedgeMesh(Object& object)
         index_to_face.emplace(index, f);
 
         array<size_t, 3> v = mesh.face(index);
-        for (size_t vid : v) {
+        for (size_t vid: v) {
             ++v_degree[vid];
         }
     }
@@ -87,25 +87,30 @@ HalfedgeMesh::HalfedgeMesh(Object& object)
     // will be those that sit along the domain boundary (on boundary, but still
     // inside the mesh).
     for (size_t index = 0; index < n_faces; ++index) {
-        array<size_t, 3> v = mesh.face(index);
+        array<size_t, 3>    v = mesh.face(index);
         array<Halfedge*, 3> face_halfedges;
         // For each pair of vertices, try to create a halfedge.
         for (size_t i = 0; i < 3; ++i) {
-            size_t a                = v[i];
-            size_t b                = v[(i + 1) % 3];
+            size_t               a  = v[i];
+            size_t               b  = v[(i + 1) % 3];
             pair<size_t, size_t> ab = make_pair(a, b);
-            Halfedge* h_ab;
+            Halfedge*            h_ab;
             if (endpoints_to_halfedge.find(ab) != endpoints_to_halfedge.end()) {
                 // If the halfedge has already been created, we have a problem.
                 error_info = HalfedgeMeshFailure::MULTIPLE_ORIENTED_EDGES;
-                logger->warn("found multiple oriented edges connecting vertices ({}, {})", ab.first,
-                             ab.second);
+                logger->warn(
+                    "found multiple oriented edges connecting vertices ({}, {})", ab.first,
+                    ab.second
+                );
                 logger->warn("This means either");
-                logger->warn("1) more than two faces contain this edge (hance the surface is "
-                             "non-manifold), or");
+                logger->warn(
+                    "1) more than two faces contain this edge (hance the surface is "
+                    "non-manifold), or"
+                );
                 logger->warn(
                     "2) there are exactly two faces containing this edge, but they have the same "
-                    "orientation (hence the surface is not consistently oriented");
+                    "orientation (hence the surface is not consistently oriented"
+                );
                 return;
             } else {
                 h_ab                      = new_halfedge();
@@ -143,7 +148,7 @@ HalfedgeMesh::HalfedgeMesh(Object& object)
     // Find vertices on the boundary of mesh, advance its halfedge pointer to a halfedge
     // which is also on the boundary.
     for (size_t vid = 0; vid < n_vertices; ++vid) {
-        Vertex* v   = index_to_vertex[vid];
+        Vertex*   v = index_to_vertex[vid];
         Halfedge* h = v->halfedge;
         do {
             if (h->inv == nullptr) {
@@ -164,10 +169,10 @@ HalfedgeMesh::HalfedgeMesh(Object& object)
             Face* virtual_face = new_face(true);
             // Keep all halfedges of the virtual face representing the boundary loop.
             vector<Halfedge*> boundary_halfedges;
-            Halfedge* i = h;
+            Halfedge*         i = h;
             do {
                 Halfedge* boundary_halfedge = new_halfedge();
-                Edge* e                     = new_edge();
+                Edge*     e                 = new_edge();
                 e->halfedge                 = i;
                 boundary_halfedges.push_back(boundary_halfedge);
                 i->inv                  = boundary_halfedge;
@@ -211,8 +216,8 @@ HalfedgeMesh::HalfedgeMesh(Object& object)
         // Each vertex should be a "fan" of faces, indicating the number of halfedges
         // emanating from the vertex is equal as the number of faces containing the
         // vertex.
-        size_t count = 0;
-        Halfedge* h  = v->halfedge;
+        size_t    count = 0;
+        Halfedge* h     = v->halfedge;
         do {
             if (!(h->face->is_boundary)) {
                 ++count;
@@ -221,9 +226,11 @@ HalfedgeMesh::HalfedgeMesh(Object& object)
         } while (h != v->halfedge);
         if (count != v_degree[vid]) {
             error_info = HalfedgeMeshFailure::NON_MANIFOLD_VERTEX;
-            logger->warn("vertex {} is non-manifold (contained by {} non-boundary faces, but "
-                         "only {} can be accessed via halfedges",
-                         v->id, v_degree[vid], count);
+            logger->warn(
+                "vertex {} is non-manifold (contained by {} non-boundary faces, but "
+                "only {} can be accessed via halfedges",
+                v->id, v_degree[vid], count
+            );
             return;
         }
     }
@@ -281,8 +288,13 @@ void HalfedgeMesh::sync()
             } while (h != face->halfedge);
         };
         visit(
-            overloaded{[]([[maybe_unused]] monostate empty) {}, sync_vertex, sync_edge, sync_face},
-            inconsistent_element);
+            overloaded{
+                []([[maybe_unused]]
+                   monostate empty) {},
+                sync_vertex, sync_edge, sync_face
+            },
+            inconsistent_element
+        );
         return;
     }
 
@@ -290,7 +302,7 @@ void HalfedgeMesh::sync()
     vector<unsigned int>& mesh_faces = mesh.faces.data;
 
     unordered_map<Vertex*, unsigned int> vertex_to_index;
-    unsigned int counter = 0;
+    unsigned int                         counter = 0;
     mesh.clear();
     // Copy the vertices in HalfedgeMesh to GL::Mesh, use area weighted normal
     // as estimation of vertex normal.
@@ -305,7 +317,7 @@ void HalfedgeMesh::sync()
 
         // Traverse all adjacent faces to calculate a weighted average normal.
         Halfedge* h = v->halfedge;
-        Vector3f normal(0.0f, 0.0f, 0.0f);
+        Vector3f  normal(0.0f, 0.0f, 0.0f);
         do {
             Vector3f area_weighted_normal = h->face->area_weighted_normal();
             normal += area_weighted_normal;
@@ -327,7 +339,7 @@ void HalfedgeMesh::sync()
             // not be synced back to the original mesh.
             continue;
         }
-        Halfedge* h = f->halfedge;
+        Halfedge*            h = f->halfedge;
         vector<unsigned int> vertices;
         do {
             mesh_faces.push_back(vertex_to_index[h->from]);
@@ -431,16 +443,16 @@ void HalfedgeMesh::erase(Face* f)
 
 void HalfedgeMesh::clear_erasure_records()
 {
-    for (auto& p : erased_halfedges) {
+    for (auto& p: erased_halfedges) {
         delete p.second;
     }
-    for (auto& p : erased_vertices) {
+    for (auto& p: erased_vertices) {
         delete p.second;
     }
-    for (auto& p : erased_edges) {
+    for (auto& p: erased_edges) {
         delete p.second;
     }
-    for (auto& p : erased_faces) {
+    for (auto& p: erased_faces) {
         delete p.second;
     }
     erased_halfedges.clear();
@@ -461,9 +473,9 @@ optional<HalfedgeMeshFailure> HalfedgeMesh::validate()
     }
 
     unordered_map<Vertex*, set<Halfedge*>> v_accessible;
-    unordered_map<Edge*, set<Halfedge*>> e_accessible;
-    unordered_map<Face*, set<Halfedge*>> f_accessible;
-    set<Halfedge*> permutation_next, permutation_prev;
+    unordered_map<Edge*, set<Halfedge*>>   e_accessible;
+    unordered_map<Face*, set<Halfedge*>>   f_accessible;
+    set<Halfedge*>                         permutation_next, permutation_prev;
 
     // Check valid halfedge permutation
     for (Halfedge* h = halfedges.head; h != nullptr; h = h->next_node) {
@@ -526,8 +538,9 @@ optional<HalfedgeMeshFailure> HalfedgeMesh::validate()
         do {
             accessible.insert(h);
             if (h->from != v) {
-                logger->error("a vertex ({})'s halfedge ({}) does not pointing to that vertex",
-                              v->id, h->id);
+                logger->error(
+                    "a vertex ({})'s halfedge ({}) does not pointing to that vertex", v->id, h->id
+                );
                 return HalfedgeMeshFailure::INVALID_VERTEX_CONNECTIVITY;
             }
             h = h->inv->next;
@@ -550,8 +563,9 @@ optional<HalfedgeMeshFailure> HalfedgeMesh::validate()
         do {
             accessible.insert(h);
             if (h->edge != e) {
-                logger->error("an edge ({})'s halfedge ({}) does not pointing to that edge", e->id,
-                              h->id);
+                logger->error(
+                    "an edge ({})'s halfedge ({}) does not pointing to that edge", e->id, h->id
+                );
                 return HalfedgeMeshFailure::INVALID_EDGE_CONNECTIVITY;
             }
             h = h->inv;
@@ -574,8 +588,9 @@ optional<HalfedgeMeshFailure> HalfedgeMesh::validate()
         do {
             accessible.insert(h);
             if (h->face != f) {
-                logger->error("a face ({})'s halfedge ({}) does not pointing to that face", f->id,
-                              h->id);
+                logger->error(
+                    "a face ({})'s halfedge ({}) does not pointing to that face", f->id, h->id
+                );
                 return HalfedgeMeshFailure::INVALID_FACE_CONNECTIVITY;
             }
             h = h->next;
@@ -608,18 +623,21 @@ optional<HalfedgeMeshFailure> HalfedgeMesh::validate()
         }
         // Check that the halfedge can be accessed via its from, edge and face
         if (v_accessible[h->from].find(h) == v_accessible[h->from].end()) {
-            logger->error("a halfedge ({}) is not accessible from its from ({})", h->id,
-                          h->from->id);
+            logger->error(
+                "a halfedge ({}) is not accessible from its from ({})", h->id, h->from->id
+            );
             return HalfedgeMeshFailure::POOR_HALFEDGE_ACCESSIBILITY;
         }
         if (e_accessible[h->edge].find(h) == e_accessible[h->edge].end()) {
-            logger->error("a halfedge ({}) is not accessible from its edge ({})", h->id,
-                          h->edge->id);
+            logger->error(
+                "a halfedge ({}) is not accessible from its edge ({})", h->id, h->edge->id
+            );
             return HalfedgeMeshFailure::POOR_HALFEDGE_ACCESSIBILITY;
         }
         if (f_accessible[h->face].find(h) == f_accessible[h->face].end()) {
-            logger->error("a halfedge ({}) is not accessible from its face ({})", h->id,
-                          h->face->id);
+            logger->error(
+                "a halfedge ({}) is not accessible from its face ({})", h->id, h->face->id
+            );
             return HalfedgeMeshFailure::POOR_HALFEDGE_ACCESSIBILITY;
         }
     }

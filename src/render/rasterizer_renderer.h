@@ -21,13 +21,15 @@
 class VertexProcessor
 {
 public:
+
     void input_vertices(const Eigen::Vector4f& positions, const Eigen::Vector3f& normals);
     VertexShaderPayload (*vertex_shader_ptr)(const VertexShaderPayload& payload);
     void worker_thread();
 
 private:
+
     std::queue<VertexShaderPayload> vertex_queue;
-    std::mutex queue_mutex;
+    std::mutex                      queue_mutex;
 };
 
 /*!
@@ -38,11 +40,13 @@ private:
 class FragmentProcessor
 {
 public:
+
     void worker_thread();
 
-    Eigen::Vector3f (*fragment_shader_ptr)(const FragmentShaderPayload& payload,
-                                           const GL::Material& material,
-                                           const std::list<Light>& lights, const Camera& camera);
+    Eigen::Vector3f (*fragment_shader_ptr)(
+        const FragmentShaderPayload& payload, const GL::Material& material,
+        const std::list<Light>& lights, const Camera& camera
+    );
 
 private:
 };

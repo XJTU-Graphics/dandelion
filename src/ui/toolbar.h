@@ -31,6 +31,7 @@ constexpr std::size_t MAX_SCENE_NODES = 100;
 class Toolbar
 {
 public:
+
     /*!
      * \~chinese
      * \brief 工具栏持有对工作模式的引用和对选中元素的引用，构造时必须传递。
@@ -53,6 +54,7 @@ public:
     std::function<void()> on_selection_canceled;
 
 private:
+
     /*! \~chinese 将场景层次结构展示为一个树形列表。 */
     void scene_hierarchies(Scene& scene);
     /*! \~chinese 显示标签分别为 x, y, z 的三个 `ImGui::DragFloat` 控件。 */

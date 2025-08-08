@@ -46,8 +46,8 @@ constexpr float ANGLE_UNIT    = 0.2f;
 constexpr float SCALING_UNIT  = 0.1f;
 constexpr float PHYSICS_UNIT  = 0.01f;
 
-Toolbar::Toolbar(WorkingMode& mode, const SelectableType& selected_element)
-    : mode(mode), selected_element(selected_element)
+Toolbar::Toolbar(WorkingMode& mode, const SelectableType& selected_element) :
+    mode(mode), selected_element(selected_element)
 {
     mode = WorkingMode::LAYOUT;
     glGenTextures(1, &gl_rendered_texture);
@@ -81,17 +81,17 @@ void Toolbar::render(Scene& scene)
 void Toolbar::scene_hierarchies(Scene& scene)
 {
     ImGui::SeparatorText("Scene");
-    Object* clicked_object = nullptr;
+    Object*            clicked_object = nullptr;
     ImGuiTreeNodeFlags group_node_flags =
         ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick;
-    ImGuiTreeNodeFlags object_node_flags = ImGuiTreeNodeFlags_SpanAvailWidth |
-                                           ImGuiTreeNodeFlags_Leaf |
-                                           ImGuiTreeNodeFlags_NoTreePushOnOpen;
+    ImGuiTreeNodeFlags object_node_flags = ImGuiTreeNodeFlags_SpanAvailWidth
+                                         | ImGuiTreeNodeFlags_Leaf
+                                         | ImGuiTreeNodeFlags_NoTreePushOnOpen;
     for (size_t i = 0; i < scene.groups.size(); ++i) {
-        const auto& group        = scene.groups[i];
+        const auto&  group       = scene.groups[i];
         const string group_label = fmt::format("{} (ID: {})", group->name, group->id);
         if (ImGui::TreeNodeEx(group_label.c_str(), group_node_flags)) {
-            for (const auto& object : group->objects) {
+            for (const auto& object: group->objects) {
                 ImGuiTreeNodeFlags flags = object_node_flags;
                 if (object.get() == scene.selected_object) {
                     flags |= ImGuiTreeNodeFlags_Selected;
@@ -138,12 +138,16 @@ void Toolbar::material_editor(GL::Material& material)
     ImGui::ColorEdit3("Diffuse", material.diffuse.data(), flags);
     ImGui::SameLine();
     ImGui::ColorEdit3("Specular", material.specular.data(), flags);
-    ImGui::SliderFloat("Shininess", &material.shininess, 0.0f, 1e6f, "%.1f",
-                       ImGuiSliderFlags_AlwaysClamp | ImGuiSliderFlags_Logarithmic);
+    ImGui::SliderFloat(
+        "Shininess", &material.shininess, 0.0f, 1e6f, "%.1f",
+        ImGuiSliderFlags_AlwaysClamp | ImGuiSliderFlags_Logarithmic
+    );
     if (ImGui::IsItemHovered()) {
-        ImGui::SetTooltip("Objects whose shininess > %.1f will be treated as mirrors by the "
-                          "Whitted-Style Ray-Tracer",
-                          WhittedRenderer::mirror_threshold);
+        ImGui::SetTooltip(
+            "Objects whose shininess > %.1f will be treated as mirrors by the "
+            "Whitted-Style Ray-Tracer",
+            WhittedRenderer::mirror_threshold
+        );
     }
 }
 
@@ -177,19 +181,24 @@ void Toolbar::layout_mode(Scene& scene)
             ImGui::Text("Rotation (ZYX Euler)");
             ImGui::PushID("Rotation##");
             ImGui::PushItemWidth(0.3f * ImGui::CalcItemWidth());
-            ImGui::DragFloat("pitch", &x_angle, ANGLE_UNIT, -180.0f, 180.0f, "%.1f deg",
-                             ImGuiSliderFlags_AlwaysClamp);
+            ImGui::DragFloat(
+                "pitch", &x_angle, ANGLE_UNIT, -180.0f, 180.0f, "%.1f deg",
+                ImGuiSliderFlags_AlwaysClamp
+            );
             ImGui::SameLine();
-            ImGui::DragFloat("yaw", &y_angle, ANGLE_UNIT, -90.0f, 90.0f, "%.1f deg",
-                             ImGuiSliderFlags_AlwaysClamp);
+            ImGui::DragFloat(
+                "yaw", &y_angle, ANGLE_UNIT, -90.0f, 90.0f, "%.1f deg", ImGuiSliderFlags_AlwaysClamp
+            );
             ImGui::SameLine();
-            ImGui::DragFloat("roll", &z_angle, ANGLE_UNIT, -180.0f, 180.0f, "%.1f deg",
-                             ImGuiSliderFlags_AlwaysClamp);
+            ImGui::DragFloat(
+                "roll", &z_angle, ANGLE_UNIT, -180.0f, 180.0f, "%.1f deg",
+                ImGuiSliderFlags_AlwaysClamp
+            );
             ImGui::PopItemWidth();
             ImGui::PopID();
-            selected_object->rotation = AngleAxisf(radians(x_angle), Vector3f::UnitX()) *
-                                        AngleAxisf(radians(y_angle), Vector3f::UnitY()) *
-                                        AngleAxisf(radians(z_angle), Vector3f::UnitZ());
+            selected_object->rotation = AngleAxisf(radians(x_angle), Vector3f::UnitX())
+                                      * AngleAxisf(radians(y_angle), Vector3f::UnitY())
+                                      * AngleAxisf(radians(z_angle), Vector3f::UnitZ());
         }
         ImGui::EndTabItem();
     }
@@ -210,7 +219,8 @@ void Toolbar::model_mode(Scene& scene)
             if (halfedge_mesh_failed) {
                 ImGui::TextWrapped(
                     "Failed to build a halfedge mesh for the current"
-                    "object, or the halfedge mesh was broken by some invalid operation");
+                    "object, or the halfedge mesh was broken by some invalid operation"
+                );
             }
             ImGui::Text("No operation available");
             ImGui::EndTabItem();
@@ -297,8 +307,8 @@ void Toolbar::model_mode(Scene& scene)
             // and no modification should take place at the inconsistent state.
             if (!scene.halfedge_mesh->global_inconsistent) {
                 Vector3f delta = center - e->center();
-                Vertex* v1     = e->halfedge->from;
-                Vertex* v2     = e->halfedge->inv->from;
+                Vertex*  v1    = e->halfedge->from;
+                Vertex*  v2    = e->halfedge->inv->from;
                 v1->pos += delta;
                 v2->pos += delta;
             }
@@ -313,8 +323,8 @@ void Toolbar::model_mode(Scene& scene)
             ImGui::PushID("Selected Face##");
             xyz_drag(&center.x(), &center.y(), &center.z(), POSITION_UNIT);
             ImGui::PopID();
-            Vector3f delta = center - f->center();
-            Halfedge* h    = f->halfedge;
+            Vector3f  delta = center - f->center();
+            Halfedge* h     = f->halfedge;
             do {
                 h->from->pos += delta;
                 h = h->next;
@@ -352,8 +362,8 @@ void Toolbar::render_mode(Scene& scene)
         bool always_true         = true;
 
         static RenderEngine render_engine;
-        static bool rendering_ready          = false;
-        static int renderer_index            = 0;
+        static bool         rendering_ready  = false;
+        static int          renderer_index   = 0;
         static RendererType current_renderer = RendererType::RASTERIZER;
 
         ImGui::Combo("Renderer", &renderer_index, renderer_names, 2);
@@ -369,8 +379,9 @@ void Toolbar::render_mode(Scene& scene)
         if (current_renderer == RendererType::WHITTED_STYLE) {
             ImGui::Checkbox("Use BVH for Acceleration", &render_engine.whitted_render->use_bvh);
         }
-        ImGui::ColorEdit3("Background Color", RenderEngine::background_color.data(),
-                          ImGuiColorEditFlags_NoInputs);
+        ImGui::ColorEdit3(
+            "Background Color", RenderEngine::background_color.data(), ImGuiColorEditFlags_NoInputs
+        );
         ImGui::SameLine();
         if (ImGui::Button("Render to Image")) {
             open_rendered_image = true;
@@ -378,12 +389,12 @@ void Toolbar::render_mode(Scene& scene)
         }
 
         ImGui::SeparatorText("Lights");
-        Light* const* result  = get_if<Light*>(&selected_element);
-        Light* selected_light = result != nullptr ? *result : nullptr;
-        size_t index          = 1;
-        for (auto& light : scene.lights) {
+        Light* const* result         = get_if<Light*>(&selected_element);
+        Light*        selected_light = result != nullptr ? *result : nullptr;
+        size_t        index          = 1;
+        for (auto& light: scene.lights) {
             const string light_name = format("Light {}", index);
-            bool selected           = &light == selected_light;
+            bool         selected   = &light == selected_light;
             if (ImGui::Selectable(light_name.c_str(), selected)) {
                 selected_light = &light;
                 on_element_selected(selected_light);
@@ -397,8 +408,10 @@ void Toolbar::render_mode(Scene& scene)
             ImGui::PushID("Selected Light##");
             Vector3f& position = selected_light->position;
             xyz_drag(&position.x(), &position.y(), &position.z(), POSITION_UNIT);
-            ImGui::DragFloat("intensity", &(selected_light->intensity), 0.2f, 1.0f, FLOAT_INF,
-                             "%.1f", ImGuiSliderFlags_AlwaysClamp);
+            ImGui::DragFloat(
+                "intensity", &(selected_light->intensity), 0.2f, 1.0f, FLOAT_INF, "%.1f",
+                ImGuiSliderFlags_AlwaysClamp
+            );
             ImGui::PopID();
         }
 
@@ -419,26 +432,33 @@ void Toolbar::render_mode(Scene& scene)
         ImGui::AlignTextToFramePadding();
         ImGui::BeginGroup();
         ImGui::Text("Aspect Ratio (W/H)");
-        ImGui::SliderFloat("ratio", &(scene.camera.aspect_ratio), 1.0f, 3.0f, "%.1f",
-                           ImGuiSliderFlags_AlwaysClamp);
+        ImGui::SliderFloat(
+            "ratio", &(scene.camera.aspect_ratio), 1.0f, 3.0f, "%.1f", ImGuiSliderFlags_AlwaysClamp
+        );
         ImGui::EndGroup();
         ImGui::SameLine();
         ImGui::BeginGroup();
         ImGui::Text("FOV Y");
-        ImGui::SliderFloat("fov", &(scene.camera.fov_y_degrees), 30.0f, 60.0f, "%.1f deg",
-                           ImGuiSliderFlags_AlwaysClamp);
+        ImGui::SliderFloat(
+            "fov", &(scene.camera.fov_y_degrees), 30.0f, 60.0f, "%.1f deg",
+            ImGuiSliderFlags_AlwaysClamp
+        );
         ImGui::EndGroup();
         ImGui::AlignTextToFramePadding();
         ImGui::BeginGroup();
         ImGui::Text("Near Plane");
-        ImGui::SliderFloat("near", &(scene.camera.near_plane), 0.0001f, scene.camera.far_plane,
-                           "%.4f", ImGuiSliderFlags_AlwaysClamp | ImGuiSliderFlags_Logarithmic);
+        ImGui::SliderFloat(
+            "near", &(scene.camera.near_plane), 0.0001f, scene.camera.far_plane, "%.4f",
+            ImGuiSliderFlags_AlwaysClamp | ImGuiSliderFlags_Logarithmic
+        );
         ImGui::EndGroup();
         ImGui::SameLine();
         ImGui::BeginGroup();
         ImGui::Text("Far Plane");
-        ImGui::SliderFloat("far", &(scene.camera.far_plane), scene.camera.near_plane, 1000.0f,
-                           "%.1f", ImGuiSliderFlags_AlwaysClamp | ImGuiSliderFlags_Logarithmic);
+        ImGui::SliderFloat(
+            "far", &(scene.camera.far_plane), scene.camera.near_plane, 1000.0f, "%.1f",
+            ImGuiSliderFlags_AlwaysClamp | ImGuiSliderFlags_Logarithmic
+        );
         ImGui::EndGroup();
         ImGui::PopItemWidth();
 
@@ -449,38 +469,43 @@ void Toolbar::render_mode(Scene& scene)
             ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar;
         if (ImGui::BeginPopupModal("Rendered Image", &always_true, image_window_flags)) {
             constexpr float image_width = 480.0f;
-            const ImVec2 image_size(image_width, image_width / scene.camera.aspect_ratio);
+            const ImVec2    image_size(image_width, image_width / scene.camera.aspect_ratio);
             render_engine.width  = std::floor(image_size.x);
             render_engine.height = std::floor(image_size.y);
             if (!rendering_ready) {
                 render_engine.render(scene, current_renderer);
                 glBindTexture(GL_TEXTURE_2D, gl_rendered_texture);
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, GLsizei(image_size.x), GLsizei(image_size.y),
-                             0, GL_RGB, GL_UNSIGNED_BYTE, render_engine.rendering_res.data());
+                glTexImage2D(
+                    GL_TEXTURE_2D, 0, GL_RGB, GLsizei(image_size.x), GLsizei(image_size.y), 0,
+                    GL_RGB, GL_UNSIGNED_BYTE, render_engine.rendering_res.data()
+                );
                 glBindTexture(GL_TEXTURE_2D, 0);
                 rendering_ready = true;
             }
 
             // The "Rendered Image" window has a default size, but it can also be resized.
-            const float margin_x = ImGui::GetWindowContentRegionMin().x;
-            const ImVec2 default_window_size(px(image_size.x) + 2.0f * margin_x,
-                                             px(image_size.y) + px(70.0f));
+            const float  margin_x = ImGui::GetWindowContentRegionMin().x;
+            const ImVec2 default_window_size(
+                px(image_size.x) + 2.0f * margin_x, px(image_size.y) + px(70.0f)
+            );
             ImGui::SetWindowSize(default_window_size, ImGuiCond_Once);
             // The displayed image will be resized together.
             const ImVec2 current_window_size = ImGui::GetWindowSize();
-            ImVec2 displayed_size(current_window_size.x - 2.0f * margin_x, 0.0f);
+            ImVec2       displayed_size(current_window_size.x - 2.0f * margin_x, 0.0f);
             displayed_size.y = displayed_size.x / scene.camera.aspect_ratio;
             ImGui::Image((void*)(intptr_t)gl_rendered_texture, displayed_size);
             if (ImGui::Button("Save Image")) {
                 string target_file =
                     pfd::save_file("Save Rendered Image", ".", {"PNG Image", "*.png"}).result();
-                fs::path target_file_path(target_file);
+                fs::path   target_file_path(target_file);
                 const bool folder_exists = fs::exists(target_file_path.parent_path());
                 if (folder_exists) {
-                    stbi_write_png(target_file.c_str(), static_cast<int>(render_engine.width),
-                                   static_cast<int>(render_engine.height), 3,
-                                   render_engine.rendering_res.data(),
-                                   static_cast<int>(render_engine.width) * 3);
+                    stbi_write_png(
+                        target_file.c_str(), static_cast<int>(render_engine.width),
+                        static_cast<int>(render_engine.height), 3,
+                        render_engine.rendering_res.data(),
+                        static_cast<int>(render_engine.width) * 3
+                    );
                     spdlog::info("rendered image saved to {}", target_file);
                 }
             }
@@ -491,8 +516,9 @@ void Toolbar::render_mode(Scene& scene)
     }
 }
 
-const char* solver_names[] = {"Forward Euler", "4-th Runge-Kutta", "Backward Euler",
-                              "Symplectic Euler"};
+const char* solver_names[] = {
+    "Forward Euler", "4-th Runge-Kutta", "Backward Euler", "Symplectic Euler"
+};
 
 void Toolbar::simulate_mode(Scene& scene)
 {
@@ -513,8 +539,9 @@ void Toolbar::simulate_mode(Scene& scene)
         }
         float fps = 1.0f / time_step;
         ImGui::SetNextItemWidth(ImGui::CalcItemWidth() * 0.8f);
-        ImGui::SliderFloat("Simulation FPS", &fps, 5.0f, 60.0f, "%.1f",
-                           ImGuiSliderFlags_AlwaysClamp);
+        ImGui::SliderFloat(
+            "Simulation FPS", &fps, 5.0f, 60.0f, "%.1f", ImGuiSliderFlags_AlwaysClamp
+        );
         time_step = 1.0f / fps;
         ImGui::Checkbox("Use BVH to accererate collision", &Object::BVH_for_collision);
         if (ImGui::Button("Start")) {
@@ -534,8 +561,9 @@ void Toolbar::simulate_mode(Scene& scene)
         if (!scene.check_during_simulation() && selected_object != nullptr) {
             ImGui::SeparatorText("Physical Properties");
             ImGui::Text("Mass");
-            ImGui::DragFloat("mass", &(selected_object->mass), PHYSICS_UNIT, -FLOAT_INF, FLOAT_INF,
-                             "%.2f kg");
+            ImGui::DragFloat(
+                "mass", &(selected_object->mass), PHYSICS_UNIT, -FLOAT_INF, FLOAT_INF, "%.2f kg"
+            );
 
             ImGui::Text("Velocity");
             ImGui::PushID("Velocity##");

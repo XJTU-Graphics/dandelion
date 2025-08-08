@@ -1,7 +1,7 @@
 #include "halfedge.h"
 
-using std::size_t;
 using Eigen::Vector3f;
+using std::size_t;
 
 Edge::Edge(size_t edge_id) : id(edge_id), halfedge(nullptr), is_new(false)
 {

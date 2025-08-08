@@ -9,7 +9,7 @@
 
 #include <Eigen/Core>
 #ifdef _WIN32
-#include <Windows.h>
+    #include <Windows.h>
 #endif
 #include <glad/glad.h>
 
@@ -140,7 +140,7 @@ struct ArrayBuffer
     /*! \~chinese
      * 这个 ArrayBuffer 存储的属性在 vertex shader 中对应的位置。
      */
-    unsigned int layout_location;
+    unsigned int   layout_location;
     std::vector<T> data;
 };
 
@@ -169,9 +169,9 @@ struct ElementArrayBuffer
     void append(Ts... values);
     /*! \~chinese 统计总共有多少个 **基元** （而不是顶点）。 */
     std::size_t count() const;
-    void bind();
-    void release();
-    void to_gpu();
+    void        bind();
+    void        release();
+    void        to_gpu();
 
     unsigned int descriptor;
     unsigned int usage;
@@ -187,10 +187,12 @@ struct ElementArrayBuffer
  */
 struct Material
 {
-    Material(const Eigen::Vector3f& K_ambient  = Eigen::Vector3f(1.0f, 1.0f, 1.0f),
-             const Eigen::Vector3f& K_diffuse  = Eigen::Vector3f(0.5f, 0.5f, 0.5f),
-             const Eigen::Vector3f& K_specular = Eigen::Vector3f(0.0f, 0.0f, 0.0f),
-             float shininess                   = 5.0f);
+    Material(
+        const Eigen::Vector3f& K_ambient  = Eigen::Vector3f(1.0f, 1.0f, 1.0f),
+        const Eigen::Vector3f& K_diffuse  = Eigen::Vector3f(0.5f, 0.5f, 0.5f),
+        const Eigen::Vector3f& K_specular = Eigen::Vector3f(0.0f, 0.0f, 0.0f),
+        float                  shininess  = 5.0f
+    );
     /*! \~chinese 环境光反射系数（颜色）。 */
     Eigen::Vector3f ambient;
     /*! \~chinese 漫反射光反射系数（颜色）。 */
@@ -230,8 +232,8 @@ struct Mesh
     std::array<size_t, 2> edge(size_t index) const;
     /*! \~chinese 读取编号为 index 的面片。 */
     std::array<size_t, 3> face(size_t index) const;
-    void clear();
-    void to_gpu();
+    void                  clear();
+    void                  to_gpu();
     /*!
      * \~chinese
      * \brief 渲染这个 mesh。
@@ -240,21 +242,23 @@ struct Mesh
      * `faces_flag` 中的任意一个或多个
      * \param face_shading 面片是否根据光照和材质进行着色，若否，则统一使用全局颜色。
      */
-    void render(const Shader& shader, unsigned int element_flags, bool face_shading = true,
-                const Eigen::Vector3f& global_color = default_wireframe_color);
+    void render(
+        const Shader& shader, unsigned int element_flags, bool face_shading = true,
+        const Eigen::Vector3f& global_color = default_wireframe_color
+    );
 
     constexpr static unsigned int vertices_flag = 1u;
     constexpr static unsigned int edges_flag    = 1u << 1u;
     constexpr static unsigned int faces_flag    = 1u << 2u;
-    const static Eigen::Vector3f default_wireframe_color;
-    const static Eigen::Vector3f default_face_color;
-    const static Eigen::Vector3f highlight_wireframe_color;
-    const static Eigen::Vector3f highlight_face_color;
-    VertexArrayObject VAO;
-    ArrayBuffer<float, 3> vertices;
-    ArrayBuffer<float, 3> normals;
-    ElementArrayBuffer<2> edges;
-    ElementArrayBuffer<3> faces;
+    const static Eigen::Vector3f  default_wireframe_color;
+    const static Eigen::Vector3f  default_face_color;
+    const static Eigen::Vector3f  highlight_wireframe_color;
+    const static Eigen::Vector3f  highlight_face_color;
+    VertexArrayObject             VAO;
+    ArrayBuffer<float, 3>         vertices;
+    ArrayBuffer<float, 3>         normals;
+    ElementArrayBuffer<2>         edges;
+    ElementArrayBuffer<3>         faces;
     /*! \~chinese 每个 Mesh 只能有一个材质 */
     Material material;
 };
@@ -293,11 +297,11 @@ struct LineSet
     void render(const Shader& shader);
 
     /*! \~chinese 绘制的线条颜色。 */
-    Eigen::Vector3f line_color;
-    VertexArrayObject VAO;
+    Eigen::Vector3f       line_color;
+    VertexArrayObject     VAO;
     ArrayBuffer<float, 3> vertices;
     ElementArrayBuffer<2> lines;
-    std::string name;
+    std::string           name;
 };
 
 /* ---------------------------------------------------------
@@ -328,16 +332,16 @@ constexpr GLenum get_GL_type_enum()
 // ArrayBuffer ---------------------------------------------
 
 template<typename T, std::size_t size>
-ArrayBuffer<T, size>::ArrayBuffer(GLenum buffer_usage, unsigned int layout_location)
-    : usage(buffer_usage), layout_location(layout_location)
+ArrayBuffer<T, size>::ArrayBuffer(GLenum buffer_usage, unsigned int layout_location) :
+    usage(buffer_usage), layout_location(layout_location)
 {
     glGenBuffers(1, &(this->descriptor));
 }
 
 template<typename T, std::size_t size>
-ArrayBuffer<T, size>::ArrayBuffer(ArrayBuffer&& other)
-    : descriptor(other.descriptor), usage(other.usage), layout_location(other.layout_location),
-      data(std::move(other.data))
+ArrayBuffer<T, size>::ArrayBuffer(ArrayBuffer&& other) :
+    descriptor(other.descriptor), usage(other.usage), layout_location(other.layout_location),
+    data(std::move(other.data))
 {
     other.descriptor = 0;
 }
@@ -354,10 +358,14 @@ template<typename T, std::size_t size>
 template<typename... Ts>
 void ArrayBuffer<T, size>::append(Ts... values)
 {
-    static_assert((std::is_same_v<decltype(values), T> && ...),
-                  "ArrayBuffer: all values to be appended must have the same type as T");
-    static_assert(sizeof...(values) == size,
-                  "ArrayBuffer: number of values to be appended must be same as size per vertex");
+    static_assert(
+        (std::is_same_v<decltype(values), T> && ...),
+        "ArrayBuffer: all values to be appended must have the same type as T"
+    );
+    static_assert(
+        sizeof...(values) == size,
+        "ArrayBuffer: number of values to be appended must be same as size per vertex"
+    );
     (this->data.push_back(values), ...);
 }
 
@@ -394,8 +402,9 @@ template<typename T, std::size_t size>
 void ArrayBuffer<T, size>::specify_vertex_attribute()
 {
     GLenum data_type = get_GL_type_enum<T>();
-    glVertexAttribPointer(this->layout_location, size, data_type, GL_FALSE, size * sizeof(T),
-                          (void*)0);
+    glVertexAttribPointer(
+        this->layout_location, size, data_type, GL_FALSE, size * sizeof(T), (void*)0
+    );
     glEnableVertexAttribArray(this->layout_location);
 }
 
@@ -422,8 +431,8 @@ ElementArrayBuffer<size>::ElementArrayBuffer(unsigned int buffer_usage) : usage(
 }
 
 template<std::size_t size>
-ElementArrayBuffer<size>::ElementArrayBuffer(ElementArrayBuffer&& other)
-    : descriptor(other.descriptor), usage(other.usage), data(std::move(other.data))
+ElementArrayBuffer<size>::ElementArrayBuffer(ElementArrayBuffer&& other) :
+    descriptor(other.descriptor), usage(other.usage), data(std::move(other.data))
 {
     other.descriptor = 0;
 }
@@ -446,11 +455,14 @@ template<std::size_t size>
 template<typename... Ts>
 void ElementArrayBuffer<size>::append(Ts... values)
 {
-    static_assert((std::is_same_v<decltype(values), unsigned int> && ...),
-                  "ElementArrayBuffer: all values to be appended must be unsigned int");
+    static_assert(
+        (std::is_same_v<decltype(values), unsigned int> && ...),
+        "ElementArrayBuffer: all values to be appended must be unsigned int"
+    );
     static_assert(
         sizeof...(values) == size,
-        "ElementArrayBuffer: number of values to be appended must be as same as size per vertex");
+        "ElementArrayBuffer: number of values to be appended must be as same as size per vertex"
+    );
     (this->data.push_back(values), ...);
 }
 
@@ -470,8 +482,10 @@ template<std::size_t size>
 void ElementArrayBuffer<size>::to_gpu()
 {
     this->bind();
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * this->data.size(),
-                 this->data.data(), this->usage);
+    glBufferData(
+        GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * this->data.size(), this->data.data(),
+        this->usage
+    );
 }
 
 } // namespace GL

@@ -35,6 +35,7 @@ struct DebugOptions
 class Menubar
 {
 public:
+
     /*! \~chinese 菜单栏持有对调试选项的引用，构造时需要传递。 */
     Menubar(DebugOptions& debug_options);
     ~Menubar();
@@ -44,6 +45,7 @@ public:
     float height() const;
 
 private:
+
     /*! \~chinese 调整全局日志输出级别的菜单。 */
     void logging_levels_menu();
     /*! \~chinese 显示 GUI 操作帮助的弹出窗口。 */

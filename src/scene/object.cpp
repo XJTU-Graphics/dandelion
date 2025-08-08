@@ -4,7 +4,7 @@
 #include <optional>
 
 #ifdef _WIN32
-#include <Windows.h>
+    #include <Windows.h>
 #endif
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -24,15 +24,15 @@ using std::optional;
 using std::string;
 using std::vector;
 
-bool Object::BVH_for_collision   = false;
+bool   Object::BVH_for_collision = false;
 size_t Object::next_available_id = 0;
 std::function<KineticState(const KineticState&, const KineticState&)> Object::step =
     forward_euler_step;
 
-Object::Object(const string& object_name)
-    : name(object_name), center(0.0f, 0.0f, 0.0f), scaling(1.0f, 1.0f, 1.0f),
-      rotation(1.0f, 0.0f, 0.0f, 0.0f), velocity(0.0f, 0.0f, 0.0f), force(0.0f, 0.0f, 0.0f),
-      mass(1.0f), BVH_boxes("BVH", GL::Mesh::highlight_wireframe_color)
+Object::Object(const string& object_name) :
+    name(object_name), center(0.0f, 0.0f, 0.0f), scaling(1.0f, 1.0f, 1.0f),
+    rotation(1.0f, 0.0f, 0.0f, 0.0f), velocity(0.0f, 0.0f, 0.0f), force(0.0f, 0.0f, 0.0f),
+    mass(1.0f), BVH_boxes("BVH", GL::Mesh::highlight_wireframe_color)
 {
     visible  = true;
     modified = false;
@@ -56,7 +56,7 @@ void Object::update(vector<Object*>& all_objects)
     (void)next_state;
     // 将物体的位置移动到下一步状态处，但暂时不要修改物体的速度。
     // 遍历 all_objects，检查该物体在下一步状态的位置处是否会与其他物体发生碰撞。
-    for (auto object : all_objects) {
+    for (auto object: all_objects) {
         (void)object;
 
         // 检测该物体与另一物体是否碰撞的方法是：

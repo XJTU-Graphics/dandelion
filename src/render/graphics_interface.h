@@ -78,9 +78,10 @@ VertexShaderPayload vertex_shader(const VertexShaderPayload& payload);
  * \param lights 当前场景中的所有光源
  * \param camera 离线渲染所用的相机
  */
-Eigen::Vector3f phong_fragment_shader(const FragmentShaderPayload& payload,
-                                      const GL::Material& material, const std::list<Light>& lights,
-                                      const Camera& camera);
+Eigen::Vector3f phong_fragment_shader(
+    const FragmentShaderPayload& payload, const GL::Material& material,
+    const std::list<Light>& lights, const Camera& camera
+);
 
 /*!
  * \ingroup rendering
@@ -113,12 +114,14 @@ inline BufferType operator&(BufferType a, BufferType b)
 class SpinLock
 {
 public:
+
     /*! \~chinese 加锁。 */
     void lock();
     /*! \~chinese 解锁。 */
     void unlock();
 
 private:
+
     /*! \~chinese 内部用于实现锁的原子变量。 */
     std::atomic_flag locked;
 };
@@ -133,6 +136,7 @@ private:
 class FrameBuffer
 {
 public:
+
     /*! \~chinese 初始化一个 frame buffer 。 */
     FrameBuffer(int width, int height);
 
@@ -170,6 +174,7 @@ public:
     std::vector<float> depth_buffer;
 
 private:
+
     /*! \~chinese 用于在深度测试和着色时对相应位置的像素加锁 */
     std::vector<SpinLock> spin_locks;
 };

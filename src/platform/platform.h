@@ -8,7 +8,7 @@
 #include <memory>
 
 #ifdef _WIN32
-#include <Windows.h>
+    #include <Windows.h>
 #endif
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -31,6 +31,7 @@
 class Platform
 {
 public:
+
     /*!
      * \~chinese
      * \brief 初始化 OpenGL Context、创建窗口、初始化 Dear ImGui、创建预览场景用的 shader。
@@ -54,6 +55,7 @@ public:
     void eventloop();
 
 private:
+
     static constexpr float mouse_wheel_threshold = 1e-2f;
     /*! \~chinese 检测显示器 DPI。 */
     double get_dpi() noexcept;
@@ -72,14 +74,14 @@ private:
      */
     void set_opengl_properties() noexcept;
     /*! \~chinese 初始化 Dear ImGui，加载字体、设置缩放和基础样式。 */
-    bool init_ui();
+    bool        init_ui();
     static void on_framebuffer_resized(GLFWwindow* window, GLsizei width, GLsizei height);
 
     std::shared_ptr<spdlog::logger> logger;
-    GLFWwindow* window;
-    int window_width, window_height;
-    double dpi;
-    std::unique_ptr<Shader> shader;
+    GLFWwindow*                     window;
+    int                             window_width, window_height;
+    double                          dpi;
+    std::unique_ptr<Shader>         shader;
 };
 
 #endif

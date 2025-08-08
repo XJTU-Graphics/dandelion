@@ -18,7 +18,7 @@ shared_ptr<spdlog::logger> get_logger(const string& name)
     if (logger != nullptr) {
         return logger;
     }
-    auto console_sink = make_shared<spdlog::sinks::stdout_color_sink_st>();
+    auto                       console_sink = make_shared<spdlog::sinks::stdout_color_sink_st>();
     array<spdlog::sink_ptr, 2> sinks{console_sink, file_sink};
     logger = make_shared<spdlog::logger>(name, sinks.begin(), sinks.end());
     spdlog::initialize_logger(logger);

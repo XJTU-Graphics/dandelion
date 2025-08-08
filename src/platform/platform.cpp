@@ -50,12 +50,15 @@ Platform::Platform()
     logger->info("runtime OpenGL context: {}", (const char*)glGetString(GL_VERSION));
     // Set the window icon.
     GLFWimage icons[3];
-    icons[0].pixels = stbi_load("resources/icons/dandelion_32.png", &icons[0].width,
-                                &icons[0].height, nullptr, 4);
-    icons[1].pixels = stbi_load("resources/icons/dandelion_64.png", &icons[1].width,
-                                &icons[1].height, nullptr, 4);
-    icons[2].pixels = stbi_load("resources/icons/dandelion_512.png", &icons[2].width,
-                                &icons[2].height, nullptr, 4);
+    icons[0].pixels = stbi_load(
+        "resources/icons/dandelion_32.png", &icons[0].width, &icons[0].height, nullptr, 4
+    );
+    icons[1].pixels = stbi_load(
+        "resources/icons/dandelion_64.png", &icons[1].width, &icons[1].height, nullptr, 4
+    );
+    icons[2].pixels = stbi_load(
+        "resources/icons/dandelion_512.png", &icons[2].width, &icons[2].height, nullptr, 4
+    );
     glfwSetWindowIcon(window, 3, icons);
     // 100% size for DPI < 120, 150% for 120 <= DPI < 192, 200% for DPI > 192
     dpi          = get_dpi();
@@ -99,8 +102,9 @@ Platform::~Platform()
 void Platform::eventloop()
 {
     Controller& controller = Controller::controller();
-    controller.on_framebuffer_resized(static_cast<float>(window_width),
-                                      static_cast<float>(window_height));
+    controller.on_framebuffer_resized(
+        static_cast<float>(window_width), static_cast<float>(window_height)
+    );
     while (!glfwWindowShouldClose(window)) {
         glClearColor(RGB_COLOR(54, 54, 54), 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -123,15 +127,17 @@ double Platform::get_dpi() noexcept
     GLFWmonitor* monitor = glfwGetPrimaryMonitor();
     // Get logical screen size measured in screen coordinates
     // See https://www.glfw.org/docs/latest/intro_guide.html#coordinate_systems
-    const GLFWvidmode* video_mode = glfwGetVideoMode(monitor);
-    int logical_width             = video_mode->width;
-    int logical_height            = video_mode->height;
+    const GLFWvidmode* video_mode     = glfwGetVideoMode(monitor);
+    int                logical_width  = video_mode->width;
+    int                logical_height = video_mode->height;
     // Get physical screen size measured in millimeters
     int physical_width, physical_height;
     glfwGetMonitorPhysicalSize(monitor, &physical_width, &physical_height);
     double diagonal = sqrt(squ(physical_width) + squ(physical_height)) / MM_PER_INCH;
-    logger->info("Physical screen size: {}x{} mm, diagonal: {:.2f} in", physical_width,
-                 physical_height, diagonal);
+    logger->info(
+        "Physical screen size: {}x{} mm, diagonal: {:.2f} in", physical_width, physical_height,
+        diagonal
+    );
 
     double dpi = sqrt(squ(logical_width) + squ(logical_height)) / diagonal;
 
@@ -146,13 +152,13 @@ void Platform::resize_window() noexcept
     // Get the primary monitor and its origin position in the virtual
     // screen coordinate system.
     GLFWmonitor* monitor = glfwGetPrimaryMonitor();
-    int screen_left, screen_top;
+    int          screen_left, screen_top;
     glfwGetMonitorPos(monitor, &screen_left, &screen_top);
-    const GLFWvidmode* video_mode = glfwGetVideoMode(monitor);
-    const int screen_width        = video_mode->width;
-    const int screen_height       = video_mode->height;
-    const int x                   = screen_width / 2 - window_width / 2;
-    const int y                   = screen_height / 2 - window_height / 2;
+    const GLFWvidmode* video_mode    = glfwGetVideoMode(monitor);
+    const int          screen_width  = video_mode->width;
+    const int          screen_height = video_mode->height;
+    const int          x             = screen_width / 2 - window_width / 2;
+    const int          y             = screen_height / 2 - window_height / 2;
     // Resize the window according to the monitor's DPI.
     logger->info("screen DPI: {:.2f}, scale factor: {:.1f}", dpi, scale_factor);
     glfwSetWindowSize(window, window_width, window_height);
@@ -199,9 +205,10 @@ bool Platform::init_ui()
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     // Load the Source Han Sans SC font and scale all UI elements by `scale_factor'
     io.Fonts->Clear();
-    ImFont* source_han_sans =
-        io.Fonts->AddFontFromFileTTF("resources/SourceHanSansSC-Regular.otf", 18.0f * scale_factor,
-                                     nullptr, io.Fonts->GetGlyphRangesChineseSimplifiedCommon());
+    ImFont* source_han_sans = io.Fonts->AddFontFromFileTTF(
+        "resources/SourceHanSansSC-Regular.otf", 18.0f * scale_factor, nullptr,
+        io.Fonts->GetGlyphRangesChineseSimplifiedCommon()
+    );
     if (source_han_sans == nullptr) {
         logger->warn("Source Han Sans not found, drop back to the default font");
     }
@@ -214,8 +221,9 @@ bool Platform::init_ui()
     return true;
 }
 
-void Platform::on_framebuffer_resized([[maybe_unused]] GLFWwindow* window, GLsizei width,
-                                      GLsizei height)
+void Platform::on_framebuffer_resized(
+    [[maybe_unused]] GLFWwindow* window, GLsizei width, GLsizei height
+)
 {
     glViewport(0, 0, width, height);
     Controller& controller = Controller::controller();

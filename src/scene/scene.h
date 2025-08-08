@@ -45,6 +45,7 @@
 class Scene
 {
 public:
+
     Scene();
     ///@{
     /*! \~chinese 禁止复制场景。 */
@@ -94,6 +95,7 @@ public:
     std::unique_ptr<HalfedgeMesh> halfedge_mesh;
 
 private:
+
     /*! \~chinese
      * \brief 绘制空间坐标轴和 \f$y=1\f$ 平面上表示地面的网格线。
      *
