@@ -137,13 +137,15 @@ void foo()
 
 为了免去写代码时考虑格式的麻烦，我们使用 clang-format 工具格式化 src 目录下的所有代码。指定格式的 .clang-format 文件已经放置于项目根目录下，请勿随意修改。
 
-目前 vim / VS Code / Visual Studio 等开发工具中都有集成 clang-format 的插件，可以直接安装使用；也可以手动在命令行使用
-
-```bash
-clang-format -i file
+目前 vim / VS Code / Visual Studio 等开发工具中都有集成 clang-format 的插件，可以直接安装使用；我们也编写了用于格式检查的 git pre-commit hook，在项目根目录执行如下命令复制该文件：
+> 注意：在 Windows 平台上，需要用 Git Bash 执行命令。
+```
+cp pre-commit .git/hooks
+chmod +x .git/hooks/pre-commit
 ```
 
-来格式化 `file` 这个文件。
+之后，每次执行 `git commit` 提交时都会自动格式化暂存区的所有 C/C++ 头文件和源文件。
+
 
 \subsection spell-check 拼写检查
 

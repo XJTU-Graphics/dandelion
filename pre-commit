@@ -1,0 +1,71 @@
+#!/bin/bash
+
+# Git pre-commit hook to format C/C++ files with clang-format
+# Only processes .h/.hpp/.c/.cpp files in src directory
+
+# Exit on error
+set -e
+
+# Function to check if clang-format is available
+if ! command -v clang-format &> /dev/null; then
+    echo "Error: clang-format is not installed or not in PATH"
+    echo "Please install clang-format to use this pre-commit hook"
+    exit 1
+fi
+
+# Get list of staged files
+staged_files=$(git diff --cached --name-only --diff-filter=ACM)
+
+# Check if there are any staged files
+if [ -z "$staged_files" ]; then
+    echo "No staged files to format"
+    exit 0
+fi
+
+# Process each staged file
+files_to_format=""
+for file in $staged_files; do
+    # Check if file is in src directory and has C/C++ extension
+    if [[ "$file" =~ ^src/.*\.(h|hpp|c|cpp)$ ]]; then
+        # Check if file exists (might be a new file being added)
+        if [ -f "$file" ]; then
+            files_to_format="$files_to_format $file"
+        fi
+    fi
+done
+
+# Check if there are any files to format
+if [ -z "$files_to_format" ]; then
+    echo "No C/C++ files in src/ directory to format"
+    exit 0
+fi
+
+echo "Formatting C/C++ files with clang-format..."
+
+# Format each file
+format_error=0
+for file in $files_to_format; do
+    echo "Formatting: $file"
+    
+    # Format the file in place
+    if ! clang-format -i "$file"; then
+        echo "Error: Failed to format $file"
+        format_error=1
+        continue
+    fi
+    
+    # Re-add the formatted file to staging area
+    if ! git add "$file"; then
+        echo "Error: Failed to re-add $file to staging area"
+        format_error=1
+    fi
+done
+
+# Exit with appropriate status
+if [ $format_error -ne 0 ]; then
+    echo "Some files failed to format properly"
+    exit 1
+fi
+
+echo "All C/C++ files formatted successfully with clang-format"
+exit 0

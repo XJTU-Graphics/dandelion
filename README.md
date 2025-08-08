@@ -13,6 +13,8 @@ We have Dandelion Development Documents published on both *GitHub Pages* and *Re
 
 The two websites are synchronized automatically, please visit any of them to get more information about Dandelion 3D. We hope the documents will be helpful for extending Dandelion to more graphics labs.
 
+See the [Start Up](https://dandelion-docs.readthedocs.io/zh-cn/latest/da/d2c/startup.html) page if you want to contribute to Dandelion.
+
 ## Channels
 
 There are two channels, the **dev** channel and the **release** channel.
@@ -22,7 +24,6 @@ The dev channel is the full functional version, containing all source code (incl
 The release channel is a public repository (XJTU-Graphics/dandelion) containing the skeleton code for Computer Graphics course of XJTU (Xi'an Jiaotong University). Some of implementations are removed, waiting for students to fill them. If you have found any bug or have any suggestion about Dandelion, please open an issue on the release channel to tell us. Pull requests are welcomed, but not all PRs will be merged. We will decide whether to merge a PR or not by its source code quality and our development plan. Once a PR is merged to the release channel, we will port it to the dev channel.
 
 Please not create any PR providing solution of any lab, such a PR will never be merged and will be deleted once we have noticed it. If your issue benefits Dandelion or your PR is merged, your name (or nick name) will be recorded in the list of contributors. Thanks for all supports, suggestions, tests and our students. Without your help, Dandelion will never be successful.
-
 
 ## Contributors
 
@@ -47,6 +48,8 @@ Dandelion 开发者文档同步托管于 GitHub Pages 和 Read the Docs 两个�
 - https://dandelion-docs.readthedocs.io
 
 请访问上述二者之一来获取详细的文档。无论你想要完成实验还是拓展 Dandelion 的功能，这些文档应该都有所帮助。
+
+如果你想参与 Dandelion 的开发，请先阅读[参与贡献](https://dandelion-docs.readthedocs.io/zh-cn/latest/da/d2c/startup.html)。
 
 ## 频道
 
