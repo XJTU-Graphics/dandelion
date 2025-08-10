@@ -30,6 +30,10 @@ HalfedgeMesh::EdgeRecord::EdgeRecord(unordered_map<Vertex*, Matrix4f>& vertex_qu
 
 bool operator<(const HalfedgeMesh::EdgeRecord& a, const HalfedgeMesh::EdgeRecord& b)
 {
+    if (a.cost == b.cost) {
+        // Sort by edge id if cost are the same
+        return a.edge->id < b.edge->id;
+    }
     return a.cost < b.cost;
 }
 
