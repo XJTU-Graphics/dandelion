@@ -13,7 +13,7 @@ We have Dandelion Development Documents published on both *GitHub Pages* and *Re
 
 The two websites are synchronized automatically, please visit any of them to get more information about Dandelion 3D. We hope the documents will be helpful for extending Dandelion to more graphics labs.
 
-See the [Start Up](https://dandelion-docs.readthedocs.io/zh-cn/latest/da/d2c/startup.html) page if you want to contribute to Dandelion.
+For online students, manual of all labs is available at [Release of XJTU-Graphics/Dandelion-docs](https://github.com/XJTU-Graphics/Dandelion-docs/releases). See the [Start Up](https://dandelion-docs.readthedocs.io/zh-cn/latest/da/d2c/startup.html) page if you want to contribute to Dandelion.
 
 ## Channels
 
@@ -49,7 +49,7 @@ Dandelion 开发者文档同步托管于 GitHub Pages 和 Read the Docs 两个�
 
 请访问上述二者之一来获取详细的文档。无论你想要完成实验还是拓展 Dandelion 的功能，这些文档应该都有所帮助。
 
-如果你想参与 Dandelion 的开发，请先阅读[参与贡献](https://dandelion-docs.readthedocs.io/zh-cn/latest/da/d2c/startup.html)。
+不参与本校课程的同学可以在 [XJTU-Graphics/Dandelion-docs Release](https://github.com/XJTU-Graphics/Dandelion-docs/releases) 获取全部实验手册。如果你想参与 Dandelion 的开发，请先阅读[参与贡献](https://dandelion-docs.readthedocs.io/zh-cn/latest/da/d2c/startup.html)。
 
 ## 频道
 
