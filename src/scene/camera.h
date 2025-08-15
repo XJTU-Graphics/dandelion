@@ -6,6 +6,8 @@
 /*!
  * \ingroup rendering
  * \file scene/camera.h
+ * \~chinese
+ * \brief 包含相机的类，用来表示场景中的相机。
  */
 
 /*!

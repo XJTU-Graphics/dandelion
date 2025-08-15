@@ -10,11 +10,15 @@
 
 /*!
  * \ingroup rendering
+ * \ingroup simulation
  * \file scene/group.h
+ * \~chinese
+ * \brief 包含物体组的类。
  */
 
 /*!
  * \ingroup rendering
+ * \ingroup simulation
  * \~chinese
  * \brief 表示物体组的类。
  *
@@ -27,7 +31,11 @@ class Group
 {
 public:
 
-    /*! \~chinese 创建一个组只需要指定组名，加载模型数据要显式调用 `load` 方法。 */
+    /*!
+     * \~chinese
+     * 创建一个组只需要指定组名，加载模型数据要显式调用 `load` 方法。
+     * \param position 要创建组的组名
+     */
     Group(const std::string& group_name);
     ///@{
     /*! \~chinese 禁止复制组。 */
@@ -35,18 +43,22 @@ public:
     Group(const Group& other) = delete;
     ///@}
     ~Group() = default;
-    /*! \~chinese 被 `Scene::load` 调用，真正加载模型数据的函数。 */
+    /*!
+     * \~chinese
+     * 被 `Scene::load` 调用，真正加载模型数据的函数。
+     * \param file_path 要加载模型的文件路径
+     */
     bool load(const std::string& file_path);
     /*! \~chinese 组中所有的物体。 */
     std::vector<std::unique_ptr<Object>> objects;
-    /*! \~chinese 组的唯一 ID 。 */
+    /*! \~chinese 组的唯一 ID。 */
     std::size_t id;
     /*! \~chinese 组名，来自加载时的文件名。 */
     std::string name;
 
 private:
 
-    /*! \~chinese 下一个可用的组 ID 。 */
+    /*! \~chinese 下一个可用的组 ID。 */
     static std::size_t              next_available_id;
     std::shared_ptr<spdlog::logger> logger;
 };

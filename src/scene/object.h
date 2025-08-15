@@ -21,6 +21,8 @@
  * \file scene/object.h
  * \ingroup rendering
  * \ingroup simulation
+ * \~chinese
+ * \brief 包含物体的类。
  */
 
 /*!
@@ -40,6 +42,15 @@ class Object
 {
 public:
 
+    /*!
+     * \~chinese
+     * \brief 创建一个物体
+     *
+     * 物体刚创建时 mesh 中没有数据，需要创建之后再添加。mesh 数据的加载过程是在
+     * `Group::load` 中完成的
+     *
+     * \param object_name 物体名字
+     */
     Object(const std::string& object_name);
     ///@{
     /*! \~chinese 禁止复制物体。 */
@@ -133,6 +144,12 @@ public:
 
 private:
 
+    /*!
+     * \~chinese
+     * \brief 将新的 BVH 线框添加到 `BVH_boxes` 中
+     *
+     * \param node 初始 BVH 结点，函数会递归更新子结点，将所有 BVH 包围盒都添加为线框
+     */
     void refresh_BVH_boxes(BVHNode* node);
     /*! \~chinese 下一个可用的物体 ID 。 */
     static std::size_t next_available_id;
