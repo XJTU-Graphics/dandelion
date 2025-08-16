@@ -39,7 +39,7 @@
 
 由于 Dandelion 首先是一个实验框架，用于西安交通大学计算机图形学课程教学，我们在 Dandelion 的公开频道上删去了所有实验题目的参考答案。然而物体拾取 (picking) 等功能依赖于射线求交，这部分代码被删去后会造成相当的不便。对此，我们的解决方案是将 *utils* 目录下的 *aabb.cpp*, *bvh.cpp* 和 *ray.cpp* 文件编译成两个静态库 *dandelion-ray* 和 *dandelion-bvh* ，只要在编译时链接它们就可以直接使用我们提供的实现。我们目前编译了这些版本的库：
 
-- Windows: Visual Studio 2022 / Clang / UCRT
+- Windows: Visual Studio 2022 / Clang / GCC
 - Linux: GCC 11 / Clang 14
 - macOS: AppleClang 14.0
 
@@ -57,7 +57,9 @@
   - 推荐使用 Visual Studio 2022、GNU GCC 12+、Clang 15+ ，可以使用最新的稳定版本。
 - CMake 3.14 及以上（推荐使用最新的稳定版本）
 
-在 Windows 平台上，从官方网站下载安装足够新的 Visual Studio 和 CMake 即可；在 Linux 平台上可以用包管理器安装编译器和 CMake；在 macOS 平台上，我们推荐安装 Xcode 命令行工具（不是 Xcode IDE），并使用 Homebrew 安装 CMake。
+在 Windows 平台上，我们推荐从官方网站下载安装足够新的 Visual Studio 和 CMake 即可，但若已有 mingw 或 MSYS2 平台构建软件的经验，也可借助 MSYS2 工具链使用移植版的 Clang 或 GCC 编译；在 Linux 平台上可以用包管理器安装编译器和 CMake；在 macOS 平台上，我们推荐安装 Xcode 命令行工具（不是 Xcode IDE），并使用 Homebrew 安装 CMake。
+
+> Windows MSYS2 平台需要的软件包为 `git toolchain cmake ninja`，其中 `git` 需要用 pacman 安装 cygwin 版本，而其余软件包则可用 `pacboy -S toolchain:p cmake:p ninja:p` 在对应环境安装。
 
 > 基于 Debian 的 Linux 发行版（使用 apt 包管理器）中，所需软件包名是 `build-essential cmake cmake-extras`，其他发行版请自行确定对应的包，亦可选择从源代码编译安装。
 
@@ -71,7 +73,7 @@
 
 \section compilation 编译
 
-由于日志输出是调试实验的重要参考，我们始终推荐从 **终端** 启动 Dandelion。在 Windows 平台上，我们推荐使用 PowerShell 而非 cmd，并推荐使用 Windows Terminal 作为终端模拟器；在 Linux 或 macOS 平台上可以直接使用默认的 shell 和终端模拟器，更熟悉这些工具的话也可以自己挑选。
+由于日志输出是调试实验的重要参考，我们始终推荐从 **终端** 启动 Dandelion。在 Windows 平台上使用 Visual Studio 编译时，我们推荐使用 PowerShell 而非 cmd，并推荐使用 Windows Terminal 作为终端模拟器；在 Windows 平台上使用 MSYS2 环境编译时，则应使用其附带终端；在 Linux 或 macOS 平台上可以直接使用默认的 shell 和终端模拟器，更熟悉这些工具的话也可以自己挑选。
 
 以下的所有说明中，均以“终端”代指终端模拟器而非 shell。不清楚二者区别的话，可以简单认为“终端”就是指能执行命令的窗口。
 
@@ -83,7 +85,7 @@
 - 如果是 Linux，安装了所需的额外依赖
 - 下载了 *dandelion-ray* 和 *dandelion-bvh* 两个静态库
 
-\subsection compilation-windows Windows
+\subsection compilation-windows-vs Windows (Visual Studio)
 
 由于 Dandelion 的源文件中包含 UTF-8 编码的中文，整个项目需要开启 `/utf-8` 选项编译，而 Windows 文件系统默认的中文编码是 GBK ，这可能导致兼容性问题（表现为“无访问权限”等）。因此，Dandelion 的源代码 **必须位于全英文路径下** 。
 
@@ -109,7 +111,11 @@
 > .\Release\dandelion.exe
 ```
 
-如果你希望在 Windows 平台上使用 MinGW 工具链构建，请注意 MinGW 是 Single-config 构建工具，执行命令的方式与 Linux 平台相同。
+\subsection compilation-windows-msys2 Windows (Clang / GCC)
+
+如果你希望在 Windows 平台上使用 MSYS2 移植版 Clang 或 GCC 构建项目，其执行命令的方式与 Linux 平台相同。注意区分 MSYS2 平台的不同环境，当前所支持的环境是 CLANG64 和 UCRT64。
+
+因为我们安装软件包时选择了 ninja 作为 make 的替代品，因此构建时如果需要手动调用 make，请换成 ninja。
 
 \subsection compilation-linux Linux
 

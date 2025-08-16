@@ -21,13 +21,16 @@
 /*!
  * \file scene/scene.h
  * \ingroup rendering
+ * \ingroup simulation
+ * \~chinese
+ * \brief 包含场景的类。
  */
 
 /*!
  * \ingroup rendering
  * \ingroup simulation
  * \~chinese
- * \brief 表示一个包含相机、光源、物体的完整场景。
+ * \brief 表示一个包含相机、光源、物体等对象的完整场景。
  *
  * `Scene` 是一个对象语义的类，它既包含完成图形设计和渲染所需的全部数据，
  * 也具有渲染自身预览效果的功能。当前的设计是：控制器 (Controller) 在 OpenGL
@@ -60,6 +63,8 @@ public:
      * \brief 从指定路径加载模型文件到这个场景中。
      *
      * 这个函数只会根据文件名创建一个物体组，然后调用物体组的 `load` 方法加载文件。
+     *
+     * \param file_path 要加载的模型文件路径
      */
     bool load(const std::string& file_path);
     /*! \~chinese 备份物体当前状态并开始模拟，此后每一帧都会调用所有物体的 `update` 方法。 */
@@ -73,8 +78,12 @@ public:
     /*! \~chinese
      * \brief 绘制整个场景。
      *
-     * `render` 方法是场景对外的绘制接口，不会直接绘制任何内容，只负责调用每个 Object 的 `render`
+     * `render` 方法是场景对外的绘制接口，不会直接绘制任何内容，只负责调用每个 `Object` 的 `render`
      * 方法、`render_camera` 和 `render_lights` 方法。
+     *
+     * \param shader `Shader` 对象的引用，会传给待渲染的每个物体
+     * \param mode 当前工作模式，根据模式的不同，会选择性渲染某些元素。
+     * 例如只有建模模式下，才会渲染半边网格
      */
     void render(const Shader& shader, WorkingMode mode);
 
@@ -101,6 +110,8 @@ private:
      *
      * 这个函数在 \f$x\f$ 和 \f$z\f$ 方向各绘制 1000 条网格线，并分别用红、绿、蓝三色绘制
      * \f$x,y,z\f$ 三轴正半轴。
+     *
+     * \param shader `Shader` 对象的引用
      */
     static void render_ground(const Shader& shader);
     /*! \~chinese
@@ -109,12 +120,16 @@ private:
      * 根据场景对象的相机参数（位置、目标点、远近平面、视角），绘制四棱锥形的相机视锥。
      * 由于近平面通常离相机视点很近，这个函数不会绘制近平面。离线渲染时，
      * 会裁剪掉视锥范围外的所有内容。
+     *
+     * \param shader `Shader` 对象的引用
      */
     void render_camera(const Shader& shader);
     /*! \~chinese
      * \brief 在渲染模式下绘制光源。
      *
-     * 这个函数将场景中每个点光源绘制成六个亮点。
+     * 这个函数将一个点光源表示成一个中心点和六个亮点。
+     *
+     * \param shader `Shader` 对象的引用
      */
     void render_lights(const Shader& shader);
     /*!
