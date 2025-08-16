@@ -18,7 +18,7 @@
  * \brief 一些公用的渲染管线接口。
  */
 
-/*！
+/*!
  * \ingroup rendering
  * \~chinese
  * \brief 顶点着色器的输入和输出单位。
@@ -211,9 +211,9 @@ struct Uniforms
  */
 struct Context
 {
-    /*！\~chinese 保护队列的互斥锁 */
+    /*! \~chinese 保护队列的互斥锁 */
     static std::mutex vertex_queue_mutex;
-    /*！\~chinese 保护队列的互斥锁 */
+    /*! \~chinese 保护队列的互斥锁 */
     static std::mutex rasterizer_queue_mutex;
     /*! \~chinese vertex shader的输出队列 */
     static std::queue<VertexShaderPayload> vertex_shader_output_queue;
