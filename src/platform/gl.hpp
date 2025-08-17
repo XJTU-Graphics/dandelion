@@ -18,10 +18,14 @@
 
 /*!
  * \file platform/gl.hpp
+ * \~chinese
+ * 提供 OpenGL API 的封装和一些向 GPU 传递数据的工具。
  */
 
 /*!
  * \ingroup platform
+ * \~chinese
+ * \brief 所有对 OpenGL 的封装类型和工具函数均在此命名空间中。
  */
 namespace GL {
 
@@ -71,6 +75,7 @@ struct VertexArrayObject
     /*! \~chinese 绘制这个 VAO 记录的所有内容，无需专门绑定和解绑。 */
     void draw(GLenum mode, int first, std::size_t count);
 
+    /*! \~chinese OpenGL VAO 的名字 (name)，是该 VAO 的唯一标识。 */
     unsigned int descriptor;
 };
 
@@ -80,10 +85,10 @@ struct VertexArrayObject
  * \brief 对 OpenGL 数组缓冲 (Array Buffer) 的封装。
  *
  * Array Buffer 通常用于创建顶点缓冲对象 (Vertex Buffer Object, VBO)，用于存储顶点属性。
- * 与 VertexArrayObject 对象不同的是，ArrayBuffer 对象持有数据。如果希望更新一个
- * ArrayBuffer 中的数据，首先应当直接修改它持有的 `std::vector<T>`，然后调用 `to_gpu`
+ * 与 `VertexArrayObject` 对象不同的是，`ArrayBuffer` 对象持有内存数据副本。
+ * 如果希望更新显存中的数据，首先应当直接修改它持有的 `data` 成员，然后调用 `to_gpu`
  * 复制到显存。
- * \tparam T 此缓冲区中存放的数据类型，应当指定为基本数据类型，否则没有实际意义。
+ * \tparam T 此缓冲区中存放的数据类型，应当指定为基本数据类型，否则行为未定义。
  * \tparam size 每个顶点的数据个数，例如 size 是 3 表示缓冲区中每三个数据是一组，
  * 这一组数据属于同一个顶点。
  */
@@ -95,13 +100,15 @@ struct ArrayBuffer
      * \param buffer_usage 绘制 hint 信息，参考 `usage` 属性。
      */
     ArrayBuffer(GLenum buffer_usage, unsigned int layout_location);
-    ArrayBuffer(const ArrayBuffer& other)      = delete;
+    /*! \~chinese 禁止拷贝构造。 */
+    ArrayBuffer(const ArrayBuffer& other) = delete;
+    /*! \~chinese 禁止拷贝赋值。 */
     ArrayBuffer& operator=(ArrayBuffer& other) = delete;
     /*! \~chinese
      * 为满足 MoveInsertable 编写的移动构造函数，参考 `VertexArrayObject` 的移动构造函数。
      */
     ArrayBuffer(ArrayBuffer&& other);
-    /*! \~chinese 调用 glDeleteBuffers 删除 Array Buffer。 */
+    /*! \~chinese 调用 `glDeleteBuffers` 删除 Array Buffer。 */
     ~ArrayBuffer();
     /*! \~chinese
      * 将 `size` 个数据附加到现有数据的末尾。
@@ -110,7 +117,7 @@ struct ArrayBuffer
     void append(Ts... values);
     /*!
      * \~chinese
-     * \brief 更新指定位置的 `size` 个数据。
+     * \brief 更新指定位置的 3 个 `float` 数据，仅限 `T = float` 时使用，否则行为未定义。
      *
      * \param index 要更新的顶点索引
      * \param value 新的值
@@ -124,13 +131,14 @@ struct ArrayBuffer
     void bind();
     /*! \~chinese 解绑 ArrayBuffer。 */
     void release();
-    /*! \~chinese 指定数据格式并使该 location 位置的属性生效。 */
+    /*! \~chinese 指定数据格式并使 `layout_location` 位置的属性生效。 */
     void specify_vertex_attribute();
-    /*! \~chinese 使该 location 位置的属性无效。 */
+    /*! \~chinese 使 `layout_location` 位置的属性失效。 */
     void disable();
-    /*! \~chinese 将数据传送到 GPU，调用前无需绑定。 */
+    /*! \~chinese 将数据传送到 GPU，已经包含了绑定操作，但不包含解绑操作。 */
     void to_gpu();
 
+    /*! \~chinese OpenGL Array Buffer 的名字 (name)，是它的唯一标识。 */
     unsigned int descriptor;
     /*! \~chinese
      * 绘制时的 hint 信息，可以是 `GL_STATIC_DRAW / GL_DYNAMIC_DRAW / GL_STREAM_DRAW`
@@ -140,7 +148,8 @@ struct ArrayBuffer
     /*! \~chinese
      * 这个 ArrayBuffer 存储的属性在 vertex shader 中对应的位置。
      */
-    unsigned int   layout_location;
+    unsigned int layout_location;
+    /*! \~chinese 内存中的数据副本。 */
     std::vector<T> data;
 };
 
@@ -150,32 +159,58 @@ struct ArrayBuffer
  * \brief 对 OpenGL 索引数组缓冲 (Element Array Buffer) 的封装。
  *
  * Element Array Buffer 通常用于创建索引缓冲对象 (Element Buffer Object, EBO)，用于存储顶点索引。
- * EBO 通常保存边或者面对应的顶点索引，从而避免直接存储数据。
- * `ElementArrayBuffer` 对象持有数据。如果希望更新一个 `ElementArrayBuffer`
- * 中的数据，首先应当直接修改它的 `data` 成员，然后调用 `to_gpu` 复制到显存。
+ * EBO 通常保存边或者面对应的顶点索引，从而避免多次存储重复的顶点数据。
+ * `ElementArrayBuffer` 对象持有内存索引数据副本。如果希望更新显存中的数据，
+ * 首先应当直接修改它的 `data` 成员，然后调用 `to_gpu` 复制到显存。
+ *
+ * 遵循 OpenGL 的规范，`ElementArrayBuffer` 只允许使用 `unsigned int` 存储索引，
+ * 不允许指定其他的索引数据类型。
  * \tparam size 每个基元（边或者面）对应的顶点索引个数，例如三角形面的 `size` 是 3。
  */
 template<std::size_t size>
 struct ElementArrayBuffer
 {
+    /*!
+     * \~chinese
+     * \brief 构造一个 EBO 对象。
+     *
+     * \param buffer_usage 该对象的使用方式，可以是 `GL_STATIC_DRAW` / `GL_DYNAMIC_DRAW`
+     * / `GL_STREAM_DRAW` 其中之一。该信息只作为 hint，没有强制力。
+     */
     ElementArrayBuffer(unsigned int buffer_usage);
-    ElementArrayBuffer(const ElementArrayBuffer& other)      = delete;
+    /*! \~chinese 禁止拷贝构造。 */
+    ElementArrayBuffer(const ElementArrayBuffer& other) = delete;
+    /*! \~chinese 禁止拷贝赋值。 */
     ElementArrayBuffer& operator=(ElementArrayBuffer& other) = delete;
     /*! \~chinese 参考 `VertexArrayObject` 的移动构造函数。 */
     ElementArrayBuffer(ElementArrayBuffer&& other);
+    /*!
+     * \~chinese
+     * \brief 调用 `glDeleteBuffers` 销毁该 EBO。
+     */
     ~ElementArrayBuffer();
     /*! \~chinese 将 `size` 个数据附加到末尾。 */
     template<typename... Ts>
     void append(Ts... values);
     /*! \~chinese 统计总共有多少个 **基元** （而不是顶点）。 */
     std::size_t count() const;
-    void        bind();
-    void        release();
-    void        to_gpu();
+    /*! \~chinese 绑定该 EBO。 */
+    void bind();
+    /*! \~chinese 解绑该 EBO。 */
+    void release();
+    /*! \~chinese 将内存数据复制到显存，已包含绑定操作，但不包含解绑操作。 */
+    void to_gpu();
 
+    /*! \~chinese OpenGL EBO 名字 (name)，该对象的唯一标识。 */
     unsigned int descriptor;
+    /*! \~chinese 该 EBO 的使用方式，见构造函数说明。 */
     unsigned int usage;
-    /*! \~chinese 使用 `unsigned int` 而非 `size_t` 的原因是 OpenGL 不接受 `size_t`。 */
+    /*!
+     * \~chinese
+     * \brief 内存中的索引数据副本。
+     *
+     * 使用 `unsigned int` 而非 `size_t` 的原因是 OpenGL 不接受 `size_t`。
+     * */
     std::vector<unsigned int> data;
 };
 
@@ -184,9 +219,20 @@ struct ElementArrayBuffer
  * \ingroup rendering
  * \~chinese
  * \brief 物体材质。
+ *
+ * 该类型实现了一个简单的 Phong 材质模型，包含环境光、漫反射、镜面反射三个颜色向量，
+ * 以及一个光滑度参数。
  */
 struct Material
 {
+    /*!
+     * \~chinese
+     * \brief 构造一个材质对象。
+     * \param K_ambient 环境光系数（颜色）
+     * \param K_diffuse 漫反射系数（颜色）
+     * \param K_specular 镜面反射系数（颜色）
+     * \param shininess 光滑度
+     */
     Material(
         const Eigen::Vector3f& K_ambient  = Eigen::Vector3f(1.0f, 1.0f, 1.0f),
         const Eigen::Vector3f& K_diffuse  = Eigen::Vector3f(0.5f, 0.5f, 0.5f),
@@ -207,8 +253,8 @@ struct Material
  * \~chinese
  * \brief 用于场景预览渲染的 Mesh 类。
  *
- * 这个类为了便于和 OpenGL 交互，不会使用 Eigen
- * 中的各种向量存储顶点坐标、法线和颜色等信息，而是直接持有 VAO、VBO 和 EBO。
+ * 为了便于和 OpenGL 交互，这个类不会使用 Eigen 中的各种向量存储顶点坐标、
+ * 法线和颜色等信息，而是直接持有 VAO、VBO 和 EBO 的封装对象，顶点数据全部被展平。
  *
  * 由于 OpenGL API 只支持绘制三角形，GL::Mesh 存储的面片 (face) 只能是三角形。
  * 四边形乃至任意多边形面片需要先三角化成三角形才能被渲染。
@@ -220,9 +266,11 @@ struct Material
  */
 struct Mesh
 {
+    /*! \~chinese 构造渲染所需的 VAO/VBO/EGO 对象。 */
     Mesh();
     /*! \~chinese 由于 VAO 和 ArrayBuffer 不允许复制构造，Mesh 也不允许复制构造。 */
     Mesh(const Mesh& other) = delete;
+    /*! \~chinese 调用各成员的移动构造。 */
     Mesh(Mesh&& other);
     /*! \~chinese 读取编号为 index 的顶点。 */
     Eigen::Vector3f vertex(size_t index) const;
@@ -232,8 +280,10 @@ struct Mesh
     std::array<size_t, 2> edge(size_t index) const;
     /*! \~chinese 读取编号为 index 的面片。 */
     std::array<size_t, 3> face(size_t index) const;
-    void                  clear();
-    void                  to_gpu();
+    /*! \~chinese 清空内存中的全部数据， **显存不会随之清空** 。 */
+    void clear();
+    /*! \~chinese 调用各成员的 `to_gpu`。 */
+    void to_gpu();
     /*!
      * \~chinese
      * \brief 渲染这个 mesh。
@@ -241,24 +291,33 @@ struct Mesh
      * \param element_flags 指定渲染哪些元素的二进制串，可以是 `vertices_flag` / `edges_flag` /
      * `faces_flag` 中的任意一个或多个
      * \param face_shading 面片是否根据光照和材质进行着色，若否，则统一使用全局颜色。
+     * 通常仅在显示辅助图形时设置，其他情况下使用默认值即可。
+     * \param global_color 要使用的全局颜色，仅当 `face_shading = false` 时有效。
      */
     void render(
         const Shader& shader, unsigned int element_flags, bool face_shading = true,
         const Eigen::Vector3f& global_color = default_wireframe_color
     );
 
+    /*! \~chinese 表示开启顶点渲染。 */
     constexpr static unsigned int vertices_flag = 1u;
-    constexpr static unsigned int edges_flag    = 1u << 1u;
-    constexpr static unsigned int faces_flag    = 1u << 2u;
-    const static Eigen::Vector3f  default_wireframe_color;
-    const static Eigen::Vector3f  default_face_color;
-    const static Eigen::Vector3f  highlight_wireframe_color;
-    const static Eigen::Vector3f  highlight_face_color;
-    VertexArrayObject             VAO;
-    ArrayBuffer<float, 3>         vertices;
-    ArrayBuffer<float, 3>         normals;
-    ElementArrayBuffer<2>         edges;
-    ElementArrayBuffer<3>         faces;
+    /*! \~chinese 表示开启边渲染。 */
+    constexpr static unsigned int edges_flag = 1u << 1u;
+    /*! \~chinese 表示开启面片渲染。 */
+    constexpr static unsigned int faces_flag = 1u << 2u;
+    /*! \~chinese 默认线框颜色，应用于顶点和边。 */
+    const static Eigen::Vector3f default_wireframe_color;
+    /*! \~chinese 默认面片颜色。 */
+    const static Eigen::Vector3f default_face_color;
+    /*! \~chinese 表示高亮状态的线框颜色。 */
+    const static Eigen::Vector3f highlight_wireframe_color;
+    /*! \~chinese 表示高亮状态的面片颜色。 */
+    const static Eigen::Vector3f highlight_face_color;
+    VertexArrayObject            VAO;
+    ArrayBuffer<float, 3>        vertices;
+    ArrayBuffer<float, 3>        normals;
+    ElementArrayBuffer<2>        edges;
+    ElementArrayBuffer<3>        faces;
     /*! \~chinese 每个 Mesh 只能有一个材质 */
     Material material;
 };
@@ -272,9 +331,17 @@ struct Mesh
  */
 struct LineSet
 {
+    /*!
+     * \~chinese
+     * \brief 构造一个 LineSet 对象以绘制线条。
+     * \param name 该对象的名称。因为 `LineSet` 对象不像 `Mesh` 一样从属于某个物体，
+     * 所以它需要有自己的名称以便在输出日志时进行检查。
+     * \param color 线条颜色。
+     */
     LineSet(const std::string& name, Eigen::Vector3f color = GL::Mesh::default_wireframe_color);
     /*! \~chinese 由于 VAO 和 ArrayBuffer 不允许复制构造，LineSet 也不允许复制构造。 */
     LineSet(const LineSet& other) = delete;
+    /*! \~chinese 调用各成员的移动构造。 */
     LineSet(LineSet&& other);
     /*! \~chinese 加入一条从 a 到 b 的线段。 */
     void add_line_segment(const Eigen::Vector3f& a, const Eigen::Vector3f& b);
@@ -282,7 +349,7 @@ struct LineSet
     void add_arrow(const Eigen::Vector3f& from, const Eigen::Vector3f& to);
     /*! \~chinese 更新索引为 `index` 的箭头，仅当该 `LineSet` 内全部是箭头时才是安全的。 */
     void update_arrow(size_t index, const Eigen::Vector3f& from, const Eigen::Vector3f& to);
-    /*! \~chinese 加入一个轴对齐包围盒 (Axis-Aligned Bouding Box, AABB) 。 */
+    /*! \~chinese 加入一个轴对齐包围盒 (Axis-Aligned Bounding Box, AABB) 。 */
     void add_AABB(const Eigen::Vector3f& p_min, const Eigen::Vector3f& p_max);
     /*! \~chinese 清空所有元素，但只影响内存，不会同步到显存。 */
     void clear();

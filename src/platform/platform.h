@@ -26,7 +26,7 @@
  * dependent parameters.
  *
  * \~chinese
- * \brief 这个类管理平台相关的窗口和配置信息。
+ * \brief 这个类管理平台相关的窗口、配置信息以及应用启动的入口和事件循环。
  */
 class Platform
 {
@@ -44,6 +44,7 @@ public:
      * 最后，构造函数编译、链接渲染预览场景的 shader。
      */
     Platform();
+    /*! \~chinese 执行 OpenGL 销毁窗口的操作。 */
     ~Platform();
     /*!
      * \~chinese
@@ -74,14 +75,20 @@ private:
      */
     void set_opengl_properties() noexcept;
     /*! \~chinese 初始化 Dear ImGui，加载字体、设置缩放和基础样式。 */
-    bool        init_ui();
+    bool init_ui();
+    /*! \~chinese 处理窗口缩放的回调函数。 */
     static void on_framebuffer_resized(GLFWwindow* window, GLsizei width, GLsizei height);
 
+    /*! \~chinese 持有的日志记录器。 */
     std::shared_ptr<spdlog::logger> logger;
-    GLFWwindow*                     window;
-    int                             window_width, window_height;
-    double                          dpi;
-    std::unique_ptr<Shader>         shader;
+    /*! \~chinese 窗口对象。 */
+    GLFWwindow* window;
+    /*! \~chinese 实时更新的窗口长宽。 */
+    int window_width, window_height;
+    /*! \~chinese 屏幕分辨率，实际是 PPI (Pixels Per Inch)，称为 DPI 只是出于习惯。 */
+    double dpi;
+    /*! \~chinese 用于实时渲染预览窗口的 OpenGL Shader 封装对象。 */
+    std::unique_ptr<Shader> shader;
 };
 
 #endif
