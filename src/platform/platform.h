@@ -83,8 +83,10 @@ private:
     std::shared_ptr<spdlog::logger> logger;
     /*! \~chinese 窗口对象。 */
     GLFWwindow* window;
-    /*! \~chinese 实时更新的窗口长宽。 */
+    ///@{
+    /*! \~chinese 实时更新的窗口长宽。*/
     int window_width, window_height;
+    ///@}
     /*! \~chinese 屏幕分辨率，实际是 PPI (Pixels Per Inch)，称为 DPI 只是出于习惯。 */
     double dpi;
     /*! \~chinese 用于实时渲染预览窗口的 OpenGL Shader 封装对象。 */

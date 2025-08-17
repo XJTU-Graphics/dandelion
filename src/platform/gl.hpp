@@ -288,6 +288,7 @@ struct Mesh
      * \~chinese
      * \brief 渲染这个 mesh。
      *
+     * \param shader `Shader` 对象的引用
      * \param element_flags 指定渲染哪些元素的二进制串，可以是 `vertices_flag` / `edges_flag` /
      * `faces_flag` 中的任意一个或多个
      * \param face_shading 面片是否根据光照和材质进行着色，若否，则统一使用全局颜色。
