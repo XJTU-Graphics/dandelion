@@ -10,12 +10,15 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <spdlog/spdlog.h>
+#include <nlohmann/json.hpp>
 
 #include "../platform/gl.hpp"
 #include "../platform/shader.hpp"
 #include "../utils/rendering.hpp"
 #include "../utils/bvh.h"
 #include "../utils/kinetic_state.h"
+
+using json = nlohmann::json;
 
 /*!
  * \file scene/object.h
@@ -156,5 +159,9 @@ private:
     /*! \~chinese 日志记录器。 */
     std::shared_ptr<spdlog::logger> logger;
 };
+
+// json 序列化方法
+void to_json(json& j, const Object& o);
+void from_json(const json& j, Object& o);
 
 #endif // DANDELION_SCENE_OBJECT_H

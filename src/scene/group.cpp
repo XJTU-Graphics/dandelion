@@ -132,6 +132,27 @@ bool Group::load(const string& file_path)
         object.modified = true;
     }
 
+    // load extra data from json
+    string        extra_json_file_path = file_path + "_extra.json";
+    std::ifstream extra_json_f(extra_json_file_path);
+    if (extra_json_f.fail()) {
+        logger->info("the file has no accompanying extra.json");
+        return true;
+    }
+    json extra_json;
+    extra_json_f >> extra_json;
+
+    // load object attributes
+    auto& object_attributes = extra_json.at("object_attributes");
+    if (object_attributes.is_array() && object_attributes.size() == objects.size()) {
+        for (size_t i = 0; i < objects.size(); ++i) {
+            // manually call from_json because we already has object instances
+            from_json(object_attributes[i], *objects[i]);
+        }
+    } else {
+        logger->warn("mismatching length of objects in extra.json");
+    }
+
     return true;
 }
 
@@ -232,14 +253,7 @@ bool Group::save(const string& file_path)
     auto& object_attributes = extra_json["object_attributes"] = json::array();
     for (size_t i = 0; i < num_objects; ++i) {
         const auto& object = objects[i];
-        object_attributes.push_back({
-            {"center",   object->center           },
-            {"scaling",  object->scaling          },
-            {"rotation", object->rotation.coeffs()},
-            {"velocity", object->velocity         },
-            {"force",    object->force            },
-            {"mass",     object->mass             },
-        });
+        object_attributes.push_back(*object);
     }
 
     // write json

@@ -131,3 +131,25 @@ void Object::refresh_BVH_boxes(BVHNode* node)
     refresh_BVH_boxes(node->left);
     refresh_BVH_boxes(node->right);
 }
+
+void to_json(json& j, const Object& o)
+{
+    j = json({
+        {"center",   o.center           },
+        {"scaling",  o.scaling          },
+        {"rotation", o.rotation.coeffs()},
+        {"velocity", o.velocity         },
+        {"force",    o.force            },
+        {"mass",     o.mass             },
+    });
+}
+
+void from_json(const json& j, Object& o)
+{
+    o.center   = Vector3f(j.at("center").get<array<float, 3>>().data());
+    o.scaling  = Vector3f(j.at("scaling").get<array<float, 3>>().data());
+    o.rotation = Quaternionf(j.at("rotation").get<array<float, 4>>().data());
+    o.velocity = Vector3f(j.at("velocity").get<array<float, 3>>().data());
+    o.force    = Vector3f(j.at("force").get<array<float, 3>>().data());
+    j.at("mass").get_to(o.mass);
+}
