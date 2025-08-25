@@ -2,6 +2,7 @@
 
 #include <set>
 #include <utility>
+#include <fstream>
 
 #include <assimp/Importer.hpp>
 #include <assimp/Exporter.hpp>
@@ -10,10 +11,12 @@
 #include <assimp/material.h>
 #include <Eigen/Core>
 #include <fmt/format.h>
+#include <nlohmann/json.hpp>
 
 #include "../utils/logger.h"
 
 using Eigen::Vector3f;
+using nlohmann::json;
 using std::make_pair;
 using std::make_unique;
 using std::pair;
@@ -154,7 +157,7 @@ bool Group::save(const string& file_path)
     for (size_t i = 0; i < num_objects; ++i) {
         const auto&         object      = objects[i];
         const GL::Material& material    = object->mesh.material;
-        auto                ai_material = scene.mMaterials[i] = new aiMaterial();
+        auto*               ai_material = scene.mMaterials[i] = new aiMaterial();
         ai_material->AddProperty(new aiString(object->name), AI_MATKEY_NAME);
         ai_material->AddProperty(
             new aiColor3D{material.ambient.x(), material.ambient.y(), material.ambient.z()}, 1,
@@ -177,6 +180,7 @@ bool Group::save(const string& file_path)
     for (size_t i = 0; i < num_objects; ++i) {
         const auto& object  = objects[i];
         auto*       ai_mesh = scene.mMeshes[i] = new aiMesh();
+        ai_mesh->mName                         = aiString(object->name);
         ai_mesh->mMaterialIndex                = i;
 
         // transfer vertices and normals from GL::Mesh to aiMesh
@@ -213,8 +217,34 @@ bool Group::save(const string& file_path)
     }
 
     Assimp::Exporter exporter;
-    if (exporter.Export(&scene, "obj", file_path) != aiReturn_SUCCESS) {
+
+    auto export_result = exporter.Export(&scene, "obj", file_path);
+    if (export_result != aiReturn_SUCCESS) {
+        logger->error("assimp export failed {}", static_cast<int>(export_result));
         return false;
     }
+
+    // save extra data in <file_path>_extra.json
+    string extra_json_file_path = file_path + "_extra.json";
+    json   extra_json;
+
+    // save object attributes to json
+    auto& object_attributes = extra_json["object_attributes"] = json::array();
+    for (size_t i = 0; i < num_objects; ++i) {
+        const auto& object = objects[i];
+        object_attributes.push_back({
+            {"center",   object->center           },
+            {"scaling",  object->scaling          },
+            {"rotation", object->rotation.coeffs()},
+            {"velocity", object->velocity         },
+            {"force",    object->force            },
+            {"mass",     object->mass             },
+        });
+    }
+
+    // write json
+    std::ofstream extra_json_f(extra_json_file_path);
+    extra_json_f << std::setw(4) << extra_json << std::endl;
+
     return true;
 }
