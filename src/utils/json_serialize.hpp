@@ -7,6 +7,7 @@
 
 #include "../scene/object.h"
 #include "../scene/camera.h"
+#include "../scene/light.h"
 
 using nlohmann::json;
 
@@ -49,5 +50,13 @@ void from_json(const json& j, Matrix<T, Rows, Cols>& m)
 // Object
 void to_json(json& j, const Object& o);
 void from_json(const json& j, Object& o);
+
+// Camera
+void to_json(json& j, const Camera& c);
+void from_json(const json& j, Camera& c);
+
+// Light
+void to_json(json& j, const Light& l);
+void from_json(const json& j, Light& l);
 
 #endif // DANDELION_UTILS_JSON_SERIALIZE_HPP
