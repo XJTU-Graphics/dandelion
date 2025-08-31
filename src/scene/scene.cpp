@@ -210,9 +210,26 @@ bool Scene::load(const std::string& folder_path)
         logger->error("folder does not exist or path is a file");
         return false;
     }
-    fs::path scene_json_path = base_path / "dandelion_scene.json";
+    fs::path      scene_json_path = base_path / "dandelion_scene.json";
+    std::ifstream scene_json_file(scene_json_path);
 
-    // TODO
+    json scene_json;
+    scene_json_file >> scene_json;
+
+    // load camera and lights
+    scene_json.at("camera").get_to(camera);
+
+    for (const json& l: scene_json.at("lights")) {
+        Light light(Vector3f(0, 0, 0), 0);
+        l.get_to(light);
+        lights.push_back(light);
+    }
+
+    // load groups
+    for (const json& g: scene_json.at("groups")) {
+        std::string group_file_name = g;
+        import_group((base_path / g).string());
+    }
 
     return true;
 }

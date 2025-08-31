@@ -143,6 +143,9 @@ bool Group::load(const string& file_path)
     json extra_json;
     extra_json_f >> extra_json;
 
+    // load name
+    extra_json.at("name").get_to(name);
+
     // load object attributes
     auto& object_attributes = extra_json.at("object_attributes");
     if (object_attributes.is_array() && object_attributes.size() == objects.size()) {
@@ -249,6 +252,9 @@ bool Group::save(const string& file_path)
     // save extra data in <file_path>_extra.json
     string extra_json_file_path = file_path + "_extra.json";
     json   extra_json;
+
+    // save group name to json
+    extra_json["name"] = name;
 
     // save object attributes to json
     auto& object_attributes = extra_json["object_attributes"] = json::array();
