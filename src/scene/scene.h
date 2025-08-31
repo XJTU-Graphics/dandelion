@@ -60,13 +60,32 @@ public:
     ~Scene()             = default;
     /*!
      * \~chinese
-     * \brief 从指定路径加载模型文件到这个场景中。
+     * \brief 从指定路径导入模型文件到这个场景中。
      *
      * 这个函数只会根据文件名创建一个物体组，然后调用物体组的 `load` 方法加载文件。
      *
-     * \param file_path 要加载的模型文件路径
+     * \param file_path 要导入的模型文件路径
      */
-    bool load(const std::string& file_path);
+    bool import_group(const std::string& file_path);
+    /*!
+     * \~chinese
+     * \brief 加载之前保存的场景文件夹
+     *
+     * 保存的场景文件夹里面包含了场景的物体组、相机、光源等数据。
+     *
+     * \param folder_path 要加载的场景文件夹路径
+     */
+    bool load(const std::string& folder_path);
+    /*!
+     * \~chinese
+     * \brief 将场景保存为一个文件夹
+     *
+     * 保存的场景文件夹里面包含了场景的物体组、相机、光源等数据。
+     * 可以使用 `load` 方法加载保存的场景。
+     *
+     * \param folder_path 场景文件夹路径
+     */
+    bool save(const std::string& folder_path);
     /*! \~chinese 备份物体当前状态并开始模拟，此后每一帧都会调用所有物体的 `update` 方法。 */
     void start_simulation();
     /*! \~chinese 停止模拟，此后不再调用物体的 `update` 方法。 */

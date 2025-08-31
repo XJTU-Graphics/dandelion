@@ -58,14 +58,14 @@ void Menubar::render(Scene& scene)
                 );
                 vector<string> result = file_dialog.result();
                 if (!result.empty()) {
-                    scene.load(result[0].c_str());
+                    scene.import_group(result[0].c_str());
                 }
             }
             ImGui::Separator();
             if (ImGui::MenuItem("Open Scene")) {}
             if (ImGui::MenuItem("Save Scene")) {
                 if (!scene.groups.empty()) {
-                    scene.groups[0]->save("test.obj");
+                    scene.save("test_scene");
                     spdlog::info("file saved");
                 }
             }

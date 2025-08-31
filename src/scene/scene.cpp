@@ -6,6 +6,7 @@
 #include <set>
 #include <utility>
 #include <algorithm>
+#include <fstream>
 
 #include <Eigen/Core>
 #include <assimp/Importer.hpp>
@@ -16,11 +17,13 @@
     #include <Windows.h>
 #endif
 #include <glad/glad.h>
+#include <nlohmann/json.hpp>
 
 #include "../platform/gl.hpp"
 #include "../utils/math.hpp"
 #include "../utils/kinetic_state.h"
 #include "../utils/logger.h"
+#include "../utils/json_serialize.hpp"
 
 namespace fs = std::filesystem;
 using Eigen::Matrix4f;
@@ -33,6 +36,7 @@ using time_point = std::chrono::time_point<std::chrono::steady_clock>;
 using duration   = std::chrono::duration<float>;
 using std::chrono::duration_cast;
 using namespace std::chrono_literals;
+using nlohmann::json;
 
 Scene::Scene() :
     selected_object(nullptr), camera(Vector3f(5.0f, 5.0f, 5.0f), Vector3f(0.0f, 0.0f, 0.0f)),
@@ -183,7 +187,7 @@ void Scene::render_lights(const Shader& shader)
     light_vao.release();
 }
 
-bool Scene::load(const string& file_path)
+bool Scene::import_group(const string& file_path)
 {
     fs::path path(file_path);
     string   group_name = path.stem().string();
@@ -191,11 +195,64 @@ bool Scene::load(const string& file_path)
     Group& group   = *(groups.back());
     bool   success = group.load(file_path);
     if (!success) {
-        logger->warn("fail to load the specified file into current scene");
+        logger->warn("fail to import the specified file into current scene");
         groups.erase(groups.end() - 1);
         return false;
     }
     logger->debug("group \"{}\" has beed added into the current scene", group_name);
+    return true;
+}
+
+bool Scene::load(const std::string& folder_path)
+{
+    fs::path base_path = folder_path;
+    if (!fs::is_directory(base_path)) {
+        logger->error("folder does not exist or path is a file");
+        return false;
+    }
+    fs::path scene_json_path = base_path / "dandelion_scene.json";
+
+    // TODO
+
+    return true;
+}
+
+bool Scene::save(const std::string& folder_path)
+{
+    fs::path base_path = folder_path;
+    if (!fs::exists(base_path)) {
+        logger->debug("creating scene save target folder");
+        fs::create_directory(base_path);
+    }
+    if (!fs::is_directory(base_path)) {
+        logger->error("can't save scene, path is not a folder");
+        return false;
+    }
+
+    // folder valid
+    // create main json file
+    fs::path      scene_json_path = base_path / "dandelion_scene.json";
+    std::ofstream scene_json_file(scene_json_path);
+
+    // build json data
+    json scene_json;
+    // camera
+    scene_json["camera"] = camera;
+
+    // lights
+    for (const Light& light: lights) {
+        scene_json["lights"].push_back(light);
+    }
+
+    // groups (as external files)
+    for (size_t i = 0; i < groups.size(); i++) {
+        auto&       group           = groups[i];
+        std::string group_file_name = fmt::format("{:02d}_{}.obj", i, group->name);
+        group->save((base_path / group_file_name).string());
+        scene_json["groups"].push_back(group_file_name);
+    }
+
+    scene_json_file << std::setw(4) << scene_json << std::endl;
     return true;
 }
 
