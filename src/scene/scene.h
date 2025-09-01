@@ -78,6 +78,11 @@ public:
     bool load(const std::string& folder_path);
     /*!
      * \~chinese
+     * \brief 清除场景中所有元素
+     */
+    void clear();
+    /*!
+     * \~chinese
      * \brief 将场景保存为一个文件夹
      *
      * 保存的场景文件夹里面包含了场景的物体组、相机、光源等数据。

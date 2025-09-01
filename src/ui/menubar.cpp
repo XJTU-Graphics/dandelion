@@ -1,9 +1,14 @@
+#include <filesystem>
+
 #ifdef _WIN32
     #include <Windows.h>
 #endif
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <imgui/imgui.h>
+// workaround for mingw64 clang, for its __GXX_ABI_VERSION version is 1002
+// and it will cause file dialog to use old ui, which does not work correctly
+#define PFD_HAS_IFILEDIALOG 1
 #include <portable-file-dialogs.h>
 #include <stb/stb_image.h>
 #include <spdlog/spdlog.h>
@@ -16,6 +21,7 @@
 using namespace UI;
 using std::string;
 using std::vector;
+namespace fs = std::filesystem;
 
 const char* usage_title               = "Usage";
 const char* about_title               = "About Us";
@@ -63,13 +69,46 @@ void Menubar::render(Scene& scene)
             }
             ImGui::Separator();
             if (ImGui::MenuItem("Open Scene")) {
-                scene.load("test_scene");
-                spdlog::info("file loaded");
+                pfd::select_folder file_dialog = pfd::select_folder("Choose scene folder");
+                string             result      = file_dialog.result();
+                if (!result.empty()) {
+                    scene.clear();
+                    scene.load(result);
+                    spdlog::info("scene loaded from path {}", result);
+                }
             }
             if (ImGui::MenuItem("Save Scene")) {
-                if (!scene.groups.empty()) {
-                    scene.save("test_scene");
-                    spdlog::info("file saved");
+                pfd::select_folder file_dialog = pfd::select_folder("Choose save folder");
+                string             result      = file_dialog.result();
+                if (!result.empty()) {
+                    if (fs::exists(result) && fs::is_directory(result)) {
+                        auto dirIter = fs::directory_iterator(result);
+                        bool empty   = true;
+                        for (auto& _: dirIter) {
+                            empty = false;
+                            break;
+                        }
+                        bool should_save = empty;
+                        if (!empty) {
+                            auto button =
+                                pfd::message(
+                                    "Action requested",
+                                    "Folder has contents inside, do you want to save anyways?",
+                                    pfd::choice::yes_no, pfd::icon::question
+                                )
+                                    .result();
+                            if (button == pfd::button::yes) {
+                                should_save = true;
+                            }
+                        }
+                        spdlog::info("should save? {}", should_save);
+                        if (should_save) {
+                            scene.save(result);
+                            spdlog::info("scene saved to path {}", result);
+                        }
+                    } else {
+                        spdlog::error("selected path is not a folder");
+                    }
                 }
             }
             ImGui::EndMenu();

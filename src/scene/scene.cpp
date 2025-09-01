@@ -234,6 +234,17 @@ bool Scene::load(const std::string& folder_path)
     return true;
 }
 
+void Scene::clear()
+{
+    groups.clear();
+    selected_object = nullptr;
+    camera          = Camera(Vector3f(5.0f, 5.0f, 5.0f), Vector3f(0.0f, 0.0f, 0.0f));
+    lights.clear();
+    halfedge_mesh    = nullptr;
+    during_animation = false;
+    all_objects.clear();
+}
+
 bool Scene::save(const std::string& folder_path)
 {
     fs::path base_path = folder_path;
@@ -257,11 +268,13 @@ bool Scene::save(const std::string& folder_path)
     scene_json["camera"] = camera;
 
     // lights
+    scene_json["lights"] = json::array();
     for (const Light& light: lights) {
         scene_json["lights"].push_back(light);
     }
 
     // groups (as external files)
+    scene_json["groups"] = json::array();
     for (size_t i = 0; i < groups.size(); i++) {
         auto&       group           = groups[i];
         std::string group_file_name = fmt::format("{:02d}_{}.obj", i, group->name);
