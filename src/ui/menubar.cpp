@@ -96,8 +96,9 @@ void Menubar::render(Scene& scene, Controller& controller)
                     if (fs::exists(result) && fs::is_directory(result)) {
                         auto dirIter = fs::directory_iterator(result);
                         bool empty   = true;
-                        for (auto& _: dirIter) {
-                            empty = false;
+                        for (auto& file_name: dirIter) {
+                            std::ignore = file_name;
+                            empty       = false;
                             break;
                         }
                         bool should_save = empty;
