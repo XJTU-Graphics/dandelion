@@ -631,6 +631,8 @@ void Controller::dump_state_json(json& state_json)
 void Controller::load_state_json(const json& state_json)
 {
     state_json.at("main_camera").get_to(*main_camera);
+    // fix camera proportion
+    on_framebuffer_resized(window_width, window_height);
 }
 
 void Controller::return_to_safe_state()
