@@ -668,7 +668,7 @@ bool Controller::save_scene(const std::string& folder_path)
     fs::path      scene_json_path = base_path / "dandelion_scene.json";
     std::ofstream scene_json_file(scene_json_path);
 
-    scene_json_file << scene_json;
+    scene_json_file << std::setw(4) << scene_json;
 
     return true;
 }
