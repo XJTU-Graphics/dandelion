@@ -69,28 +69,30 @@ public:
     bool import_group(const std::string& file_path);
     /*!
      * \~chinese
-     * \brief 加载之前保存的场景文件夹
+     * \brief 将场景模型保存到文件夹中，并生成场景 JSON 数据
      *
-     * 保存的场景文件夹里面包含了场景的物体组、相机、光源等数据。
+     * 保存的场景文件夹里面包含了场景中的物体数据，被 JSON 文件所引用。
+     * 可以使用 `load` 方法加载保存的场景 JSON 文件。
+     *
+     * \param folder_path 场景文件夹路径
+     * \param scene_json 输出的场景 JSON 数据
+     */
+    bool save(const std::string& folder_path, json& scene_json);
+    /*!
+     * \~chinese
+     * \brief 加载表示场景的 JSON 数据，同时从文件夹中加载引用的物体数据
+     *
+     * 保存的场景 JSON 里面包含了场景的物体组、相机、光源等数据。
      *
      * \param folder_path 要加载的场景文件夹路径
+     * \param scene_json 场景 JSON 数据
      */
-    bool load(const std::string& folder_path);
+    bool load(const std::string& folder_path, const json& scene_json);
     /*!
      * \~chinese
      * \brief 清除场景中所有元素
      */
     void clear();
-    /*!
-     * \~chinese
-     * \brief 将场景保存为一个文件夹
-     *
-     * 保存的场景文件夹里面包含了场景的物体组、相机、光源等数据。
-     * 可以使用 `load` 方法加载保存的场景。
-     *
-     * \param folder_path 场景文件夹路径
-     */
-    bool save(const std::string& folder_path);
     /*! \~chinese 备份物体当前状态并开始模拟，此后每一帧都会调用所有物体的 `update` 方法。 */
     void start_simulation();
     /*! \~chinese 停止模拟，此后不再调用物体的 `update` 方法。 */

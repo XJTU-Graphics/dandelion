@@ -14,6 +14,7 @@
 #include <spdlog/spdlog.h>
 
 #include "menubar.h"
+#include "controller.h"
 #include "settings.h"
 #include "help.inc"
 #include "about.inc"
@@ -51,7 +52,7 @@ Menubar::~Menubar()
     glDeleteTextures(1, &gl_icon_texture);
 }
 
-void Menubar::render(Scene& scene)
+void Menubar::render(Scene& scene, Controller& controller)
 {
     bool open_usage               = false;
     bool open_about               = false;
@@ -76,6 +77,7 @@ void Menubar::render(Scene& scene)
                 )
                                   .result();
                 if (button == pfd::button::yes) {
+                    controller.return_to_safe_state();
                     scene.clear();
                 }
             }
@@ -83,14 +85,8 @@ void Menubar::render(Scene& scene)
                 pfd::select_folder file_dialog = pfd::select_folder("Choose scene folder");
                 string             result      = file_dialog.result();
                 if (!result.empty()) {
-                    scene.clear();
-                    try {
-                        scene.load(result);
-                    } catch (std::exception const& e) {
-                        spdlog::error("failed to load scene: {}", e.what());
-                        scene.clear();
-                    }
-                    spdlog::info("scene loaded from path {}", result);
+                    controller.return_to_safe_state();
+                    controller.load_scene(result);
                 }
             }
             if (ImGui::MenuItem("Save Scene")) {
@@ -120,7 +116,7 @@ void Menubar::render(Scene& scene)
                         spdlog::info("should save? {}", should_save);
                         if (should_save) {
                             try {
-                                scene.save(result);
+                                controller.save_scene(result);
                             } catch (std::exception const& e) {
                                 spdlog::error("failed to save scene: {}", e.what());
                             }

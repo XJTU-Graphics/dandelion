@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <array>
+#include <fstream>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -17,7 +18,9 @@
 #include "../utils/ray.h"
 #include "../utils/rendering.hpp"
 #include "../utils/logger.h"
+#include "../utils/json_serialize.hpp"
 
+namespace fs = std::filesystem;
 using Eigen::Matrix3f;
 using Eigen::Matrix4f;
 using Eigen::Quaternionf;
@@ -241,7 +244,7 @@ void Controller::process_input()
 void Controller::render(const Shader& shader)
 {
     Controller& controller = Controller::controller();
-    controller.menubar->render(*scene);
+    controller.menubar->render(*scene, *this);
     controller.toolbar->render(*scene);
 
     ImGui::Render();
@@ -618,4 +621,81 @@ void Controller::on_translating(bool initial)
     main_camera->target += delta;
     main_camera->position += delta;
     previous_pos = pos;
+}
+
+void Controller::dump_state_json(json& state_json)
+{
+    state_json["main_camera"] = *main_camera;
+}
+
+void Controller::load_state_json(const json& state_json)
+{
+    state_json.at("main_camera").get_to(*main_camera);
+}
+
+void Controller::return_to_safe_state()
+{
+    mode = WorkingMode::LAYOUT;
+    unselect();
+    main_camera = make_unique<Camera>(
+        Vector3f(1.0f, 2.0f, 3.0f), Vector3f(0.0f, 0.0f, 0.0f), 0.1f, 1000.0f, 45.0f, 0.75f
+    );
+    on_framebuffer_resized(window_width, window_height);
+}
+
+bool Controller::save_scene(const std::string& folder_path)
+{
+    fs::path base_path = folder_path;
+    if (!fs::exists(base_path)) {
+        logger->debug("creating scene save target folder");
+        fs::create_directory(base_path);
+    }
+    if (!fs::is_directory(base_path)) {
+        logger->error("can't save scene, path is not a folder");
+        return false;
+    }
+
+    // first save scene
+    json scene_json;
+    scene_json["scene"] = json::object();
+    scene->save(folder_path, scene_json["scene"]);
+
+    // then save controller states
+    json controller_state_json;
+    dump_state_json(controller_state_json);
+    scene_json["controller_state"] = controller_state_json;
+
+    fs::path      scene_json_path = base_path / "dandelion_scene.json";
+    std::ofstream scene_json_file(scene_json_path);
+
+    scene_json_file << scene_json;
+
+    return true;
+}
+
+bool Controller::load_scene(const std::string& folder_path)
+{
+    // load main json file
+    fs::path      base_path       = folder_path;
+    fs::path      scene_json_path = base_path / "dandelion_scene.json";
+    std::ifstream scene_json_file(scene_json_path);
+
+    json scene_json;
+    scene_json_file >> scene_json;
+
+    // first load scene
+    scene->clear();
+    try {
+        scene->load(folder_path, scene_json.at("scene"));
+    } catch (std::exception const& e) {
+        spdlog::error("failed to load scene: {}", e.what());
+        scene->clear();
+        return false;
+    }
+
+    // then load controller state
+    load_state_json(scene_json.at("controller_state"));
+
+    spdlog::info("scene loaded from path {}", folder_path);
+    return true;
 }

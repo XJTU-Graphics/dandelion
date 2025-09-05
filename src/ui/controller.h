@@ -9,6 +9,7 @@
 #include <variant>
 
 #include <spdlog/spdlog.h>
+#include <nlohmann/json.hpp>
 
 #include "menubar.h"
 #include "toolbar.h"
@@ -17,6 +18,8 @@
 #include "../platform/shader.hpp"
 #include "../scene/camera.h"
 #include "../scene/scene.h"
+
+using nlohmann::json;
 
 /*!
  * \ingroup ui
@@ -110,6 +113,26 @@ public:
      * \param shader 当前渲染使用的 shader，用于设置 shader 中的全局变量。
      */
     void render(const Shader& shader);
+    /*!
+     * \~chinese
+     * 回到一个基础的工作状态，取消选中物体、返回 Layout 模式等，以便正确加载场景
+     */
+    void return_to_safe_state();
+    /*!
+     * \~chinese
+     * 将当前工作相关状态（当前视角等属性）保存为 JSON 格式（目前只保存场景预览主相机参数）
+     * \param
+     */
+    void dump_state_json(json& state_json);
+    /*!
+     * \~chinese
+     * 读取 JSON 格式保存的工作状态
+     * \param
+     */
+    void load_state_json(const json& state_json);
+
+    bool save_scene(const std::string& folder_path);
+    bool load_scene(const std::string& folder_path);
     /*!
      * \~english All variables used for layout are float because ImVec2 expects float.
      * \~chinese 由于 ImGui 使用浮点数表示尺寸，所有和布局相关的变量都是浮点型。

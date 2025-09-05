@@ -5,6 +5,9 @@
 
 #include "../scene/scene.h"
 
+// declaration to prevent cyclic dependency
+class Controller;
+
 /*!
  * \file ui/menubar.h
  * \ingroup ui
@@ -40,7 +43,7 @@ public:
     Menubar(DebugOptions& debug_options);
     ~Menubar();
     /*! \~chinese 显示菜单栏。 */
-    void render(Scene& scene);
+    void render(Scene& scene, Controller& controller);
     /*! \~chinese 当前菜单栏高度。 */
     float height() const;
 

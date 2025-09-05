@@ -203,18 +203,44 @@ bool Scene::import_group(const string& file_path)
     return true;
 }
 
-bool Scene::load(const std::string& folder_path)
+bool Scene::save(const std::string& folder_path, json& scene_json)
+{
+    fs::path base_path = folder_path;
+
+    // camera
+    scene_json["camera"] = camera;
+
+    // lights
+    scene_json["lights"] = json::array();
+    for (const Light& light: lights) {
+        scene_json["lights"].push_back(light);
+    }
+
+    // groups (as external files and extra json)
+    scene_json["groups"] = json::array();
+    for (size_t i = 0; i < groups.size(); i++) {
+        auto&       group           = groups[i];
+        std::string group_file_name = fmt::format("{:02d}_{}.obj", i, group->name);
+        // save mesh and material to external obj file
+        group->save((base_path / group_file_name).string());
+        // record other attributes in json
+        json group_extra_json;
+        group->dump_extra_json(group_extra_json);
+        scene_json["groups"].push_back({
+            {"file_name", group_file_name },
+            {"extra",     group_extra_json},
+        });
+    }
+    return true;
+}
+
+bool Scene::load(const std::string& folder_path, const json& scene_json)
 {
     fs::path base_path = folder_path;
     if (!fs::is_directory(base_path)) {
         logger->error("folder does not exist or path is a file");
         return false;
     }
-    fs::path      scene_json_path = base_path / "dandelion_scene.json";
-    std::ifstream scene_json_file(scene_json_path);
-
-    json scene_json;
-    scene_json_file >> scene_json;
 
     // load camera and lights
     scene_json.at("camera").get_to(camera);
@@ -249,54 +275,6 @@ void Scene::clear()
     halfedge_mesh    = nullptr;
     during_animation = false;
     all_objects.clear();
-}
-
-bool Scene::save(const std::string& folder_path)
-{
-    fs::path base_path = folder_path;
-    if (!fs::exists(base_path)) {
-        logger->debug("creating scene save target folder");
-        fs::create_directory(base_path);
-    }
-    if (!fs::is_directory(base_path)) {
-        logger->error("can't save scene, path is not a folder");
-        return false;
-    }
-
-    // folder valid
-    // create main json file
-    fs::path      scene_json_path = base_path / "dandelion_scene.json";
-    std::ofstream scene_json_file(scene_json_path);
-
-    // build json data
-    json scene_json;
-    // camera
-    scene_json["camera"] = camera;
-
-    // lights
-    scene_json["lights"] = json::array();
-    for (const Light& light: lights) {
-        scene_json["lights"].push_back(light);
-    }
-
-    // groups (as external files and extra json)
-    scene_json["groups"] = json::array();
-    for (size_t i = 0; i < groups.size(); i++) {
-        auto&       group           = groups[i];
-        std::string group_file_name = fmt::format("{:02d}_{}.obj", i, group->name);
-        // save mesh and material to external obj file
-        group->save((base_path / group_file_name).string());
-        // record other attributes in json
-        json group_extra_json;
-        group->dump_extra_json(group_extra_json);
-        scene_json["groups"].push_back({
-            {"file_name", group_file_name },
-            {"extra",     group_extra_json},
-        });
-    }
-
-    scene_json_file << std::setw(4) << scene_json << std::endl;
-    return true;
 }
 
 void Scene::start_simulation()
