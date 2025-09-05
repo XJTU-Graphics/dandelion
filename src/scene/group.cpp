@@ -11,13 +11,11 @@
 #include <assimp/material.h>
 #include <Eigen/Core>
 #include <fmt/format.h>
-#include <nlohmann/json.hpp>
 
 #include "../utils/logger.h"
 #include "../utils/json_serialize.hpp"
 
 using Eigen::Vector3f;
-using nlohmann::json;
 using std::make_pair;
 using std::make_unique;
 using std::pair;
@@ -133,30 +131,6 @@ bool Group::load(const string& file_path)
         object.modified = true;
     }
 
-    // load extra data from json
-    string        extra_json_file_path = file_path + "_extra.json";
-    std::ifstream extra_json_f(extra_json_file_path);
-    if (extra_json_f.fail()) {
-        logger->info("the file has no accompanying extra.json");
-        return true;
-    }
-    json extra_json;
-    extra_json_f >> extra_json;
-
-    // load name
-    extra_json.at("name").get_to(name);
-
-    // load object attributes
-    auto& object_attributes = extra_json.at("object_attributes");
-    if (object_attributes.is_array() && object_attributes.size() == objects.size()) {
-        for (size_t i = 0; i < objects.size(); ++i) {
-            // manually call from_json because we already has object instances
-            from_json(object_attributes[i], *objects[i]);
-        }
-    } else {
-        logger->warn("mismatching length of objects in extra.json");
-    }
-
     return true;
 }
 
@@ -248,24 +222,36 @@ bool Group::save(const string& file_path)
         logger->error("assimp export failed {}", static_cast<int>(export_result));
         return false;
     }
+    return true;
+}
 
-    // save extra data in <file_path>_extra.json
-    string extra_json_file_path = file_path + "_extra.json";
-    json   extra_json;
+void Group::load_extra_json(const json& extra_json)
+{
 
+    // load name
+    extra_json.at("name").get_to(name);
+
+    // load object attributes
+    auto& object_attributes = extra_json.at("object_attributes");
+    if (object_attributes.is_array() && object_attributes.size() == objects.size()) {
+        for (size_t i = 0; i < objects.size(); ++i) {
+            // manually call from_json because we already has object instances
+            from_json(object_attributes[i], *objects[i]);
+        }
+    } else {
+        logger->warn("mismatching length of objects in extra json data");
+    }
+}
+
+void Group::dump_extra_json(json& extra_json)
+{
     // save group name to json
     extra_json["name"] = name;
 
     // save object attributes to json
     auto& object_attributes = extra_json["object_attributes"] = json::array();
-    for (size_t i = 0; i < num_objects; ++i) {
+    for (size_t i = 0; i < objects.size(); ++i) {
         const auto& object = objects[i];
         object_attributes.push_back(*object);
     }
-
-    // write json
-    std::ofstream extra_json_f(extra_json_file_path);
-    extra_json_f << std::setw(4) << extra_json << std::endl;
-
-    return true;
 }

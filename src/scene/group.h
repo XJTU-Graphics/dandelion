@@ -5,8 +5,11 @@
 #include <string>
 
 #include <spdlog/spdlog.h>
+#include <nlohmann/json.hpp>
 
 #include "object.h"
+
+using nlohmann::json;
 
 /*!
  * \ingroup rendering
@@ -46,6 +49,7 @@ public:
     /*!
      * \~chinese
      * 被 `Scene::load` 调用，真正加载模型数据的函数。
+     * 这个函数只加载模型 mesh 数据，不包括变换、物理属性等 `Object` 层面的信息
      * \param file_path 要加载模型的文件路径
      */
     bool load(const std::string& file_path);
@@ -55,6 +59,18 @@ public:
      * \param file_path 保存的文件路径
      */
     bool save(const std::string& file_path);
+    /*!
+     * \~chinese
+     * 加载以 JSON 格式保存的除 mesh 和材质以外的数据，如变换、物理属性
+     * \param extra_json JSON 对象
+     */
+    void load_extra_json(const json& extra_json);
+    /*!
+     * \~chinese
+     * 生成 JSON 对象，用来保存 `save` 方法以外的数据，用 `load_extra_json` 可以读取
+     * \param extra_json JSON 对象
+     */
+    void dump_extra_json(json& extra_json);
     /*! \~chinese 组中所有的物体。 */
     std::vector<std::unique_ptr<Object>> objects;
     /*! \~chinese 组的唯一 ID。 */

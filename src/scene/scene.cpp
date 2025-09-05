@@ -227,8 +227,14 @@ bool Scene::load(const std::string& folder_path)
 
     // load groups
     for (const json& g: scene_json.at("groups")) {
-        std::string group_file_name = g;
-        import_group((base_path / g).string());
+        std::string group_file_name  = g.at("file_name");
+        json        group_extra_json = g.at("extra");
+        if (import_group((base_path / group_file_name).string())) {
+            auto& imported_group = groups.back();
+            imported_group->load_extra_json(group_extra_json);
+        } else {
+            logger->warn("failed to load group file {}", group_file_name);
+        }
     }
 
     return true;
@@ -273,13 +279,20 @@ bool Scene::save(const std::string& folder_path)
         scene_json["lights"].push_back(light);
     }
 
-    // groups (as external files)
+    // groups (as external files and extra json)
     scene_json["groups"] = json::array();
     for (size_t i = 0; i < groups.size(); i++) {
         auto&       group           = groups[i];
         std::string group_file_name = fmt::format("{:02d}_{}.obj", i, group->name);
+        // save mesh and material to external obj file
         group->save((base_path / group_file_name).string());
-        scene_json["groups"].push_back(group_file_name);
+        // record other attributes in json
+        json group_extra_json;
+        group->dump_extra_json(group_extra_json);
+        scene_json["groups"].push_back({
+            {"file_name", group_file_name },
+            {"extra",     group_extra_json},
+        });
     }
 
     scene_json_file << std::setw(4) << scene_json << std::endl;

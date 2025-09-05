@@ -68,12 +68,28 @@ void Menubar::render(Scene& scene)
                 }
             }
             ImGui::Separator();
+            if (ImGui::MenuItem("New Scene")) {
+                auto button = pfd::message(
+                                  "New Scene",
+                                  "Your current scene will be cleared and forever lost. Continue?",
+                                  pfd::choice::yes_no, pfd::icon::question
+                )
+                                  .result();
+                if (button == pfd::button::yes) {
+                    scene.clear();
+                }
+            }
             if (ImGui::MenuItem("Open Scene")) {
                 pfd::select_folder file_dialog = pfd::select_folder("Choose scene folder");
                 string             result      = file_dialog.result();
                 if (!result.empty()) {
                     scene.clear();
-                    scene.load(result);
+                    try {
+                        scene.load(result);
+                    } catch (std::exception const& e) {
+                        spdlog::error("failed to load scene: {}", e.what());
+                        scene.clear();
+                    }
                     spdlog::info("scene loaded from path {}", result);
                 }
             }
@@ -92,7 +108,7 @@ void Menubar::render(Scene& scene)
                         if (!empty) {
                             auto button =
                                 pfd::message(
-                                    "Action requested",
+                                    "Save Confirmation",
                                     "Folder has contents inside, do you want to save anyways?",
                                     pfd::choice::yes_no, pfd::icon::question
                                 )
@@ -103,7 +119,11 @@ void Menubar::render(Scene& scene)
                         }
                         spdlog::info("should save? {}", should_save);
                         if (should_save) {
-                            scene.save(result);
+                            try {
+                                scene.save(result);
+                            } catch (std::exception const& e) {
+                                spdlog::error("failed to save scene: {}", e.what());
+                            }
                             spdlog::info("scene saved to path {}", result);
                         }
                     } else {
