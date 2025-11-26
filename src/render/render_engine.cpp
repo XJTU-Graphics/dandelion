@@ -5,7 +5,7 @@ Eigen::Vector3f RenderEngine::background_color(RGB_COLOR(100, 100, 100));
 RenderEngine::RenderEngine()
 {
     // unique pointer to Rasterizer Renderer
-    rasterizer_render = std::make_unique<RasterizerRenderer>(*this, 2, 2, 2);
+    rasterizer_render = std::make_unique<RasterizerRenderer>(*this, 1, 2, 2);
     // unique pointer to Whitted Style Renderer
     whitted_render = std::make_unique<WhittedRenderer>(*this);
     // default setting of number of threads(if use multi-threads edition)
