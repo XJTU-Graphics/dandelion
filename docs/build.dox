@@ -28,7 +28,7 @@
 - GLAD (OpenGL Core Profile, version >= 3.3), MIT & Apache License
 - Eigen (commit 12068cbcdb835d7bd88b09d8439d2171e856be06), Mozilla Public License
 - Assimp 6.0.2, Open Assert Import Library License
-- Dear ImGui 1.92.1 (docking branch), MIT License
+- Dear ImGui 1.92.5, MIT License
 - stb\_image 2.30, MIT License & Public Domain
 - spdlog 1.15.3, MIT License
 - {fmt} 11.2.0, {fmt}'s License

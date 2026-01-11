@@ -202,7 +202,6 @@ bool Platform::init_ui()
     if (ImGui::CreateContext() == nullptr)
         return false;
     ImGuiIO& io = ImGui::GetIO();
-    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     // Load the Source Han Sans SC font and scale all UI elements by `scale_factor'
     io.Fonts->Clear();
     ImFont* source_han_sans = io.Fonts->AddFontFromFileTTF(

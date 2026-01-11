@@ -85,7 +85,6 @@ Controller::Controller() :
     colors[ImGuiCol_TabActive]             = ImVec4(0.30f, 0.33f, 0.39f, 1.00f);
     colors[ImGuiCol_TabUnfocused]          = ImVec4(0.13f, 0.15f, 0.17f, 1.00f);
     colors[ImGuiCol_TabUnfocusedActive]    = ImVec4(0.20f, 0.22f, 0.26f, 1.00f);
-    colors[ImGuiCol_DockingPreview]        = ImVec4(0.34f, 0.52f, 0.88f, 1.00f);
     colors[ImGuiCol_TextSelectedBg]        = ImVec4(0.30f, 0.33f, 0.39f, 1.00f);
     colors[ImGuiCol_DragDropTarget]        = ImVec4(0.37f, 0.41f, 0.49f, 1.00f);
     colors[ImGuiCol_NavHighlight]          = ImVec4(0.30f, 0.33f, 0.39f, 1.00f);
@@ -100,9 +99,9 @@ void Controller::on_mouse_dragged(bool initial)
 {
     bool is_middle_dragging = ImGui::IsMouseDragging(ImGuiMouseButton_Middle);
     bool is_alt_left_dragging =
-        ImGui::IsKeyDown(ImGuiKey_ModAlt) && ImGui::IsMouseDragging(ImGuiMouseButton_Left);
+        ImGui::IsKeyDown(ImGuiMod_Alt) && ImGui::IsMouseDragging(ImGuiMouseButton_Left);
     bool is_ctrl_left_dragging =
-        ImGui::IsKeyDown(ImGuiKey_ModCtrl) && ImGui::IsMouseDragging(ImGuiMouseButton_Left);
+        ImGui::IsKeyDown(ImGuiMod_Ctrl) && ImGui::IsMouseDragging(ImGuiMouseButton_Left);
     if (is_middle_dragging || is_alt_left_dragging) {
         on_rotating(initial);
     } else if (is_ctrl_left_dragging) {
@@ -180,7 +179,7 @@ void Controller::process_input()
             // Stop dragging.
             dragging = false;
         }
-        if (!ImGui::IsKeyDown(ImGuiKey_ModAlt) && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+        if (!ImGui::IsKeyDown(ImGuiMod_Alt) && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
             on_picking();
         }
         if (ImGui::IsKeyDown(ImGuiKey_MouseWheelY)) {
@@ -233,7 +232,7 @@ void Controller::process_input()
             }
         }
     }
-    if (ImGui::IsKeyDown(ImGuiKey_ModCtrl) && ImGui::IsKeyDown(ImGuiKey_R)) {
+    if (ImGui::IsKeyDown(ImGuiMod_Ctrl) && ImGui::IsKeyDown(ImGuiKey_R)) {
         main_camera->position -= main_camera->target;
         main_camera->target = Vector3f(0.0f, 0.0f, 0.0f);
     }
@@ -262,8 +261,7 @@ void Controller::select(SelectableType element)
     unselect();
     visit(
         overloaded{
-            []([[maybe_unused]]
-               monostate empty) {},
+            []([[maybe_unused]] monostate empty) {},
             [this](Object* object) { select_object(object); },
             [this](const Halfedge* halfedge) { select_halfedge(halfedge); },
             [this](Vertex* vertex) { select_vertex(vertex); },
@@ -297,10 +295,8 @@ void Controller::unselect()
                                     Light* light) { clear_highlighted_element(); };
     visit(
         overloaded{
-            []([[maybe_unused]]
-               monostate empty) {},
-            unselect_halfedge, unselect_object, unselect_vertex, unselect_edge, unselect_face,
-            unselect_light
+            []([[maybe_unused]] monostate empty) {}, unselect_halfedge, unselect_object,
+            unselect_vertex, unselect_edge, unselect_face, unselect_light
         },
         selected_element
     );
@@ -368,9 +364,7 @@ void Controller::render_selected_element(const Shader& shader)
     };
     visit(
         overloaded{
-            []([[maybe_unused]] monostate empty) {},
-            []([[maybe_unused]]
-               Object* object) {},
+            []([[maybe_unused]] monostate empty) {}, []([[maybe_unused]] Object* object) {},
             render_halfedge, render_vertex, render_edge, render_face, render_light
         },
         selected_element
