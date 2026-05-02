@@ -62,15 +62,15 @@ public:
     /*!
      * \~chinese
      * 加载以 JSON 格式保存的除 mesh 和材质以外的数据，如变换、物理属性
-     * \param extra_json JSON 对象
+     * \param extra_info JSON 对象
      */
-    void load_extra_json(const json& extra_json);
+    void load_extra_info(const json& extra_info);
     /*!
      * \~chinese
      * 生成 JSON 对象，用来保存 `save` 方法以外的数据，用 `load_extra_json` 可以读取
-     * \param extra_json JSON 对象
+     * \param extra_info JSON 对象
      */
-    void dump_extra_json(json& extra_json);
+    void dump_extra_info(json& extra_info);
     /*! \~chinese 组中所有的物体。 */
     std::vector<std::unique_ptr<Object>> objects;
     /*! \~chinese 组的唯一 ID。 */

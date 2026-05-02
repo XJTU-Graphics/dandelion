@@ -22,6 +22,7 @@ using std::pair;
 using std::set;
 using std::size_t;
 using std::string;
+using std::unique_ptr;
 
 size_t Group::next_available_id = 0;
 
@@ -225,33 +226,38 @@ bool Group::save(const string& file_path)
     return true;
 }
 
-void Group::load_extra_json(const json& extra_json)
+void Group::load_extra_info(const json& extra_info)
 {
-
     // load name
-    extra_json.at("name").get_to(name);
+    extra_info.at("name").get_to(name);
 
     // load object attributes
-    auto& object_attributes = extra_json.at("object_attributes");
-    if (object_attributes.is_array() && object_attributes.size() == objects.size()) {
-        for (size_t i = 0; i < objects.size(); ++i) {
-            // manually call from_json because we already has object instances
-            from_json(object_attributes[i], *objects[i]);
-        }
-    } else {
+    const json& objects_info = extra_info.at("objects_info");
+    if (objects_info.size() != objects.size()) {
         logger->warn("mismatching length of objects in extra json data");
+        return;
+    }
+    for (size_t i = 0; i < objects.size(); ++i) {
+        const unique_ptr<Object>& object = *std::find_if(
+            this->objects.begin(), this->objects.end(),
+            [&objects_info, &i](const unique_ptr<Object>& o) -> bool {
+                return o->name == objects_info[i]["name"].get<string>();
+            }
+        );
+        // manually call from_json because we already has object instances
+        from_json(objects_info[i], *object);
     }
 }
 
-void Group::dump_extra_json(json& extra_json)
+void Group::dump_extra_info(json& extra_info)
 {
     // save group name to json
-    extra_json["name"] = name;
+    extra_info["name"] = name;
 
     // save object attributes to json
-    auto& object_attributes = extra_json["object_attributes"] = json::array();
+    json& objects_info = extra_info["objects_info"] = json::object();
     for (size_t i = 0; i < objects.size(); ++i) {
-        const auto& object = objects[i];
-        object_attributes.push_back(*object);
+        const unique_ptr<Object>& object = objects[i];
+        objects_info[object->name]       = *object;
     }
 }

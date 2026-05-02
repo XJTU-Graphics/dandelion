@@ -225,7 +225,7 @@ bool Scene::save(const std::string& folder_path, json& scene_json)
         group->save((base_path / group_file_name).string());
         // record other attributes in json
         json group_extra_json;
-        group->dump_extra_json(group_extra_json);
+        group->dump_extra_info(group_extra_json);
         scene_json["groups"].push_back({
             {"file_name", group_file_name },
             {"extra",     group_extra_json},
@@ -257,7 +257,7 @@ bool Scene::load(const std::string& folder_path, const json& scene_json)
         json        group_extra_json = g.at("extra");
         if (import_group((base_path / group_file_name).string())) {
             auto& imported_group = groups.back();
-            imported_group->load_extra_json(group_extra_json);
+            imported_group->load_extra_info(group_extra_json);
         } else {
             logger->warn("failed to load group file {}", group_file_name);
         }
