@@ -23,6 +23,9 @@ set(ASSIMP_BUILD_COLLADA_IMPORTER TRUE)
 set(ASSIMP_BUILD_OBJ_IMPORTER TRUE)
 set(ASSIMP_BUILD_FBX_IMPORTER TRUE)
 set(ASSIMP_BUILD_OBJ_EXPORTER TRUE)
+# If zlib >= 1.3.2 exists in the system include path, assimp will fail to find unzip.h from minizip.
+# See [issue 6576](https://github.com/assimp/assimp/issues/6576) for details.
+set(ASSIMP_BUILD_ZLIB TRUE)
 add_subdirectory(deps/assimp)
 
 set(JSON_BuildTests OFF CACHE INTERNAL "")
