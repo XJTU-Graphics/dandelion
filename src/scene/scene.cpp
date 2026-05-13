@@ -3,10 +3,6 @@
 #include <cmath>
 #include <string>
 #include <filesystem>
-#include <set>
-#include <utility>
-#include <algorithm>
-#include <fstream>
 
 #include <Eigen/Core>
 #include <assimp/Importer.hpp>
@@ -30,6 +26,7 @@ using Eigen::Matrix4f;
 using Eigen::Vector3f;
 using std::chrono::steady_clock;
 using std::make_unique;
+using std::optional;
 using std::size_t;
 using std::string;
 using time_point = std::chrono::time_point<std::chrono::steady_clock>;
@@ -190,7 +187,7 @@ void Scene::render_lights(const Shader& shader)
 bool Scene::import_group(const string& file_path)
 {
     fs::path path(file_path);
-    string   group_name = path.stem().string();
+    string   group_name = path.stem().generic_string();
     groups.push_back(make_unique<Group>(group_name));
     Group& group   = *(groups.back());
     bool   success = group.load(file_path);
@@ -203,35 +200,35 @@ bool Scene::import_group(const string& file_path)
     return true;
 }
 
-bool Scene::save(const std::string& folder_path, json& scene_json)
+optional<json> Scene::save(const string& folder_path)
 {
-    fs::path base_path = folder_path;
+    json     scene_descrption = json::object();
+    fs::path base_path        = folder_path;
 
     // camera
-    scene_json["camera"] = camera;
+    scene_descrption["camera"] = camera;
 
     // lights
-    scene_json["lights"] = json::array();
+    scene_descrption["lights"] = json::array();
     for (const Light& light: lights) {
-        scene_json["lights"].push_back(light);
+        scene_descrption["lights"].push_back(light);
     }
 
     // groups (as external files and extra json)
-    scene_json["groups"] = json::array();
+    scene_descrption["groups"] = json::array();
     for (size_t i = 0; i < groups.size(); i++) {
-        auto&       group           = groups[i];
-        std::string group_file_name = fmt::format("{:02d}_{}.obj", i, group->name);
+        auto&  group          = groups[i];
+        string group_filename = fmt::format("{:02d}_{}.obj", i, group->name);
         // save mesh and material to external obj file
-        group->save((base_path / group_file_name).string());
+        group->save((base_path / group_filename).generic_string());
         // record other attributes in json
-        json group_extra_json;
-        group->dump_extra_info(group_extra_json);
-        scene_json["groups"].push_back({
-            {"file_name", group_file_name },
-            {"extra",     group_extra_json},
+        json group_extra_info = group->dump_extra_info();
+        scene_descrption["groups"].push_back({
+            {"filename", group_filename  },
+            {"extra",    group_extra_info},
         });
     }
-    return true;
+    return scene_descrption;
 }
 
 bool Scene::load(const std::string& folder_path, const json& scene_json)
@@ -245,23 +242,25 @@ bool Scene::load(const std::string& folder_path, const json& scene_json)
     // load camera and lights
     scene_json.at("camera").get_to(camera);
 
-    for (const json& l: scene_json.at("lights")) {
+    for (const json& light_info: scene_json.at("lights")) {
         Light light(Vector3f(0, 0, 0), 0);
-        l.get_to(light);
+        light_info.get_to(light);
         lights.push_back(light);
     }
+    logger->info("{} light sources loaded", this->lights.size());
 
     // load groups
-    for (const json& g: scene_json.at("groups")) {
-        std::string group_file_name  = g.at("file_name");
-        json        group_extra_json = g.at("extra");
-        if (import_group((base_path / group_file_name).string())) {
+    for (const json& group_info: scene_json.at("groups")) {
+        string group_filename   = group_info.at("filename");
+        json   group_extra_json = group_info.at("extra");
+        if (import_group((base_path / group_filename).generic_string())) {
             auto& imported_group = groups.back();
             imported_group->load_extra_info(group_extra_json);
         } else {
-            logger->warn("failed to load group file {}", group_file_name);
+            logger->warn("failed to load group file {}", group_filename);
         }
     }
+    logger->info("{} groups loaded", this->groups.size());
 
     return true;
 }

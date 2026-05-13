@@ -230,6 +230,7 @@ void Group::load_extra_info(const json& extra_info)
 {
     // load name
     extra_info.at("name").get_to(name);
+    logger->info("loading group {}", this->name);
 
     // load object attributes
     const json& objects_info = extra_info.at("objects_info");
@@ -238,19 +239,16 @@ void Group::load_extra_info(const json& extra_info)
         return;
     }
     for (size_t i = 0; i < objects.size(); ++i) {
-        const unique_ptr<Object>& object = *std::find_if(
-            this->objects.begin(), this->objects.end(),
-            [&objects_info, &i](const unique_ptr<Object>& o) -> bool {
-                return o->name == objects_info[i]["name"].get<string>();
-            }
-        );
+        std::string_view object_name = objects[i]->name;
+        const json&      object_info = objects_info[object_name];
         // manually call from_json because we already has object instances
-        from_json(objects_info[i], *object);
+        from_json(object_info, *(objects[i]));
     }
 }
 
-void Group::dump_extra_info(json& extra_info)
+json Group::dump_extra_info()
 {
+    json extra_info = json::object();
     // save group name to json
     extra_info["name"] = name;
 
@@ -260,4 +258,5 @@ void Group::dump_extra_info(json& extra_info)
         const unique_ptr<Object>& object = objects[i];
         objects_info[object->name]       = *object;
     }
+    return extra_info;
 }

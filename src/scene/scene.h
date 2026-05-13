@@ -75,9 +75,10 @@ public:
      * 可以使用 `load` 方法加载保存的场景 JSON 文件。
      *
      * \param folder_path 场景文件夹路径
-     * \param scene_json 输出的场景 JSON 数据
+     * \returns 序列化为 JSON 格式的场景信息，几何数据除外。如果返回了 `std::nullopt`，
+     *  就表示场景序信息序列化失败。
      */
-    bool save(const std::string& folder_path, json& scene_json);
+    std::optional<json> save(const std::string& folder_path);
     /*!
      * \~chinese
      * \brief 加载表示场景的 JSON 数据，同时从文件夹中加载引用的物体数据

@@ -278,7 +278,7 @@ void Controller::select(SelectableType element)
 void Controller::unselect()
 {
     static auto unselect_object           = []([[maybe_unused]]
-                                     Object* object) {};
+                                               Object* object) {};
     static auto clear_highlighted_element = [this]() {
         highlighted_element.clear();
         highlighted_element.to_gpu();
@@ -291,11 +291,11 @@ void Controller::unselect()
     static auto unselect_vertex = []([[maybe_unused]]
                                      Vertex* vertex) { clear_highlighted_element(); };
     static auto unselect_edge   = []([[maybe_unused]]
-                                   Edge* edge) { clear_highlighted_element(); };
+                                     Edge* edge) { clear_highlighted_element(); };
     static auto unselect_face   = []([[maybe_unused]]
-                                   Face* face) { clear_highlighted_element(); };
+                                     Face* face) { clear_highlighted_element(); };
     static auto unselect_light  = []([[maybe_unused]]
-                                    Light* light) { clear_highlighted_element(); };
+                                     Light* light) { clear_highlighted_element(); };
     visit(
         overloaded{
             []([[maybe_unused]] monostate empty) {}, unselect_halfedge, unselect_object,
@@ -659,8 +659,7 @@ bool Controller::save_scene(const std::string& folder_path)
 
     // first save scene
     json scene_json;
-    scene_json["scene"] = json::object();
-    scene->save(folder_path, scene_json["scene"]);
+    scene_json["scene"] = scene->save(folder_path);
 
     // then save controller states
     json controller_state_json;
