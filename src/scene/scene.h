@@ -141,6 +141,16 @@ private:
      * \param shader `Shader` 对象的引用
      */
     static void render_ground(const Shader& shader);
+    /*!
+     * \~chinese
+     * 主相机的初始位置。
+     */
+    static Eigen::Vector3f initial_camera_pos;
+    /*!
+     * \~chinese
+     * 主相机的初始观察目标点（看向的位置）。
+     */
+    static Eigen::Vector3f initial_camera_target;
     /*! \~chinese
      * \brief 在渲染模式 (Rendering mode) 下绘制代表相机视锥的线框。
      *

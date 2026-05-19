@@ -35,8 +35,11 @@ using std::chrono::duration_cast;
 using namespace std::chrono_literals;
 using nlohmann::json;
 
+Vector3f Scene::initial_camera_pos(5.0f, 5.0f, 5.0f);
+Vector3f Scene::initial_camera_target(0.0f, 0.0f, 0.0f);
+
 Scene::Scene() :
-    selected_object(nullptr), camera(Vector3f(5.0f, 5.0f, 5.0f), Vector3f(0.0f, 0.0f, 0.0f)),
+    selected_object(nullptr), camera(initial_camera_pos, initial_camera_target),
     during_animation(false), arrows("Scene arrows", GL::Mesh::highlight_wireframe_color)
 {
     logger = get_logger("Scene");
@@ -269,7 +272,7 @@ void Scene::clear()
 {
     groups.clear();
     selected_object = nullptr;
-    camera          = Camera(Vector3f(5.0f, 5.0f, 5.0f), Vector3f(0.0f, 0.0f, 0.0f));
+    camera          = Camera(initial_camera_pos, initial_camera_target);
     lights.clear();
     halfedge_mesh    = nullptr;
     during_animation = false;
