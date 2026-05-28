@@ -33,6 +33,7 @@ using std::string_view;
 using time_point = std::chrono::time_point<std::chrono::steady_clock>;
 using duration   = std::chrono::duration<float>;
 using std::chrono::duration_cast;
+using std::unique_ptr;
 using namespace std::chrono_literals;
 using nlohmann::json;
 
@@ -210,6 +211,7 @@ bool Scene::import_model(const string& file_path)
 
 bool Scene::save(const string_view directory)
 {
+    logger->info("saving scene data to {}", directory);
     json     metadata = json::object();
     fs::path base_path(directory);
     if (!fs::exists(base_path)) {
@@ -225,6 +227,7 @@ bool Scene::save(const string_view directory)
         return false;
     }
 
+    logger->info("saving cameras and lights...");
     // the main (view) camera
     metadata["main_camera"] = main_camera;
 
@@ -238,44 +241,55 @@ bool Scene::save(const string_view directory)
     }
 
     // groups (as external files and extra json)
-    metadata["groups"] = json::array();
+    logger->info("saving groups...");
+    metadata["groups"]    = json::array();
+    size_t n_saved_groups = 0ULL;
     for (size_t i = 0; i < groups.size(); i++) {
         auto&  group          = groups[i];
         string group_filename = fmt::format("{:02d}_{}.obj", i, group->name);
         // save mesh and material to external obj file
-        group->save_models((base_path / group_filename).generic_string());
+        bool result = group->save_models((base_path / group_filename).generic_string());
+        if (result)
+            ++n_saved_groups;
         // record other attributes in json
         json group_metadata = group->dump_metadata();
         metadata["groups"].push_back({
             {"filename", group_filename},
-            {"extra",    group_metadata},
+            {"metadata", group_metadata},
         });
     }
 
     // write metadata to file
+    logger->info("writing metadata file...");
     fs::path      metadata_path = base_path / metadata_filename;
     std::ofstream metadata_file(metadata_path);
     metadata_file << std::setw(4) << metadata;
+    logger->info(
+        "scene data saved, {}/{} group(s) exported as model file(s)", n_saved_groups, groups.size()
+    );
 
     return true;
 }
 
 bool Scene::load(const string_view directory)
 {
+    logger->info("loading scene from {}", directory);
     fs::path base_path(directory);
     if (!fs::is_directory(base_path)) {
         logger->error("folder does not exist or path is a file");
         return false;
     }
-    logger->info("try to load scene from {}", directory);
+    logger->info("reading metadata...");
     fs::path      metadata_path = base_path / "metadata.json";
     std::ifstream metadata_file(metadata_path);
     json          metadata;
     metadata_file >> metadata;
+    logger->info("clearing the current scene...");
     this->clear();
 
     try {
         // load camera and lights
+        logger->info("loading cameras and lights...");
         metadata.at("main_camera").get_to(main_camera);
         metadata.at("camera").get_to(camera);
 
@@ -284,27 +298,30 @@ bool Scene::load(const string_view directory)
             light_info.get_to(light);
             lights.push_back(light);
         }
-        logger->info("{} light sources loaded", this->lights.size());
 
         // load groups
+        logger->info("loading groups...");
+        size_t n_groups_in_metadata = 0ULL;
         for (const json& group_info: metadata.at("groups")) {
-            string group_filename   = group_info.at("filename");
-            json   group_extra_json = group_info.at("extra");
+            ++n_groups_in_metadata;
+            string group_filename = group_info.at("filename");
+            json   group_metadata = group_info.at("metadata");
             if (import_model((base_path / group_filename).generic_string())) {
-                auto& imported_group = groups.back();
-                imported_group->load_metadata(group_extra_json);
+                unique_ptr<Group>& imported_group = groups.back();
+                imported_group->load_metadata(group_metadata);
             } else {
-                logger->warn("failed to load group file {}", group_filename);
+                logger->warn("failed to import file {} as a group", group_filename);
             }
         }
-        logger->info("{} groups loaded", this->groups.size());
+        logger->info(
+            "scene loaded, {}/{} group(s) imported", this->groups.size(), n_groups_in_metadata
+        );
     } catch (std::exception const& e) {
         logger->error("failed to load scene because: {}", e.what());
         this->clear();
         logger->info("clear scene to avoid data corruption");
         return false;
     }
-    logger->info("scene loaded from {}", directory);
 
     return true;
 }

@@ -217,24 +217,36 @@ bool Group::save_models(const string& file_path)
 
     Assimp::Exporter exporter;
 
-    auto export_result = exporter.Export(&scene, "obj", file_path);
-    if (export_result != aiReturn_SUCCESS) {
-        logger->error("assimp export failed {}", static_cast<int>(export_result));
-        return false;
+    aiReturn export_result = exporter.Export(&scene, "obj", file_path);
+    if (export_result == aiReturn_SUCCESS) {
+        logger->info("group {} exported", this->name);
+        return true;
     }
-    return true;
+    switch (export_result) {
+    case aiReturn_FAILURE:
+        logger->error(
+            "Assimp export failed, some model data may be incompatible with the file format"
+        );
+        break;
+    case aiReturn_OUTOFMEMORY: logger->error("out of memory during exporting, aborted"); break;
+    default:
+        logger->error(
+            "unknown error occurred, error code from Assimp: {}", static_cast<int>(export_result)
+        );
+        break;
+    }
+    return false;
 }
 
 void Group::load_metadata(const json& metadata)
 {
     // load name
     metadata.at("name").get_to(name);
-    logger->info("loading group {}", this->name);
 
     // load object attributes
     const json& objects_info = metadata.at("objects_info");
     if (objects_info.size() != objects.size()) {
-        logger->warn("mismatching length of objects in extra json data, terminate");
+        logger->warn("mismatching length of objects in metadata, terminate");
         return;
     }
     for (size_t i = 0; i < objects.size(); ++i) {
@@ -243,6 +255,7 @@ void Group::load_metadata(const json& metadata)
         // manually call from_json because we already has object instances
         from_json(object_info, *(objects[i]));
     }
+    logger->info("metadata of group {} loaded", this->name);
 }
 
 json Group::dump_metadata()
