@@ -14,7 +14,6 @@
 #include <spdlog/spdlog.h>
 
 #include "menubar.h"
-#include "controller.h"
 #include "settings.h"
 #include "help.inc"
 #include "about.inc"
@@ -52,7 +51,7 @@ Menubar::~Menubar()
     glDeleteTextures(1, &gl_icon_texture);
 }
 
-void Menubar::render(Scene& scene, Controller& controller)
+void Menubar::render(Scene& scene)
 {
     bool open_usage               = false;
     bool open_about               = false;
@@ -65,19 +64,19 @@ void Menubar::render(Scene& scene, Controller& controller)
                 );
                 vector<string> result = file_dialog.result();
                 if (!result.empty()) {
-                    scene.import_group(result[0].c_str());
+                    scene.import_model(result[0].c_str());
                 }
             }
             ImGui::Separator();
             if (ImGui::MenuItem("New Scene")) {
-                auto button = pfd::message(
-                                  "New Scene",
-                                  "Your current scene will be cleared and forever lost. Continue?",
-                                  pfd::choice::yes_no, pfd::icon::question
-                )
-                                  .result();
+                pfd::button button =
+                    pfd::message(
+                        "New Scene", "Your current scene will be cleared. Continue?",
+                        pfd::choice::yes_no, pfd::icon::question
+                    )
+                        .result();
                 if (button == pfd::button::yes) {
-                    controller.return_to_safe_state();
+                    reset_ui();
                     scene.clear();
                 }
             }
@@ -85,47 +84,30 @@ void Menubar::render(Scene& scene, Controller& controller)
                 pfd::select_folder file_dialog = pfd::select_folder("Choose scene folder");
                 string             result      = file_dialog.result();
                 if (!result.empty()) {
-                    controller.return_to_safe_state();
-                    controller.load_scene(result);
+                    scene.load(result);
                 }
             }
             if (ImGui::MenuItem("Save Scene")) {
-                pfd::select_folder file_dialog = pfd::select_folder("Choose save folder");
+                pfd::select_folder file_dialog = pfd::select_folder("Choose a folder to save");
                 string             result      = file_dialog.result();
-                if (!result.empty()) {
-                    if (fs::exists(result) && fs::is_directory(result)) {
-                        auto dirIter = fs::directory_iterator(result);
-                        bool empty   = true;
-                        for (auto& file_name: dirIter) {
-                            std::ignore = file_name;
-                            empty       = false;
-                            break;
-                        }
-                        bool should_save = empty;
-                        if (!empty) {
-                            auto button =
-                                pfd::message(
-                                    "Save Confirmation",
-                                    "Folder has contents inside, do you want to save anyways?",
-                                    pfd::choice::yes_no, pfd::icon::question
-                                )
-                                    .result();
-                            if (button == pfd::button::yes) {
-                                should_save = true;
-                            }
-                        }
-                        spdlog::info("should save? {}", should_save);
-                        if (should_save) {
-                            try {
-                                controller.save_scene(result);
-                            } catch (std::exception const& e) {
-                                spdlog::error("failed to save scene: {}", e.what());
-                            }
-                            spdlog::info("scene saved to path {}", result);
-                        }
-                    } else {
-                        spdlog::error("selected path is not a folder");
+                auto               should_save = [&result]() -> bool {
+                    if (result.empty())
+                        return false;
+                    fs::path target_path(result);
+                    if (fs::exists(target_path) && fs::is_directory(target_path)
+                        && !fs::is_empty(target_path)) {
+                        pfd::button button =
+                            pfd::message(
+                                "Confirmation", "Folder is not empty, save anyway?",
+                                pfd::choice::yes_no, pfd::icon::question
+                            )
+                                .result();
+                        return button == pfd::button::yes;
                     }
+                    return true;
+                };
+                if (should_save()) {
+                    scene.save(result);
                 }
             }
             ImGui::EndMenu();

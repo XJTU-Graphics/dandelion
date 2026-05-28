@@ -2,7 +2,6 @@
 
 #include <set>
 #include <utility>
-#include <fstream>
 
 #include <assimp/Importer.hpp>
 #include <assimp/Exporter.hpp>
@@ -34,7 +33,7 @@ Group::Group(const string& group_name) : name(group_name)
     logger                   = get_logger(logger_name);
 }
 
-bool Group::load(const string& file_path)
+bool Group::load_models(const string& file_path)
 {
     Assimp::Importer importer;
     const aiScene*   scene = importer.ReadFile(
@@ -135,7 +134,7 @@ bool Group::load(const string& file_path)
     return true;
 }
 
-bool Group::save(const string& file_path)
+bool Group::save_models(const string& file_path)
 {
     size_t num_objects = objects.size();
     logger->info("saving group with {} objects to file {}", num_objects, file_path);
@@ -226,16 +225,16 @@ bool Group::save(const string& file_path)
     return true;
 }
 
-void Group::load_extra_info(const json& extra_info)
+void Group::load_metadata(const json& metadata)
 {
     // load name
-    extra_info.at("name").get_to(name);
+    metadata.at("name").get_to(name);
     logger->info("loading group {}", this->name);
 
     // load object attributes
-    const json& objects_info = extra_info.at("objects_info");
+    const json& objects_info = metadata.at("objects_info");
     if (objects_info.size() != objects.size()) {
-        logger->warn("mismatching length of objects in extra json data");
+        logger->warn("mismatching length of objects in extra json data, terminate");
         return;
     }
     for (size_t i = 0; i < objects.size(); ++i) {
@@ -246,17 +245,17 @@ void Group::load_extra_info(const json& extra_info)
     }
 }
 
-json Group::dump_extra_info()
+json Group::dump_metadata()
 {
-    json extra_info = json::object();
+    json metadata = json::object();
     // save group name to json
-    extra_info["name"] = name;
+    metadata["name"] = name;
 
     // save object attributes to json
-    json& objects_info = extra_info["objects_info"] = json::object();
+    json& objects_info = metadata["objects_info"] = json::object();
     for (size_t i = 0; i < objects.size(); ++i) {
         const unique_ptr<Object>& object = objects[i];
         objects_info[object->name]       = *object;
     }
-    return extra_info;
+    return metadata;
 }

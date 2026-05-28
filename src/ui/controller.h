@@ -6,7 +6,6 @@
  */
 
 #include <memory>
-#include <variant>
 
 #include <spdlog/spdlog.h>
 #include <nlohmann/json.hpp>
@@ -16,10 +15,7 @@
 #include "selection_helper.h"
 #include "../platform/gl.hpp"
 #include "../platform/shader.hpp"
-#include "../scene/camera.h"
 #include "../scene/scene.h"
-
-using nlohmann::json;
 
 /*!
  * \ingroup ui
@@ -115,24 +111,9 @@ public:
     void render(const Shader& shader);
     /*!
      * \~chinese
-     * 回到一个基础的工作状态，取消选中物体、返回 Layout 模式等，以便正确加载场景
+     * 在加载场景前重置 UI 的状态，避免加载场景时控制器仍有不当的数据引用。
      */
     void return_to_safe_state();
-    /*!
-     * \~chinese
-     * 将当前工作相关状态（当前视角等属性）保存为 JSON 格式（目前只保存场景预览主相机参数）
-     * \param
-     */
-    void dump_state_json(json& state_json);
-    /*!
-     * \~chinese
-     * 读取 JSON 格式保存的工作状态
-     * \param
-     */
-    void load_state_json(const json& state_json);
-
-    bool save_scene(const std::string& folder_path);
-    bool load_scene(const std::string& folder_path);
     /*!
      * \~english All variables used for layout are float because ImVec2 expects float.
      * \~chinese 由于 ImGui 使用浮点数表示尺寸，所有和布局相关的变量都是浮点型。
@@ -260,8 +241,6 @@ private:
      * 当前的选择状态为空（没有任何元素被选中）。
      */
     SelectableType selected_element;
-    /*! \~chinese 用于预览场景的观察相机（主相机）。 */
-    std::unique_ptr<Camera> main_camera;
     /*! \~chinese 日志记录器。 */
     std::shared_ptr<spdlog::logger> logger;
     /*! \~chinese 当前的轨迹球半径，决定轨迹球控制曲面上球面和双曲面部分的相切位置。 */

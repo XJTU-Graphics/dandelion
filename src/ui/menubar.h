@@ -1,12 +1,9 @@
 #ifndef DANDELION_UI_MENUBAR_H
 #define DANDELION_UI_MENUBAR_H
 
-#include <memory>
+#include <functional>
 
 #include "../scene/scene.h"
-
-// declaration to prevent cyclic dependency
-class Controller;
 
 /*!
  * \file ui/menubar.h
@@ -43,9 +40,10 @@ public:
     Menubar(DebugOptions& debug_options);
     ~Menubar();
     /*! \~chinese 显示菜单栏。 */
-    void render(Scene& scene, Controller& controller);
+    void render(Scene& scene);
     /*! \~chinese 当前菜单栏高度。 */
-    float height() const;
+    float                 height() const;
+    std::function<void()> reset_ui;
 
 private:
 

@@ -9,8 +9,6 @@
 
 #include "object.h"
 
-using nlohmann::json;
-
 /*!
  * \ingroup rendering
  * \ingroup simulation
@@ -37,7 +35,7 @@ public:
     /*!
      * \~chinese
      * 创建一个组只需要指定组名，加载模型数据要显式调用 `load` 方法。
-     * \param position 要创建组的组名
+     * \param group_name 要创建组的组名
      */
     Group(const std::string& group_name);
     ///@{
@@ -51,26 +49,28 @@ public:
      * 被 `Scene::load` 调用，真正加载模型数据的函数。
      * 这个函数只加载模型 mesh 数据，不包括变换、物理属性等 `Object` 层面的信息
      * \param file_path 要加载模型的文件路径
+     * \returns 是否加载成功
      */
-    bool load(const std::string& file_path);
+    bool load_models(const std::string& file_path);
     /*!
      * \~chinese
      * 将 `Group` 保存为单个 obj 文件，包括 mesh、材质等信息
      * \param file_path 保存的文件路径
+     * \returns 是否保存成功
      */
-    bool save(const std::string& file_path);
+    bool save_models(const std::string& file_path);
     /*!
      * \~chinese
      * 加载以 JSON 格式保存的除 mesh 和材质以外的数据，如变换、物理属性
-     * \param extra_info JSON 对象
+     * \param metadata 包含所有额外信息的 JSON 对象
      */
-    void load_extra_info(const json& extra_info);
+    void load_metadata(const nlohmann::json& metadata);
     /*!
      * \~chinese
-     * 生成 JSON 对象，用来保存 `save` 方法以外的数据，用 `load_extra_json` 可以读取
+     * 将模型以外的额外信息序列化为 JSON 对象，用 `load_metadata` 可以读取
      * \returns 表示该组中所有物体信息的 JSON 对象
      */
-    json dump_extra_info();
+    nlohmann::json dump_metadata();
     /*! \~chinese 组中所有的物体。 */
     std::vector<std::unique_ptr<Object>> objects;
     /*! \~chinese 组的唯一 ID。 */

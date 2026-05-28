@@ -5,8 +5,8 @@
 #include <string>
 #include <vector>
 #include <list>
-#include <optional>
 #include <chrono>
+#include <string_view>
 
 #include <spdlog/spdlog.h>
 
@@ -62,33 +62,34 @@ public:
      * \~chinese
      * \brief 从指定路径导入模型文件到这个场景中。
      *
-     * 这个函数只会根据文件名创建一个物体组，然后调用物体组的 `load` 方法加载文件。
+     * 这个函数只会根据文件名创建一个物体组，然后调用物体组的 `load_models` 方法加载文件。
      *
      * \param file_path 要导入的模型文件路径
+     * \returns 加载是否成功
      */
-    bool import_group(const std::string& file_path);
+    bool import_model(const std::string& file_path);
     /*!
      * \~chinese
-     * \brief 将场景模型保存到文件夹中，并生成场景 JSON 数据
+     * \brief 保存所有场景数据到指定的目录中。
      *
-     * 保存的场景文件夹里面包含了场景中的物体数据，被 JSON 文件所引用。
-     * 可以使用 `load` 方法加载保存的场景 JSON 文件。
+     * 保存场景时涉及两类数据：
+     * - 模型数据（包括几何数据和材质数据），会被保存为通用模型文件格式
+     * - 元数据，Dandelion 特有的组、物体信息等，会被保存为 metadata.json 文件
      *
-     * \param folder_path 场景文件夹路径
-     * \returns 序列化为 JSON 格式的场景信息，几何数据除外。如果返回了 `std::nullopt`，
-     *  就表示场景序信息序列化失败。
+     * \param directory 场景文件夹路径
+     * \returns 是否保存成功
      */
-    std::optional<json> save(const std::string& folder_path);
+    bool save(const std::string_view directory);
     /*!
      * \~chinese
-     * \brief 加载表示场景的 JSON 数据，同时从文件夹中加载引用的物体数据
+     * \brief 从指定目录中加载保存的场景数据。
      *
-     * 保存的场景 JSON 里面包含了场景的物体组、相机、光源等数据。
-     *
-     * \param folder_path 要加载的场景文件夹路径
-     * \param scene_json 场景 JSON 数据
+     * 与 `save` 方法相对应，`load` 会从保存的数据中恢复模型、物体、组、相机、
+     * 光源等全部信息。
+     * \param directory 要加载的场景文件夹路径
+     * \returns 是否加载成功
      */
-    bool load(const std::string& folder_path, const json& scene_json);
+    bool load(const std::string_view directory);
     /*!
      * \~chinese
      * \brief 清除场景中所有元素
@@ -123,6 +124,8 @@ public:
      * 在布局模式和物理模拟模式下，它决定当前被高亮的物体；在建模模式下，仅有这个物体被绘制。
      */
     Object* selected_object;
+    /*! \~chinese 用于预览场景的观察相机（主相机）。 */
+    Camera main_camera;
     /*! \~chinese 用于 **离线渲染** 的相机，和用于预览场景的观察相机（主相机）无关。 */
     Camera camera;
     /*! \~chinese 用于 **离线渲染** 的光源，和预览时照亮物体的光源无关。 */
@@ -151,6 +154,11 @@ private:
      * 主相机的初始观察目标点（看向的位置）。
      */
     static Eigen::Vector3f initial_camera_target;
+    /*!
+     * \~chinese
+     * 保存场景元数据的文件名。
+     */
+    static constexpr std::string_view metadata_filename = "metadata.json";
     /*! \~chinese
      * \brief 在渲染模式 (Rendering mode) 下绘制代表相机视锥的线框。
      *

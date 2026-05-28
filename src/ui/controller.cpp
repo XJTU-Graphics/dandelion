@@ -4,7 +4,6 @@
 #include <string>
 #include <vector>
 #include <array>
-#include <fstream>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -18,9 +17,7 @@
 #include "../utils/ray.h"
 #include "../utils/rendering.hpp"
 #include "../utils/logger.h"
-#include "../utils/json_serialize.hpp"
 
-namespace fs = std::filesystem;
 using Eigen::Matrix3f;
 using Eigen::Matrix4f;
 using Eigen::Quaternionf;
@@ -32,7 +29,6 @@ using std::make_unique;
 using std::monostate;
 using std::optional;
 using std::sqrt;
-using std::unique_ptr;
 using std::visit;
 
 Controller& Controller::controller()
@@ -48,14 +44,12 @@ Controller::Controller() :
     logger                         = get_logger("Controller");
     scene                          = make_unique<Scene>();
     menubar                        = make_unique<UI::Menubar>(debug_options);
+    menubar->reset_ui              = [this]() -> void { this->return_to_safe_state(); };
     toolbar                        = make_unique<UI::Toolbar>(mode, selected_element);
     toolbar->on_element_selected   = [this](SelectableType element) { select(element); };
     toolbar->on_selection_canceled = [this]() { unselect(); };
-    main_camera                    = make_unique<Camera>(
-        Vector3f(1.0f, 2.0f, 3.0f), Vector3f(0.0f, 0.0f, 0.0f), 0.1f, 1000.0f, 45.0f, 0.75f
-    );
-    trackball_radius = 300.0f;
-    selected_element = monostate();
+    trackball_radius               = 300.0f;
+    selected_element               = monostate();
     // Device-independent configurations (i.e. styles) here.
     ImGui::StyleColorsDark();
     ImGuiStyle& style  = ImGui::GetStyle();
@@ -119,13 +113,12 @@ void Controller::on_picking()
         unselect();
         return;
     }
-    Controller& controller = Controller::controller();
-    ImGuiIO&    io         = ImGui::GetIO();
+    ImGuiIO& io = ImGui::GetIO();
     // Construct a view ray from the main_camera according to the clicked position.
     // If the ray intersects with any object, the intersected object will be picked.
     Ray ray = generate_ray(
-        (int)(controller.window_width), (int)(controller.window_height), (int)(io.MousePos.x),
-        (int)(io.MousePos.y), *(controller.main_camera), controller.main_camera->far_plane
+        (int)(window_width), (int)(window_height), (int)(io.MousePos.x), (int)(io.MousePos.y),
+        scene->main_camera, scene->main_camera.far_plane
     );
     if (mode == WorkingMode::MODEL) {
         pick_element(ray);
@@ -142,20 +135,20 @@ void Controller::on_picking()
 
 void Controller::on_wheel_scrolled()
 {
-    ImGuiIO&            io     = ImGui::GetIO();
-    float               input  = io.MouseWheel;
-    unique_ptr<Camera>& camera = main_camera;
-    Vector3f            delta  = camera->position - camera->target;
-    delta                      = std::pow(Controller::wheel_scroll_factor, input) * delta;
-    camera->position           = camera->target + delta;
+    ImGuiIO& io          = ImGui::GetIO();
+    float    input       = io.MouseWheel;
+    Camera&  main_camera = scene->main_camera;
+    Vector3f delta       = main_camera.position - main_camera.target;
+    delta                = std::pow(Controller::wheel_scroll_factor, input) * delta;
+    main_camera.position = main_camera.target + delta;
 }
 
 void Controller::on_framebuffer_resized(float width, float height)
 {
-    window_width              = width;
-    window_height             = height;
-    trackball_radius          = std::min(window_width, window_height) / 2.0f;
-    main_camera->aspect_ratio = width / height;
+    window_width                    = width;
+    window_height                   = height;
+    trackball_radius                = std::min(window_width, window_height) / 2.0f;
+    scene->main_camera.aspect_ratio = width / height;
 }
 
 void Controller::process_input()
@@ -236,24 +229,22 @@ void Controller::process_input()
         }
     }
     if (ImGui::IsKeyDown(ImGuiMod_Ctrl) && ImGui::IsKeyDown(ImGuiKey_R)) {
-        main_camera->position -= main_camera->target;
-        main_camera->target = Vector3f(0.0f, 0.0f, 0.0f);
+        scene->main_camera.position -= scene->main_camera.target;
+        scene->main_camera.target = Vector3f(0.0f, 0.0f, 0.0f);
     }
 }
 
 void Controller::render(const Shader& shader)
 {
-    Controller& controller = Controller::controller();
-    controller.menubar->render(*scene, *this);
-    controller.toolbar->render(*scene);
+    menubar->render(*scene);
+    toolbar->render(*scene);
 
     ImGui::Render();
 
-    Matrix4f view_projection =
-        controller.main_camera->projection() * controller.main_camera->view();
+    Matrix4f view_projection = scene->main_camera.projection() * scene->main_camera.view();
     shader.set_uniform("view_projection", view_projection);
-    shader.set_uniform("camera_position", controller.main_camera->position);
-    controller.scene->render(shader, mode);
+    shader.set_uniform("camera_position", scene->main_camera.position);
+    scene->render(shader, mode);
 
     render_selected_element(shader);
     render_debug_helpers(shader);
@@ -549,7 +540,7 @@ void Controller::select_light(Light* light)
 void Controller::on_rotating(bool initial)
 {
     static Vector3f previous_pos;
-    Matrix4f        inv_view           = main_camera->view().inverse();
+    Matrix4f        inv_view           = scene->main_camera.view().inverse();
     auto            to_trackball_space = [this](const ImVec2& mouse_pos) -> Vector3f {
         // The mouse position starts from the top-left corner of window, x is greater at right and
         // y is greater at bottom.
@@ -587,19 +578,20 @@ void Controller::on_rotating(bool initial)
         (inv_view * pos.homogeneous()).hnormalized(),
         (inv_view * previous_pos.homogeneous()).hnormalized()
     );
-    Vector3f& target              = main_camera->target;
-    Vector3f  previous_camera_pos = main_camera->position;
+    Camera&   main_camera         = scene->main_camera;
+    Vector3f& target              = main_camera.target;
+    Vector3f  previous_camera_pos = main_camera.position;
     Vector3f  new_camera_pos      = quat * (previous_camera_pos - target) + target;
     bool      x_inverted =
         (new_camera_pos.x() - target.x()) * (previous_camera_pos.x() - target.x()) < 0.0f;
     bool z_inverted =
         (new_camera_pos.z() - target.z()) * (previous_camera_pos.z() - target.z()) < 0.0f;
     if (x_inverted && z_inverted) {
-        main_camera->world_up.y() *= -1.0f;
+        main_camera.world_up.y() *= -1.0f;
         logger->debug("world up inverted");
     }
-    main_camera->position = new_camera_pos;
-    previous_pos          = pos;
+    main_camera.position = new_camera_pos;
+    previous_pos         = pos;
 }
 
 void Controller::on_translating(bool initial)
@@ -610,93 +602,23 @@ void Controller::on_translating(bool initial)
         previous_pos = io.MousePos;
         return;
     }
-    Matrix4f       inv_view = main_camera->view().inverse();
-    const Vector3f right    = (inv_view * Vector4f(1.0f, 0.0f, 0.0f, 0.0f)).topRows(3);
-    const Vector3f up       = (inv_view * Vector4f(0.0f, 1.0f, 0.0f, 0.0f)).topRows(3);
-    const ImVec2   pos      = io.MousePos;
+    Camera&        main_camera = scene->main_camera;
+    Matrix4f       inv_view    = main_camera.view().inverse();
+    const Vector3f right       = (inv_view * Vector4f(1.0f, 0.0f, 0.0f, 0.0f)).topRows(3);
+    const Vector3f up          = (inv_view * Vector4f(0.0f, 1.0f, 0.0f, 0.0f)).topRows(3);
+    const ImVec2   pos         = io.MousePos;
     const ImVec2   mouse_delta(pos.x - previous_pos.x, pos.y - previous_pos.y);
     const float    coeff =
-        mouse_translation_factor * (main_camera->position - main_camera->target).norm();
+        mouse_translation_factor * (main_camera.position - main_camera.target).norm();
     const Vector3f delta = coeff * (-mouse_delta.x * right + mouse_delta.y * up);
-    main_camera->target += delta;
-    main_camera->position += delta;
+    main_camera.target += delta;
+    main_camera.position += delta;
     previous_pos = pos;
-}
-
-void Controller::dump_state_json(json& state_json)
-{
-    state_json["main_camera"] = *main_camera;
-}
-
-void Controller::load_state_json(const json& state_json)
-{
-    state_json.at("main_camera").get_to(*main_camera);
-    // fix camera proportion
-    on_framebuffer_resized(window_width, window_height);
 }
 
 void Controller::return_to_safe_state()
 {
-    mode = WorkingMode::LAYOUT;
     unselect();
-    main_camera = make_unique<Camera>(
-        Vector3f(1.0f, 2.0f, 3.0f), Vector3f(0.0f, 0.0f, 0.0f), 0.1f, 1000.0f, 45.0f, 0.75f
-    );
+    mode = WorkingMode::LAYOUT;
     on_framebuffer_resized(window_width, window_height);
-}
-
-bool Controller::save_scene(const std::string& folder_path)
-{
-    fs::path base_path = folder_path;
-    if (!fs::exists(base_path)) {
-        logger->debug("creating scene save target folder");
-        fs::create_directory(base_path);
-    }
-    if (!fs::is_directory(base_path)) {
-        logger->error("can't save scene, path is not a folder");
-        return false;
-    }
-
-    // first save scene
-    json scene_json;
-    scene_json["scene"] = scene->save(folder_path);
-
-    // then save controller states
-    json controller_state_json;
-    dump_state_json(controller_state_json);
-    scene_json["controller_state"] = controller_state_json;
-
-    fs::path      scene_json_path = base_path / "dandelion_scene.json";
-    std::ofstream scene_json_file(scene_json_path);
-
-    scene_json_file << std::setw(4) << scene_json;
-
-    return true;
-}
-
-bool Controller::load_scene(const std::string& folder_path)
-{
-    // load main json file
-    fs::path      base_path       = folder_path;
-    fs::path      scene_json_path = base_path / "dandelion_scene.json";
-    std::ifstream scene_json_file(scene_json_path);
-
-    json scene_json;
-    scene_json_file >> scene_json;
-
-    // first load scene
-    scene->clear();
-    try {
-        scene->load(folder_path, scene_json.at("scene"));
-    } catch (std::exception const& e) {
-        spdlog::error("failed to load scene: {}", e.what());
-        scene->clear();
-        return false;
-    }
-
-    // then load controller state
-    load_state_json(scene_json.at("controller_state"));
-
-    spdlog::info("scene loaded from path {}", folder_path);
-    return true;
 }
