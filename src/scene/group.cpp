@@ -14,6 +14,7 @@
 #include <nlohmann/json.hpp>
 
 #include "../utils/logger.h"
+#include "../utils/json_serialize.hpp"
 
 using Eigen::Vector3f;
 using nlohmann::json;

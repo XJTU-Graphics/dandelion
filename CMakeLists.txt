@@ -66,6 +66,7 @@ set(DANDELION_UTILS_SOURCES
     # src/utils/bvh.cpp
     src/utils/kinetic_state.cpp
     src/utils/logger.cpp
+    src/utils/json_serialize.cpp
 )
 set(DANDELION_RENDER_SOURCES
     src/render/shader.cpp
