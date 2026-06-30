@@ -61,6 +61,14 @@ void Menubar::render(Scene& scene)
                     scene.load(result[0].c_str());
                 }
             }
+            ImGui::Separator();
+            if (ImGui::MenuItem("Open Scene")) {}
+            if (ImGui::MenuItem("Save Scene")) {
+                if (!scene.groups.empty()) {
+                    scene.groups[0]->save("test.obj");
+                    spdlog::info("file saved");
+                }
+            }
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("Debug")) {

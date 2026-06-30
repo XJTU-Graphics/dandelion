@@ -49,6 +49,12 @@ public:
      * \param file_path 要加载模型的文件路径
      */
     bool load(const std::string& file_path);
+    /*!
+     * \~chinese
+     * 将 `Group` 保存为单个 obj 文件，包括 mesh、材质等信息
+     * \param file_path 保存的文件路径
+     */
+    bool save(const std::string& file_path);
     /*! \~chinese 组中所有的物体。 */
     std::vector<std::unique_ptr<Object>> objects;
     /*! \~chinese 组的唯一 ID。 */

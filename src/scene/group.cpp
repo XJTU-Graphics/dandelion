@@ -4,6 +4,7 @@
 #include <utility>
 
 #include <assimp/Importer.hpp>
+#include <assimp/Exporter.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 #include <assimp/material.h>
@@ -128,5 +129,92 @@ bool Group::load(const string& file_path)
         object.modified = true;
     }
 
+    return true;
+}
+
+bool Group::save(const string& file_path)
+{
+    size_t num_objects = objects.size();
+    logger->info("saving group with {} objects to file {}", num_objects, file_path);
+
+    // reconstruct aiScene with Group data
+    aiScene scene               = aiScene();
+    scene.mRootNode             = new aiNode();
+    scene.mRootNode->mName      = aiString(this->name);
+    scene.mRootNode->mNumMeshes = num_objects;
+    scene.mRootNode->mMeshes    = new unsigned int[num_objects];
+    // add mesh indices to root node
+    for (size_t i = 0; i < num_objects; ++i) {
+        scene.mRootNode->mMeshes[i] = i;
+    }
+
+    // create a new material for each object
+    scene.mNumMaterials = num_objects;
+    scene.mMaterials    = new aiMaterial*[num_objects];
+    for (size_t i = 0; i < num_objects; ++i) {
+        const auto&         object      = objects[i];
+        const GL::Material& material    = object->mesh.material;
+        auto                ai_material = scene.mMaterials[i] = new aiMaterial();
+        ai_material->AddProperty(new aiString(object->name), AI_MATKEY_NAME);
+        ai_material->AddProperty(
+            new aiColor3D{material.ambient.x(), material.ambient.y(), material.ambient.z()}, 1,
+            AI_MATKEY_COLOR_AMBIENT
+        );
+        ai_material->AddProperty(
+            new aiColor3D{material.diffuse.x(), material.diffuse.y(), material.diffuse.z()}, 1,
+            AI_MATKEY_COLOR_DIFFUSE
+        );
+        ai_material->AddProperty(
+            new aiColor3D{material.specular.x(), material.specular.y(), material.specular.z()}, 1,
+            AI_MATKEY_COLOR_SPECULAR
+        );
+        ai_material->AddProperty(new double(material.shininess), 1, AI_MATKEY_SHININESS);
+    }
+
+    // create a mesh for each object
+    scene.mNumMeshes = num_objects;
+    scene.mMeshes    = new aiMesh*[num_objects];
+    for (size_t i = 0; i < num_objects; ++i) {
+        const auto& object  = objects[i];
+        auto*       ai_mesh = scene.mMeshes[i] = new aiMesh();
+        ai_mesh->mMaterialIndex                = i;
+
+        // transfer vertices and normals from GL::Mesh to aiMesh
+        size_t num_vertices = object->mesh.vertices.count();
+        size_t num_normals  = object->mesh.normals.count();
+        logger->debug("transfering {} vertices and {} normals", num_vertices, num_normals);
+        if (num_vertices != num_normals) {
+            logger->error("number of vertices and normals are not equal");
+            return false;
+        }
+        ai_mesh->mNumVertices = num_vertices;
+        ai_mesh->mVertices    = new aiVector3D[num_vertices];
+        ai_mesh->mNormals     = new aiVector3D[num_vertices];
+        for (size_t vertex_id = 0; vertex_id < num_vertices; ++vertex_id) {
+            auto vertex                   = object->mesh.vertex(vertex_id);
+            ai_mesh->mVertices[vertex_id] = {vertex.x(), vertex.y(), vertex.z()};
+            auto normal                   = object->mesh.normal(vertex_id);
+            ai_mesh->mNormals[vertex_id]  = {normal.x(), normal.y(), normal.z()};
+        }
+
+        // transfer faces (detecting and transfering loose edges is not necessary)
+        size_t num_faces = object->mesh.faces.count();
+        logger->debug("transfering {} faces", num_faces);
+        ai_mesh->mNumFaces = num_faces;
+        ai_mesh->mFaces    = new aiFace[num_faces];
+        for (size_t face_id = 0; face_id < num_faces; ++face_id) {
+            auto face                            = object->mesh.face(face_id);
+            ai_mesh->mFaces[face_id].mNumIndices = 3;
+            ai_mesh->mFaces[face_id].mIndices    = new unsigned int[3]{
+                static_cast<unsigned int>(face[0]), static_cast<unsigned int>(face[1]),
+                static_cast<unsigned int>(face[2])
+            };
+        }
+    }
+
+    Assimp::Exporter exporter;
+    if (exporter.Export(&scene, "obj", file_path) != aiReturn_SUCCESS) {
+        return false;
+    }
     return true;
 }
