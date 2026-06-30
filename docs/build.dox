@@ -34,6 +34,7 @@
 - {fmt} 11.2.0, {fmt}'s License
 - portable-file-dialogs (commit 7f852d88a480020d7f91957cbcefe514fc95000c), WTFPL License
 - Catch2 3.8.1, BOOST Software License
+- nlohmann/json 3.12.0, MIT License
 
 在 Linux 平台上，为了编译 GLFW ，你可能需要按照 [Compiling GLFW](https://www.glfw.org/docs/latest/compile_guide.html) 的要求安装相应的依赖库。除此以外，所有的依赖项均被包含于 *deps* 子目录中，不需要额外下载或安装。由于我们对一些库进行了修复移植或裁剪，也请不要轻易尝试替换 *deps* 目录下的第三方库，它们和官方发布的相应版本可能并不完全一样。
 

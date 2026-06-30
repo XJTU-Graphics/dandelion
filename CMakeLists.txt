@@ -24,6 +24,10 @@ set(ASSIMP_BUILD_OBJ_IMPORTER TRUE)
 set(ASSIMP_BUILD_FBX_IMPORTER TRUE)
 add_subdirectory(deps/assimp)
 
+set(JSON_BuildTests OFF CACHE INTERNAL "")
+set(JSON_Install OFF CACHE INTERNAL "")
+add_subdirectory(deps/nlohmann_json)
+
 set(GLAD_SOURCES
     deps/glad/src/glad.c
 )
@@ -109,6 +113,7 @@ target_link_libraries(${PROJECT_NAME}
     optimized dandelion-ray
     debug dandelion-bvh-debug
     optimized dandelion-bvh
+    nlohmann_json::nlohmann_json
 )
 target_compile_definitions(${PROJECT_NAME}
     PRIVATE $<$<CONFIG:Debug>:DEBUG>
