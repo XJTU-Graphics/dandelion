@@ -23,7 +23,7 @@ jobs:
   pre_build:
     runs-on: ubuntu-24.04
     outputs:
-      updated: ${{ steps.check.outputs.updated }}
+      updated: ${{ steps.check_dev_updated.outputs.updated }}
     steps:
       - id: check_dev_updated
         name: Check if dev is updated
@@ -44,7 +44,7 @@ jobs:
   build_windows_x64_msvc:
     runs-on: windows-2022
     needs: pre_build
-    if: ${{ needs.check_dev_updated.outputs.updated == 'true' }}
+    if: ${{ needs.pre_build.outputs.updated == 'true' }}
     strategy:
       matrix:
         build_kind: [dev, lib]
@@ -66,7 +66,7 @@ jobs:
         shell: powershell
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: ${{ env.DANDELION_DEV_REPO }}
           ref: ${{ env.DANDELION_DEV_BRANCH }}
@@ -117,7 +117,7 @@ jobs:
       ARTIFACT_NAME: dandelion-macos-arm64-${{ matrix.build_kind }}-${{ matrix.build_type }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: ${{ env.DANDELION_DEV_REPO }}
           ref: ${{ env.DANDELION_DEV_BRANCH }}
@@ -165,7 +165,7 @@ jobs:
         shell: msys2 {0}
     steps:
       - name: Checkout dandelion-autobuild
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: ${{ env.DANDELION_AUTOBUILD_REPO }}
       
@@ -175,7 +175,7 @@ jobs:
           key: ${{ env.ARTIFACT_NAME }}
 
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           path: dandelion
           repository: ${{ env.DANDELION_DEV_REPO }}
@@ -243,12 +243,12 @@ jobs:
         shell: bash
     steps:
       - name: Checkout dandelion-autobuild
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: ${{ env.DANDELION_AUTOBUILD_REPO }}
 
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           path: dandelion
           repository: ${{ env.DANDELION_DEV_REPO }}

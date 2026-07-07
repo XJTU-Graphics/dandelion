@@ -31,7 +31,7 @@ jobs:
           Write-Output "Using branch: $branch"
 
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ steps.determine_branch.outputs.branch }}
       
@@ -68,7 +68,7 @@ jobs:
           echo "Using branch: $branch"
 
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ steps.determine_branch.outputs.branch }}
 
@@ -120,7 +120,7 @@ jobs:
           echo "Using branch: $branch"
 
       - name: Checkout dandelion-autobuild
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: ${{ env.DANDELION_AUTOBUILD_REPO }}
       
@@ -130,7 +130,7 @@ jobs:
           key: dandelion-windows_${{ matrix.sys }}-x64-release
 
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           path: dandelion
           ref: ${{ env.BRANCH }}
@@ -159,7 +159,7 @@ jobs:
     runs-on: ubuntu-24.04
     strategy:
       matrix:
-        sys: [archlinux, debian-12, fedora, ubuntu-22.04, ubuntu-24.04]
+        sys: [archlinux, debian-13, fedora, ubuntu-24.04, ubuntu-26.04]
     defaults:
       run:
         shell: bash
@@ -171,12 +171,12 @@ jobs:
           echo "Using branch: $branch"
 
       - name: Checkout dandelion-autobuild
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: ${{ env.DANDELION_AUTOBUILD_REPO }}
 
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           path: dandelion
           ref: ${{ env.BRANCH }}
