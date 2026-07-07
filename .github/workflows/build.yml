@@ -148,7 +148,7 @@ jobs:
   build_windows_x64_mingw:
     runs-on: windows-2022
     needs: pre_build
-    if: ${{ needs.check_dev_updated.outputs.updated == 'true' }}
+    if: ${{ needs.pre_build.outputs.updated == 'true' }}
     strategy:
       matrix:
         sys: [ucrt64, clang64]
@@ -229,7 +229,7 @@ jobs:
     if: ${{ needs.pre_build.outputs.updated == 'true' }}
     strategy:
       matrix:
-        sys: [archlinux, debian-12, fedora, ubuntu-22.04, ubuntu-24.04]
+        sys: [archlinux, debian-13, fedora, ubuntu-24.04, ubuntu-26.04]
         build_kind: [dev, lib]
         include:
           - should_upload_debug: false
