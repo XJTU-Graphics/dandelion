@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
-project(test VERSION 0.1)
+project(test VERSION 1.2)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
@@ -15,6 +15,11 @@ set(ASSIMP_BUILD_COLLADA_IMPORTER TRUE)
 set(ASSIMP_BUILD_OBJ_IMPORTER TRUE)
 set(ASSIMP_BUILD_FBX_IMPORTER TRUE)
 
+# If zlib >= 1.3.2 exists in the system include path, assimp will fail to find unzip.h from minizip.
+# See [issue 6576](https://github.com/assimp/assimp/issues/6576) for details.
+set(ASSIMP_BUILD_ZLIB TRUE)
+# Do not treat warnings from Assimp as errors
+set(ASSIMP_WARNINGS_AS_ERRORS OFF CACHE BOOL "" FORCE)
 add_subdirectory(../deps/assimp ${PROJECT_BINARY_DIR}/deps/assimp)
 add_subdirectory(../deps/fmt ${PROJECT_BINARY_DIR}/deps/fmt)
 
