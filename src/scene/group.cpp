@@ -143,15 +143,15 @@ bool Group::save_models(const string& file_path)
     aiScene scene               = aiScene();
     scene.mRootNode             = new aiNode();
     scene.mRootNode->mName      = aiString(this->name);
-    scene.mRootNode->mNumMeshes = num_objects;
+    scene.mRootNode->mNumMeshes = static_cast<unsigned int>(num_objects);
     scene.mRootNode->mMeshes    = new unsigned int[num_objects];
     // add mesh indices to root node
     for (size_t i = 0; i < num_objects; ++i) {
-        scene.mRootNode->mMeshes[i] = i;
+        scene.mRootNode->mMeshes[i] = static_cast<unsigned int>(i);
     }
 
     // create a new material for each object
-    scene.mNumMaterials = num_objects;
+    scene.mNumMaterials = static_cast<unsigned int>(num_objects);
     scene.mMaterials    = new aiMaterial*[num_objects];
     for (size_t i = 0; i < num_objects; ++i) {
         const auto&         object      = objects[i];
@@ -174,13 +174,13 @@ bool Group::save_models(const string& file_path)
     }
 
     // create a mesh for each object
-    scene.mNumMeshes = num_objects;
+    scene.mNumMeshes = static_cast<unsigned int>(num_objects);
     scene.mMeshes    = new aiMesh*[num_objects];
     for (size_t i = 0; i < num_objects; ++i) {
         const auto& object  = objects[i];
         auto*       ai_mesh = scene.mMeshes[i] = new aiMesh();
         ai_mesh->mName                         = aiString(object->name);
-        ai_mesh->mMaterialIndex                = i;
+        ai_mesh->mMaterialIndex                = static_cast<unsigned int>(i);
 
         // transfer vertices and normals from GL::Mesh to aiMesh
         size_t num_vertices = object->mesh.vertices.count();
@@ -190,7 +190,7 @@ bool Group::save_models(const string& file_path)
             logger->error("number of vertices and normals are not equal");
             return false;
         }
-        ai_mesh->mNumVertices = num_vertices;
+        ai_mesh->mNumVertices = static_cast<unsigned int>(num_vertices);
         ai_mesh->mVertices    = new aiVector3D[num_vertices];
         ai_mesh->mNormals     = new aiVector3D[num_vertices];
         for (size_t vertex_id = 0; vertex_id < num_vertices; ++vertex_id) {
@@ -203,7 +203,7 @@ bool Group::save_models(const string& file_path)
         // transfer faces (detecting and transfering loose edges is not necessary)
         size_t num_faces = object->mesh.faces.count();
         logger->debug("transfering {} faces", num_faces);
-        ai_mesh->mNumFaces = num_faces;
+        ai_mesh->mNumFaces = static_cast<unsigned int>(num_faces);
         ai_mesh->mFaces    = new aiFace[num_faces];
         for (size_t face_id = 0; face_id < num_faces; ++face_id) {
             auto face                            = object->mesh.face(face_id);
