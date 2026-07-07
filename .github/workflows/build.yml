@@ -96,7 +96,7 @@ jobs:
   build_macos:
     runs-on: macos-14
     needs: pre_build
-    if: ${{ needs.check_dev_updated.outputs.updated == 'true' }}
+    if: ${{ needs.pre_build.outputs.updated == 'true' }}
     strategy:
       matrix:
         build_kind: [dev, lib]
@@ -226,7 +226,7 @@ jobs:
   build_linux:
     runs-on: ubuntu-24.04
     needs: pre_build
-    if: ${{ needs.check_dev_updated.outputs.updated == 'true' }}
+    if: ${{ needs.pre_build.outputs.updated == 'true' }}
     strategy:
       matrix:
         sys: [archlinux, debian-12, fedora, ubuntu-22.04, ubuntu-24.04]
