@@ -24,6 +24,7 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       updated: ${{ steps.check_dev_updated.outputs.updated }}
+      current_hash: ${{ steps.check_dev_updated.outputs.current_hash }}
     steps:
       - id: check_dev_updated
         name: Check if dev is updated
@@ -38,8 +39,7 @@ jobs:
           else
             echo "updated=true" >> "$GITHUB_OUTPUT"
           fi
-          # update title
-          gh release edit nightly -R ${{ github.repository }} --title "Nightly build [${CURRENT_NIGHTLY_HASH}]"
+          echo "current_hash=${CURRENT_NIGHTLY_HASH}" >> "$GITHUB_OUTPUT"
 
   build_windows_x64_msvc:
     runs-on: windows-2022
@@ -282,3 +282,12 @@ jobs:
           7z a -tzip -mx9 ${{ env.ARTIFACT_NAME }}-release.zip ./build_output/${{ matrix.sys }}-release-artifacts/*
           gh release upload nightly ${{ env.ARTIFACT_NAME }}-release.zip -R ${{github.repository}} --clobber
         continue-on-error: true
+
+  post_build:
+    runs-on: ubuntu-24.04
+    needs: [pre_build, build_windows_x64_msvc, build_macos, build_windows_x64_mingw, build_linux]
+    if: ${{ needs.pre_build.outputs.updated == 'true' }}
+    steps:
+      - name: Update Nightly Release title
+        run: |
+          gh release edit nightly -R ${{ github.repository }} --title "Nightly build [${{ needs.pre_build.outputs.current_hash }}]"
