@@ -21,7 +21,6 @@ set(ASSIMP_BUILD_ZLIB TRUE)
 # Do not treat warnings from Assimp as errors
 set(ASSIMP_WARNINGS_AS_ERRORS OFF CACHE BOOL "" FORCE)
 add_subdirectory(../deps/assimp ${PROJECT_BINARY_DIR}/deps/assimp)
-add_subdirectory(../deps/fmt ${PROJECT_BINARY_DIR}/deps/fmt)
 
 set(GLAD_SOURCES
     ../deps/glad/src/glad.c
@@ -95,7 +94,6 @@ target_link_directories(${PROJECT_NAME} PRIVATE ../deps)
 target_link_libraries(${PROJECT_NAME}
     glfw
     assimp
-    fmt::fmt
     debug dandelion-ray-debug
     optimized dandelion-ray
     debug dandelion-bvh-debug
@@ -103,7 +101,7 @@ target_link_libraries(${PROJECT_NAME}
 )
 target_compile_definitions(${PROJECT_NAME}
     PRIVATE $<$<CONFIG:Debug>:DEBUG>
-    PRIVATE SPDLOG_FMT_EXTERNAL
+    PRIVATE SPDLOG_USE_STD_FORMAT
     PRIVATE CATCH_AMALGAMATED_CUSTOM_MAIN
 )
 

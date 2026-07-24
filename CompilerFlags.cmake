@@ -32,7 +32,7 @@ else()
         PRIVATE -Wall -Wextra -Werror
     )
 endif()
-# ignore dangling reference warning with assimp and fmt with GCC 13 and onward
+# ignore dangling reference warning with assimp with GCC 13 and onward
 # ignore maybe uninitialized warning from copy constructor of Eigen::Matrix with GCC 11 and onward (only occur in release)
 if(${CMAKE_C_COMPILER_ID} STREQUAL "GNU" AND ${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER_EQUAL 11)
     if (${current_target} STREQUAL ${PROJECT_NAME})

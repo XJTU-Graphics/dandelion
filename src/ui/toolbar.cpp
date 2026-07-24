@@ -7,12 +7,12 @@
 #include <variant>
 #include <optional>
 #include <filesystem>
+#include <format>
 
 #include <imgui/imgui.h>
 #include <glad/glad.h>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
-#include <fmt/format.h>
 #include "../utils/formatter.hpp"
 #include <spdlog/spdlog.h>
 #include <portable-file-dialogs.h>
@@ -33,7 +33,7 @@ using Eigen::AngleAxisf;
 using Eigen::Matrix4f;
 using Eigen::Quaternionf;
 using Eigen::Vector3f;
-using fmt::format;
+using std::format;
 using std::get_if;
 using std::holds_alternative;
 using std::optional;
@@ -89,7 +89,7 @@ void Toolbar::scene_hierarchies(Scene& scene)
                                          | ImGuiTreeNodeFlags_NoTreePushOnOpen;
     for (size_t i = 0; i < scene.groups.size(); ++i) {
         const auto&  group       = scene.groups[i];
-        const string group_label = fmt::format("{} (ID: {})", group->name, group->id);
+        const string group_label = std::format("{} (ID: {})", group->name, group->id);
         if (ImGui::TreeNodeEx(group_label.c_str(), group_node_flags)) {
             for (const auto& object: group->objects) {
                 ImGuiTreeNodeFlags flags = object_node_flags;
