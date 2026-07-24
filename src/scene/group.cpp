@@ -2,6 +2,7 @@
 
 #include <set>
 #include <utility>
+#include <format>
 
 #include <assimp/Importer.hpp>
 #include <assimp/Exporter.hpp>
@@ -9,7 +10,6 @@
 #include <assimp/scene.h>
 #include <assimp/material.h>
 #include <Eigen/Core>
-#include <fmt/format.h>
 
 #include "../utils/logger.h"
 #include "../utils/json_serialize.hpp"
@@ -29,7 +29,8 @@ Group::Group(const string& group_name) : name(group_name)
 {
     this->id = next_available_id;
     ++next_available_id;
-    const string logger_name = fmt::format("{} (Group ID: {})", name, id);
+
+    const string logger_name = std::format("{} (Group ID: {})", name, id);
     logger                   = get_logger(logger_name);
 }
 

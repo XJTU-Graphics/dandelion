@@ -1,13 +1,12 @@
 #include <ctime>
+#include <chrono>
 
 #include <catch2/catch_amalgamated.hpp>
 #ifdef _WIN32
-#include <Windows.h>
+    #include <Windows.h>
 #endif
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include <fmt/format.h>
-#include <fmt/chrono.h>
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 
@@ -23,9 +22,9 @@ int main(int argc, char* argv[])
     spdlog::set_level(spdlog::level::info);
     spdlog::set_pattern("[%n] [%^%l%$] %v");
     spdlog::set_default_logger(spdlog::stdout_color_mt("Test"));
-    std::time_t current_timestamp = std::time(nullptr);
-    std::tm *now = std::localtime(&current_timestamp);
-    spdlog::info("Dandelion 3D Unit Test, started at {:%Y-%m-%d %H:%M:%S}", *now);
+    auto now       = std::chrono::system_clock::now();
+    auto local_now = std::chrono::current_zone()->to_local(now);
+    spdlog::info("Dandelion 3D Unit Test, started at {:%Y-%m-%d %H:%M:%S}", local_now);
 
     GLFWwindow* window = nullptr;
     glfwInit();

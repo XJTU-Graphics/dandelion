@@ -1,8 +1,9 @@
 #ifndef DANDELION_UTILS_FORMATTER_HPP
 #define DANDELION_UTILS_FORMATTER_HPP
 
+#include <format>
+
 #include <Eigen/Core>
-#include <fmt/core.h>
 
 /*!
  * \file utils/formatter.hpp
@@ -27,19 +28,20 @@
  * \tparam n_dim 向量维数
  */
 template<typename Scalar, int n_dim>
-struct fmt::formatter<Eigen::Matrix<Scalar, n_dim, 1>> : formatter<Scalar>
+struct std::formatter<Eigen::Matrix<Scalar, n_dim, 1>> : std::formatter<Scalar>
 {
     static_assert(n_dim > 0, "Dimension of a vector must be positive");
 
-    fmt::appender format(const Eigen::Matrix<Scalar, n_dim, 1>& v, format_context& ctx) const
+    std::format_context::iterator
+    format(const Eigen::Matrix<Scalar, n_dim, 1>& v, format_context& ctx) const
     {
-        fmt::appender iter = fmt::format_to(ctx.out(), "(");
-        iter               = formatter<Scalar>::format(v(0), ctx);
+        std::format_context::iterator iter = std::format_to(ctx.out(), "(");
+        iter                               = std::formatter<Scalar>::format(v(0), ctx);
         for (int i = 1; i < n_dim; ++i) {
-            iter = fmt::format_to(iter, ", ");
-            iter = formatter<Scalar>::format(v(i), ctx);
+            iter = std::format_to(iter, ", ");
+            iter = std::formatter<Scalar>::format(v(i), ctx);
         }
-        iter = fmt::format_to(iter, ")");
+        iter = std::format_to(iter, ")");
         return iter;
     }
 };
@@ -56,14 +58,14 @@ struct fmt::formatter<Eigen::Matrix<Scalar, n_dim, 1>> : formatter<Scalar>
  * 格式符：与元素类型的格式符相同，例如 `Matrix4f` 可以使用所有 `float`
  * 类型的格式符，`Matrix3d` 可以使用所有 `double` 类型的格式符。
  *
- * 请注意，方阵的最后一行不会添加换行符，如果使用 `fmt::print` / `std::printf` /
+ * 请注意，方阵的最后一行不会添加换行符，如果使用 `std::printf` /
  * `std::cout` 等工具直接输出时，请自行添加换行。使用 spdlog 的日志输出则不必。
  *
  * 当矩阵中的元素位数不一时（例如 10 和 0），默认的格式符 `{}` 并不会对齐它们。
- * 如果使用者希望将数字右对齐，请直接使用 fmtlib 的右对齐格式，例如：
+ * 如果使用者希望将数字右对齐，请直接使用 std::format 的右对齐格式，例如：
  * ```cpp
  * Eigen::Matrix4f m = 10.0f * Eigen::Matrix4f::Identity();
- * fmt::print("matrix: {:>5.1f}", m);
+ * std::cout << std::format("matrix: {:>5.1f}", m);
  * ```
  * 会输出
  * ```
@@ -78,24 +80,24 @@ struct fmt::formatter<Eigen::Matrix<Scalar, n_dim, 1>> : formatter<Scalar>
  * \tparam n_dim 方阵的维数
  */
 template<typename Scalar, int n_dim>
-struct fmt::formatter<Eigen::Matrix<Scalar, n_dim, n_dim, 0, n_dim, n_dim>> : formatter<Scalar>
+struct std::formatter<Eigen::Matrix<Scalar, n_dim, n_dim, 0, n_dim, n_dim>> : std::formatter<Scalar>
 {
     static_assert(n_dim > 0, "Dimension of a square matrix must be positive");
 
-    fmt::appender
+    std::format_context::iterator
     format(const Eigen::Matrix<Scalar, n_dim, n_dim, 0, n_dim, n_dim>& m, format_context& ctx) const
     {
-        fmt::appender iter = fmt::format_to(ctx.out(), "\n");
+        std::format_context::iterator iter = std::format_to(ctx.out(), "\n");
         for (int row = 0; row < n_dim - 1; ++row) {
             for (int column = 0; column < n_dim; ++column) {
-                iter = formatter<Scalar>::format(m(row, column), ctx);
-                iter = fmt::format_to(iter, " ");
+                iter = std::formatter<Scalar>::format(m(row, column), ctx);
+                iter = std::format_to(iter, " ");
             }
-            iter = fmt::format_to(iter, "\n");
+            iter = std::format_to(iter, "\n");
         }
         for (int column = 0; column < n_dim; ++column) {
-            iter = formatter<Scalar>::format(m(n_dim - 1, column), ctx);
-            iter = fmt::format_to(iter, " ");
+            iter = std::formatter<Scalar>::format(m(n_dim - 1, column), ctx);
+            iter = std::format_to(iter, " ");
         }
         return iter;
     }

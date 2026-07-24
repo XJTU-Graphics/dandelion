@@ -2,13 +2,13 @@
 
 #include <array>
 #include <optional>
+#include <format>
 
 #ifdef _WIN32
     #include <Windows.h>
 #endif
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include <fmt/format.h>
 
 #include "../utils/math.hpp"
 #include "../utils/ray.h"
@@ -39,7 +39,7 @@ Object::Object(const string& object_name) :
     id       = next_available_id;
     ++next_available_id;
     bvh                      = make_unique<BVH>(mesh);
-    const string logger_name = fmt::format("{} (Object ID: {})", name, id);
+    const string logger_name = std::format("{} (Object ID: {})", name, id);
     logger                   = get_logger(logger_name);
 }
 

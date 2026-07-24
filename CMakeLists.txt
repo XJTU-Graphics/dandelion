@@ -13,7 +13,6 @@ endif()
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 
 add_subdirectory(deps/glfw)
-add_subdirectory(deps/fmt)
 
 set(ASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT OFF CACHE BOOL "" FORCE)
 set(ASSIMP_BUILD_ALL_EXPORTERS_BY_DEFAULT OFF CACHE BOOL "" FORCE)
@@ -115,7 +114,6 @@ target_link_directories(${PROJECT_NAME} PRIVATE deps)
 target_link_libraries(${PROJECT_NAME}
     glfw
     assimp
-    fmt::fmt
     debug dandelion-ray-debug
     optimized dandelion-ray
     debug dandelion-bvh-debug
@@ -124,7 +122,7 @@ target_link_libraries(${PROJECT_NAME}
 )
 target_compile_definitions(${PROJECT_NAME}
     PRIVATE $<$<CONFIG:Debug>:DEBUG>
-    PRIVATE SPDLOG_FMT_EXTERNAL
+    PRIVATE SPDLOG_USE_STD_FORMAT
 )
 
 set(current_target ${PROJECT_NAME})
