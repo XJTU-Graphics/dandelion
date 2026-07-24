@@ -246,7 +246,7 @@ bool Scene::save(const string_view directory)
     size_t n_saved_groups = 0ULL;
     for (size_t i = 0; i < groups.size(); i++) {
         auto&  group          = groups[i];
-        string group_filename = fmt::format("{:02d}_{}.obj", i, group->name);
+        string group_filename = std::format("{:02d}_{}.obj", i, group->name);
         // save mesh and material to external obj file
         bool result = group->save_models((base_path / group_filename).generic_string());
         if (result)
