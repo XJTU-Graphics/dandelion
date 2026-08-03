@@ -22,9 +22,12 @@ int main(int argc, char* argv[])
     spdlog::set_level(spdlog::level::info);
     spdlog::set_pattern("[%n] [%^%l%$] %v");
     spdlog::set_default_logger(spdlog::stdout_color_mt("Test"));
-    auto now       = std::chrono::system_clock::now();
-    auto local_now = std::chrono::current_zone()->to_local(now);
-    spdlog::info("Dandelion 3D Unit Test, started at {:%Y-%m-%d %H:%M:%S}", local_now);
+    std::time_t current_timestamp = std::time(nullptr);
+    std::tm*    now               = std::localtime(&current_timestamp);
+    spdlog::info(
+        "Dandelion 3D Builder, started at {:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}",
+        now->tm_year + 1'900, now->tm_mon + 1, now->tm_mday, now->tm_hour, now->tm_min, now->tm_sec
+    );
 
     GLFWwindow* window = nullptr;
     glfwInit();

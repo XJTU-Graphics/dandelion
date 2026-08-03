@@ -17,9 +17,12 @@ int main()
     spdlog::set_default_logger(get_logger("Default"));
 
     // Log the start time point.
-    auto now = std::chrono::system_clock::now();
-    auto local_now = std::chrono::current_zone()->to_local(now);
-    spdlog::info("Dandelion 3D Builder, started at {:%Y-%m-%d %H:%M:%S}", local_now);
+    std::time_t current_timestamp = std::time(nullptr);
+    std::tm*    now               = std::localtime(&current_timestamp);
+    spdlog::info(
+        "Dandelion 3D Builder, started at {:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}",
+        now->tm_year + 1'900, now->tm_mon + 1, now->tm_mday, now->tm_hour, now->tm_min, now->tm_sec
+    );
 
     Platform platform;
     platform.eventloop();
