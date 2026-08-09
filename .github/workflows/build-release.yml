@@ -55,7 +55,7 @@ jobs:
         run: cmake --build build --config ${{ matrix.build_type }} --parallel $Env:NUMBER_OF_PROCESSORS
 
   build_macos:
-    runs-on: macos-14
+    runs-on: macos-15
     strategy:
       matrix:
         build_type: [debug, release]

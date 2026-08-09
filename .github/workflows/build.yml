@@ -94,7 +94,7 @@ jobs:
         continue-on-error: true
   
   build_macos:
-    runs-on: macos-14
+    runs-on: macos-15
     needs: pre_build
     if: ${{ needs.pre_build.outputs.updated == 'true' }}
     strategy:
