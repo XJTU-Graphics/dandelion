@@ -10,6 +10,12 @@ if (APPLE)
         "-framework IOKit"
         ${OPENGL_gl_LIBRARY}
     )
+    # Assimp's bundled zlib 1.2.13 defines fdopen as NULL when TARGET_OS_MAC is
+    # visible (macOS SDK >= 15), which breaks stdio.h. A self-referential
+    # pass-through macro neutralizes the #ifndef fdopen guard in zutil.h.
+    if (TARGET zlibstatic)
+        target_compile_definitions(zlibstatic PRIVATE fdopen=fdopen)
+    endif()
 endif()
 
 if (MSVC)
