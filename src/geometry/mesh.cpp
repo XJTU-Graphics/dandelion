@@ -25,7 +25,7 @@ void Mesh::clear() noexcept
 // -------------------- LineSet --------------------
 void LineSet::add_line(const Vector3f& from, const Vector3f& to)
 {
-    const unsigned int index = positions.size();
+    const unsigned int index = static_cast<unsigned int>(positions.size());
     positions.emplace_back(from);
     positions.emplace_back(to);
     lines.push_back({index, index + 1});
