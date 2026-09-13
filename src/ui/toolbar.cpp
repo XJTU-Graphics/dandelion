@@ -8,12 +8,13 @@
 #include <optional>
 #include <filesystem>
 #include <format>
+#include <memory>
 
 #include <imgui/imgui.h>
 #include <glad/glad.h>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
-#include "../utils/formatter.hpp"
+#include "../utils/formatter.hpp" // IWYU pragma: keep
 #include <spdlog/spdlog.h>
 #include <portable-file-dialogs.h>
 #include <stb/stb_image_write.h>
@@ -36,15 +37,17 @@ using Eigen::Vector3f;
 using std::format;
 using std::get_if;
 using std::holds_alternative;
+using std::make_unique;
 using std::optional;
 using std::size_t;
 using std::string;
 
-constexpr float FLOAT_INF     = std::numeric_limits<float>::max();
-constexpr float POSITION_UNIT = 0.02f;
-constexpr float ANGLE_UNIT    = 0.2f;
-constexpr float SCALING_UNIT  = 0.1f;
-constexpr float PHYSICS_UNIT  = 0.01f;
+constexpr float FLOAT_INF                  = std::numeric_limits<float>::max();
+constexpr float POSITION_UNIT              = 0.02f;
+constexpr float POSITION_CHANGED_THRESHOLD = squ(POSITION_UNIT) - 1e-6f;
+constexpr float ANGLE_UNIT                 = 0.2f;
+constexpr float SCALING_UNIT               = 0.1f;
+constexpr float PHYSICS_UNIT               = 0.01f;
 
 Toolbar::Toolbar(WorkingMode& mode, const SelectableType& selected_element) :
     mode(mode), selected_element(selected_element)
@@ -76,6 +79,44 @@ void Toolbar::render(Scene& scene)
         ImGui::EndTabBar(); // Mode
     }
     ImGui::End(); // End Tools
+}
+
+void Toolbar::switch_mode(WorkingMode target_mode, Scene& scene)
+{
+    if (target_mode == mode) [[likely]]
+        return;
+    switch (mode) {
+    case WorkingMode::MODEL:
+    {
+        if (scene.halfedge_mesh)
+            scene.halfedge_mesh.reset();
+        break;
+    }
+    case WorkingMode::RENDER:
+    {
+        scene.camera_wireframe.clear();
+        break;
+    }
+    case WorkingMode::SIMULATE:
+    {
+        if (scene.arrows.n_arrows() > 0)
+            scene.arrows.clear();
+        break;
+    }
+    default: break;
+    }
+    switch (target_mode) {
+    case WorkingMode::MODEL:
+    {
+        if (scene.selected_object) {
+            scene.halfedge_mesh = make_unique<HalfedgeMesh>(*scene.selected_object);
+        }
+        break;
+    }
+    default: break;
+    }
+    mode = target_mode;
+    on_selection_canceled();
 }
 
 void Toolbar::scene_hierarchies(Scene& scene)
@@ -129,17 +170,21 @@ void Toolbar::xyz_drag(float* x, float* y, float* z, float v_speed, const char* 
     ImGui::PopItemWidth();
 }
 
-void Toolbar::material_editor(GL::Material& material)
+void Toolbar::material_editor(Material& material)
 {
     static constexpr ImGuiColorEditFlags flags = ImGuiColorEditFlags_NoInputs;
+    if (material.type() != MaterialType::Phong) {
+        return;
+    }
+    PhongMaterial& phong_material = dynamic_cast<PhongMaterial&>(material);
     ImGui::SeparatorText("Material");
-    ImGui::ColorEdit3("Ambient", material.ambient.data(), flags);
+    ImGui::ColorEdit3("Ambient", phong_material.ambient.data(), flags);
     ImGui::SameLine();
-    ImGui::ColorEdit3("Diffuse", material.diffuse.data(), flags);
+    ImGui::ColorEdit3("Diffuse", phong_material.diffuse.data(), flags);
     ImGui::SameLine();
-    ImGui::ColorEdit3("Specular", material.specular.data(), flags);
+    ImGui::ColorEdit3("Specular", phong_material.specular.data(), flags);
     ImGui::SliderFloat(
-        "Shininess", &material.shininess, 0.0f, 1e6f, "%.1f",
+        "Shininess", &phong_material.shininess, 0.0f, 1e6f, "%.1f",
         ImGuiSliderFlags_AlwaysClamp | ImGuiSliderFlags_Logarithmic
     );
     if (ImGui::IsItemHovered()) {
@@ -154,15 +199,13 @@ void Toolbar::material_editor(GL::Material& material)
 void Toolbar::layout_mode(Scene& scene)
 {
     if (ImGui::BeginTabItem("Layout")) {
-        if (mode != WorkingMode::LAYOUT) {
-            on_selection_canceled();
-            mode = WorkingMode::LAYOUT;
-        }
+        switch_mode(WorkingMode::LAYOUT, scene);
+
         scene_hierarchies(scene);
 
         Object* selected_object = scene.selected_object;
         if (selected_object != nullptr) {
-            material_editor(selected_object->mesh.material);
+            material_editor(*selected_object->material);
             ImGui::SeparatorText("Transform");
             ImGui::Text("Translation");
             ImGui::PushID("Translation##");
@@ -207,7 +250,7 @@ void Toolbar::layout_mode(Scene& scene)
 void Toolbar::model_mode(Scene& scene)
 {
     if (ImGui::BeginTabItem("Model")) {
-        mode = WorkingMode::MODEL;
+        switch_mode(WorkingMode::MODEL, scene);
 
         bool no_halfedge_mesh = !scene.halfedge_mesh;
         bool halfedge_mesh_failed =
@@ -265,7 +308,13 @@ void Toolbar::model_mode(Scene& scene)
             }
             ImGui::Text("Position");
             ImGui::PushID("Selected Vertex##");
+            const Vector3f position_snapshot = position;
             xyz_drag(&position.x(), &position.y(), &position.z(), POSITION_UNIT);
+            if ((position - position_snapshot).squaredNorm() > POSITION_CHANGED_THRESHOLD) {
+                scene.highlighted_element.clear();
+                scene.highlighted_element.positions.push_back(position);
+                scene.halfedge_mesh->modified = true;
+            }
             ImGui::PopID();
         } else if (holds_alternative<Edge*>(selected_element)) {
             Edge* e = std::get<Edge*>(selected_element);
@@ -277,7 +326,7 @@ void Toolbar::model_mode(Scene& scene)
             if (ImGui::Button("Flip")) {
                 optional<Edge*> result = scene.halfedge_mesh->flip_edge(e);
                 if (result.has_value()) {
-                    scene.halfedge_mesh->global_inconsistent = true;
+                    scene.halfedge_mesh->modified = true;
                 }
             }
             ImGui::SameLine();
@@ -285,7 +334,7 @@ void Toolbar::model_mode(Scene& scene)
                 on_selection_canceled();
                 optional<Vertex*> result = scene.halfedge_mesh->split_edge(e);
                 if (result.has_value()) {
-                    scene.halfedge_mesh->global_inconsistent = true;
+                    scene.halfedge_mesh->modified = true;
                     on_element_selected(result.value());
                 }
             }
@@ -294,23 +343,28 @@ void Toolbar::model_mode(Scene& scene)
                 on_selection_canceled();
                 optional<Vertex*> result = scene.halfedge_mesh->collapse_edge(e);
                 if (result.has_value()) {
-                    scene.halfedge_mesh->global_inconsistent = true;
+                    scene.halfedge_mesh->modified = true;
                     on_element_selected(result.value());
                 }
             }
             ImGui::Text("Position");
             ImGui::PushID("Selected Edge##");
+            const Vector3f center_snapshot = center;
             xyz_drag(&center.x(), &center.y(), &center.z(), POSITION_UNIT);
             ImGui::PopID();
             // Only sync the positions of endpoints if no local operation has been performed.
             // Because an local operation makes the halfedge mesh and the mesh inconsistent,
             // and no modification should take place at the inconsistent state.
-            if (!scene.halfedge_mesh->global_inconsistent) {
+            if (!scene.halfedge_mesh->modified
+                && (center - center_snapshot).squaredNorm() > POSITION_CHANGED_THRESHOLD) {
                 Vector3f delta = center - e->center();
                 Vertex*  v1    = e->halfedge->from;
                 Vertex*  v2    = e->halfedge->inv->from;
                 v1->pos += delta;
                 v2->pos += delta;
+                for (Vector3f& p: scene.highlighted_element.positions) p += delta;
+                scene.highlighted_element.modified = true;
+                scene.halfedge_mesh->modified      = true;
             }
         } else if (holds_alternative<Face*>(selected_element)) {
             Face* f = std::get<Face*>(selected_element);
@@ -323,12 +377,17 @@ void Toolbar::model_mode(Scene& scene)
             ImGui::PushID("Selected Face##");
             xyz_drag(&center.x(), &center.y(), &center.z(), POSITION_UNIT);
             ImGui::PopID();
-            Vector3f  delta = center - f->center();
-            Halfedge* h     = f->halfedge;
-            do {
-                h->from->pos += delta;
-                h = h->next;
-            } while (h != f->halfedge);
+            Vector3f delta = center - f->center();
+            if (delta.squaredNorm() > POSITION_CHANGED_THRESHOLD) {
+                Halfedge* h = f->halfedge;
+                do {
+                    h->from->pos += delta;
+                    h = h->next;
+                } while (h != f->halfedge);
+                for (Vector3f& p: scene.highlighted_element.positions) p += delta;
+                scene.highlighted_element.modified = true;
+                scene.halfedge_mesh->modified      = true;
+            }
         }
 
         ImGui::SeparatorText("Global Operations");
@@ -350,14 +409,38 @@ void Toolbar::model_mode(Scene& scene)
 
 const char* renderer_names[] = {"Rasterizer Renderer", "Whitted-Style Ray-Tracer"};
 
+void update_camera_wireframe(Scene& scene)
+{
+    const Camera& camera          = scene.camera;
+    LineSet&      wireframe       = scene.camera_wireframe;
+    const float   far_plane       = camera.far_plane;
+    const float   tan_half_fov_y  = std::tan(0.5f * radians(camera.fov_y_degrees));
+    const float   half_height     = camera.far_plane * tan_half_fov_y;
+    const float   half_width      = half_height * camera.aspect_ratio;
+    const float   target_distance = (camera.target - camera.position).norm();
+    wireframe.clear();
+    wireframe.positions.emplace_back(0.0f, 0.0f, 0.0f);
+    wireframe.positions.emplace_back(-half_width, half_height, -far_plane);
+    wireframe.positions.emplace_back(half_width, half_height, -far_plane);
+    wireframe.positions.emplace_back(half_width, -half_height, -far_plane);
+    wireframe.positions.emplace_back(-half_width, -half_height, -far_plane);
+    wireframe.positions.emplace_back(0.0f, 0.0f, -target_distance);
+    wireframe.lines.push_back({0u, 1u});
+    wireframe.lines.push_back({0u, 2u});
+    wireframe.lines.push_back({0u, 3u});
+    wireframe.lines.push_back({0u, 4u});
+    wireframe.lines.push_back({0u, 5u});
+    wireframe.lines.push_back({1u, 2u});
+    wireframe.lines.push_back({2u, 3u});
+    wireframe.lines.push_back({3u, 4u});
+    wireframe.lines.push_back({4u, 1u});
+    wireframe.modified = true;
+}
+
 void Toolbar::render_mode(Scene& scene)
 {
     if (ImGui::BeginTabItem("Render")) {
-        // un-select the selected object (if there is a selected object)
-        if (mode != WorkingMode::RENDER) {
-            on_selection_canceled();
-            mode = WorkingMode::RENDER;
-        }
+        switch_mode(WorkingMode::RENDER, scene);
         bool open_rendered_image = false;
         bool always_true         = true;
 
@@ -461,6 +544,7 @@ void Toolbar::render_mode(Scene& scene)
         );
         ImGui::EndGroup();
         ImGui::PopItemWidth();
+        update_camera_wireframe(scene);
 
         if (open_rendered_image) {
             ImGui::OpenPopup("Rendered Image");
@@ -523,10 +607,7 @@ const char* solver_names[] = {
 void Toolbar::simulate_mode(Scene& scene)
 {
     if (ImGui::BeginTabItem("Simulate")) {
-        if (mode != WorkingMode::SIMULATE) {
-            on_selection_canceled();
-            mode = WorkingMode::SIMULATE;
-        }
+        switch_mode(WorkingMode::SIMULATE, scene);
 
         static int current_solver_index = 0;
         ImGui::Combo("Kinetic Solver", &current_solver_index, solver_names, 4);
@@ -558,6 +639,8 @@ void Toolbar::simulate_mode(Scene& scene)
 
         scene_hierarchies(scene);
         Object* selected_object = scene.selected_object;
+        if (scene.arrows.n_arrows() > 0)
+            scene.arrows.clear();
         if (!scene.check_during_simulation() && selected_object != nullptr) {
             ImGui::SeparatorText("Physical Properties");
             ImGui::Text("Mass");
@@ -576,6 +659,11 @@ void Toolbar::simulate_mode(Scene& scene)
             Vector3f& force = selected_object->force;
             xyz_drag(&force.x(), &force.y(), &force.z(), PHYSICS_UNIT, "%.2f N");
             ImGui::PopID();
+        }
+        if (selected_object) {
+            scene.arrows.add_arrow(
+                selected_object->center, selected_object->center + selected_object->velocity
+            );
         }
         ImGui::EndTabItem();
     }

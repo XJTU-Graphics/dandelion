@@ -79,7 +79,7 @@ VertexShaderPayload vertex_shader(const VertexShaderPayload& payload);
  * \param camera 离线渲染所用的相机
  */
 Eigen::Vector3f phong_fragment_shader(
-    const FragmentShaderPayload& payload, const GL::Material& material,
+    const FragmentShaderPayload& payload, const PhongMaterial& material,
     const std::list<Light>& lights, const Camera& camera
 );
 
@@ -197,7 +197,7 @@ struct Uniforms
     ///@}
 
     /*! \~chinese 渲染物体的材质 */
-    static GL::Material& material;
+    static PhongMaterial& material;
     /*! \~chinese 场景内的光源 */
     static std::list<Light>& lights;
     /*! \~chinese 当前渲染视角的相机 */

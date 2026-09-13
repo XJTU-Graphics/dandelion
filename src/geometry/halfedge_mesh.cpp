@@ -6,19 +6,19 @@
 #include <vector>
 #include <utility>
 #include <string>
+#include <set>
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
 #include "../utils/logger.h"
-#include "../utils/math.hpp"
+#include "../utils/rendering.hpp"
 
 using Eigen::Matrix4f;
 using Eigen::Vector3f;
 using std::array;
 using std::make_pair;
 using std::map;
-using std::monostate;
 using std::optional;
 using std::pair;
 using std::set;
@@ -27,7 +27,6 @@ using std::string;
 using std::tuple;
 using std::unordered_map;
 using std::vector;
-using std::visit;
 
 size_t HalfedgeMesh::next_available_id = 0;
 
@@ -39,13 +38,13 @@ struct overloaded : Ts...
 template<class... Ts>
 overloaded(Ts...) -> overloaded<Ts...>;
 
-HalfedgeMesh::HalfedgeMesh(Object& object) :
-    inconsistent_element(monostate()), global_inconsistent(false), object(object),
-    mesh(object.mesh), halfedge_arrows("Halfedge Mesh")
+HalfedgeMesh::HalfedgeMesh(Object& object) : modified(false), object(object), mesh(object.mesh)
 {
+    halfedge_arrows.name    = "Halfedge Mesh";
+    halfedge_arrows.color   = default_wireframe_color;
     logger                  = get_logger("Halfedge Mesh");
-    const size_t n_vertices = mesh.vertices.count();
-    const size_t n_faces    = mesh.faces.count();
+    const size_t n_vertices = mesh.positions.size();
+    const size_t n_faces    = mesh.faces.size();
     // Map vertex's index in GL::Mesh to pointer.
     unordered_map<size_t, Vertex*> index_to_vertex;
     // The degree of each vertex (i.e. the number of faces that contains it).
@@ -61,7 +60,7 @@ HalfedgeMesh::HalfedgeMesh(Object& object) :
     v_pointers.resize(n_vertices);
     for (size_t index = 0; index < n_vertices; ++index) {
         Vertex* v         = new_vertex();
-        v->pos            = mesh.vertex(index);
+        v->pos            = mesh.positions[index];
         v_indices[v]      = index;
         v_pointers[index] = v;
         index_to_vertex.emplace(index, v);
@@ -75,8 +74,8 @@ HalfedgeMesh::HalfedgeMesh(Object& object) :
         Face* f = new_face();
         index_to_face.emplace(index, f);
 
-        array<size_t, 3> v = mesh.face(index);
-        for (size_t vid: v) {
+        array<unsigned int, 3> v = mesh.faces[index];
+        for (unsigned int vid: v) {
             ++v_degree[vid];
         }
     }
@@ -87,8 +86,8 @@ HalfedgeMesh::HalfedgeMesh(Object& object) :
     // will be those that sit along the domain boundary (on boundary, but still
     // inside the mesh).
     for (size_t index = 0; index < n_faces; ++index) {
-        array<size_t, 3>    v = mesh.face(index);
-        array<Halfedge*, 3> face_halfedges;
+        array<unsigned int, 3> v = mesh.faces[index];
+        array<Halfedge*, 3>    face_halfedges;
         // For each pair of vertices, try to create a halfedge.
         for (size_t i = 0; i < 3; ++i) {
             size_t               a  = v[i];
@@ -253,53 +252,10 @@ HalfedgeMesh::~HalfedgeMesh()
 
 void HalfedgeMesh::sync()
 {
-    if (!global_inconsistent) {
-        // Synchronize the inconsistent element
-        const auto sync_vertex = [this](Vertex* vertex) {
-            mesh.VAO.bind();
-            mesh.vertices.update(v_indices[vertex], vertex->pos);
-            mesh.VAO.release();
-            const Halfedge* h = vertex->halfedge;
-            halfedge_arrows.VAO.bind();
-            do {
-                if (!(h->is_boundary())) {
-                    auto [from, to] = halfedge_arrow_endpoints(h);
-                    halfedge_arrows.update_arrow(h_indices[h], from, to);
-                }
-                if (!(h->inv->is_boundary())) {
-                    auto [from, to] = halfedge_arrow_endpoints(h->inv);
-                    halfedge_arrows.update_arrow(h_indices[h->inv], from, to);
-                }
-                h = h->inv->next;
-            } while (h != vertex->halfedge);
-            halfedge_arrows.VAO.release();
-        };
-        const auto sync_edge = [&sync_vertex](Edge* edge) {
-            Vertex* v1 = edge->halfedge->from;
-            Vertex* v2 = edge->halfedge->inv->from;
-            sync_vertex(v1);
-            sync_vertex(v2);
-        };
-        const auto sync_face = [&sync_vertex](Face* face) {
-            Halfedge* h = face->halfedge;
-            do {
-                sync_vertex(h->from);
-                h = h->next;
-            } while (h != face->halfedge);
-        };
-        visit(
-            overloaded{
-                []([[maybe_unused]]
-                   monostate empty) {},
-                sync_vertex, sync_edge, sync_face
-            },
-            inconsistent_element
-        );
+    if (!modified)
         return;
-    }
 
     logger->info("synchronize halfedge mesh to object {} (ID: {})", object.name, object.id);
-    vector<unsigned int>& mesh_faces = mesh.faces.data;
 
     unordered_map<Vertex*, unsigned int> vertex_to_index;
     unsigned int                         counter = 0;
@@ -309,7 +265,7 @@ void HalfedgeMesh::sync()
     v_pointers.reserve(vertices.size);
     v_pointers.resize(vertices.size);
     for (Vertex* v = vertices.head; v != nullptr; v = v->next_node) {
-        mesh.vertices.append(v->pos.x(), v->pos.y(), v->pos.z());
+        mesh.positions.push_back(v->pos);
         vertex_to_index[v]  = counter;
         v_indices[v]        = static_cast<size_t>(counter);
         v_pointers[counter] = v;
@@ -324,13 +280,13 @@ void HalfedgeMesh::sync()
             h = h->inv->next;
         } while (h != v->halfedge);
         normal.normalize();
-        mesh.normals.append(normal.x(), normal.y(), normal.z());
+        mesh.normals.emplace_back(std::move(normal));
     }
     logger->debug("vertex data is synchronized");
     for (Edge* e = edges.head; e != nullptr; e = e->next_node) {
         unsigned int v1 = vertex_to_index[e->halfedge->from];
         unsigned int v2 = vertex_to_index[e->halfedge->inv->from];
-        mesh.edges.append(v1, v2);
+        mesh.edges.push_back({v1, v2});
     }
     logger->debug("edge data is synchronized");
     for (Face* f = faces.head; f != nullptr; f = f->next_node) {
@@ -340,27 +296,24 @@ void HalfedgeMesh::sync()
             continue;
         }
         Halfedge*            h = f->halfedge;
-        vector<unsigned int> vertices;
+        vector<unsigned int> v;
         do {
-            mesh_faces.push_back(vertex_to_index[h->from]);
-            vertices.push_back(vertex_to_index[h->from]);
+            v.push_back(vertex_to_index[h->from]);
             h = h->next;
         } while (h != f->halfedge);
+        if (v.size() != 3) {
+            logger->error("non-virtual face {} in halfedge mesh is not a triangle", f->id);
+        } else {
+            mesh.faces.push_back({v[0], v[1], v[2]});
+        }
     }
     logger->debug("face data is synchronized");
-    object.modified = true;
-    logger->debug("all data is synchronized, the object's dirty flag is set");
+    mesh.modified = true;
+    logger->debug("all data is synchronized, source mesh marked as modified");
     regenerate_halfedge_arrows();
     logger->debug("halfedge arrows are regenerated");
-    global_inconsistent = false;
+    modified = false;
     logger->info("synchronization done");
-    logger->info("");
-}
-
-void HalfedgeMesh::render(const Shader& shader)
-{
-    shader.set_uniform("model", I4f);
-    halfedge_arrows.render(shader);
 }
 
 tuple<Vector3f, Vector3f> HalfedgeMesh::halfedge_arrow_endpoints(const Halfedge* h)
@@ -418,7 +371,7 @@ void HalfedgeMesh::regenerate_halfedge_arrows()
         h_indices[h] = counter;
         ++counter;
     }
-    halfedge_arrows.to_gpu();
+    halfedge_arrows.modified = true;
 }
 
 void HalfedgeMesh::erase(Halfedge* h)

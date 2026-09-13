@@ -77,14 +77,8 @@ Platform::Platform()
     resize_window();
     // Default properties for OpenGL, such as depth test or line width.
     set_opengl_properties();
-    // Compile and use shader program for scene previewing.
-    shader = make_unique<Shader>(logger);
-    shader->load_vertex_shader("resources/shaders/vertex.glsl");
-    shader->load_fragment_shader("resources/shaders/fragment.glsl");
-    if (!shader->compile()) {
-        logger->critical("Failed to compile shader program");
-    }
-    shader->use();
+    // Compile shaders used by the preview renderer.
+    renderer.compile_shaders();
 }
 
 Platform::~Platform()
@@ -93,6 +87,11 @@ Platform::~Platform()
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
+    logger->info("Destroy all OpenGL array/buffer objects");
+    Controller& controller = Controller::controller();
+    controller.shutdown();
+    renderer.delete_drawable_resources();
+    renderer.delete_shaders();
     logger->info("GLFW shutdown");
     glfwDestroyWindow(window);
     glfwTerminate();
@@ -115,7 +114,7 @@ void Platform::eventloop()
         glfwPollEvents();
         controller.process_input();
 
-        controller.render(*shader);
+        controller.render(renderer);
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         glfwSwapBuffers(window);

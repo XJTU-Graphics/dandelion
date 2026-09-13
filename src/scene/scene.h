@@ -13,9 +13,8 @@
 #include "group.h"
 #include "camera.h"
 #include "light.h"
-#include "../platform/gl.hpp"
-#include "../platform/shader.hpp"
-#include "../utils/rendering.hpp"
+#include "selection_helper.h"
+#include "../geometry/mesh.hpp"
 #include "../geometry/halfedge.h"
 
 /*!
@@ -25,6 +24,15 @@
  * \~chinese
  * \brief 包含场景的类。
  */
+
+/*! \~chinese 约束 `F` 必须是对单个物体进行的读写操作。 */
+template<typename F>
+concept ObjectOp = std::invocable<F, Object&> && std::is_void_v<std::invoke_result_t<F, Object&>>;
+
+/*! \~chinese 约束 `F` 必须是对单个物体进行的只读操作。 */
+template<typename F>
+concept ObjectReadOp =
+    std::invocable<F, const Object&> && std::is_void_v<std::invoke_result_t<F, const Object&>>;
 
 /*!
  * \ingroup rendering
@@ -103,17 +111,44 @@ public:
     void reset_simulation();
     /*! \~chinese 查询当前是否正在进行物理模拟。 */
     bool check_during_simulation();
-    /*! \~chinese
-     * \brief 绘制整个场景。
+    /*!
+     * \~chinese
+     * \brief 计算场景中所有物体下一帧要渲染的运动状态。
      *
-     * `render` 方法是场景对外的绘制接口，不会直接绘制任何内容，只负责调用每个 `Object` 的 `render`
-     * 方法、`render_camera` 和 `render_lights` 方法。
+     * 这个函数按照固定的时间步长模拟物体运动。
      *
-     * \param shader `Shader` 对象的引用，会传给待渲染的每个物体
-     * \param mode 当前工作模式，根据模式的不同，会选择性渲染某些元素。
-     * 例如只有建模模式下，才会渲染半边网格
+     * 每一帧的渲染过程可以概括为更新数据（几何、运动等等）和渲染图像两步。
+     * 约定当前屏幕上显示的是上一帧的图像，正在计算的是当前帧的数据。
+     * 更新运动状态时首先用当前时间减去 `last_update` 得到上一帧和之前帧剩余时长之和；
+     * 再循环模拟物体运动。每循环一次走过一个长度为 `time_step` 的时间步、
+     * 剩余时长减去 `time_step` ；当剩余时长不足一个 `time_step` 时停止模拟，
+     * 并将这一帧模拟走过的总时长累加到 `last_update` 上。
      */
-    void render(const Shader& shader, WorkingMode mode);
+    void simulation_update();
+
+    /*!
+     * \~chinese
+     * 对每个物体执行同样的操作，允许读写物体数据。
+     * \param op 要执行的操作，其函数签名必须满足 `ObjectOp` 的要求。
+     */
+    template<ObjectOp F>
+    void for_each_object(F&& op)
+    {
+        for (std::unique_ptr<Group>& group: this->groups)
+            for (std::unique_ptr<Object>& object: group->objects) op(*object);
+    }
+
+    /*!
+     * \~chinese
+     * 对每个物体执行同样的操作，只能读取物体数据。
+     * \param op 要执行的操作，其函数签名必须满足 `ObjectReadOp` 的要求。
+     */
+    template<ObjectReadOp F>
+    void for_each_object(F&& op) const
+    {
+        for (const std::unique_ptr<Group>& group: this->groups)
+            for (const std::unique_ptr<Object>& object: group->objects) op(*object);
+    }
 
     /*! \~chinese 场景中所有的物体组。 */
     std::vector<std::unique_ptr<Group>> groups;
@@ -124,6 +159,15 @@ public:
      * 在布局模式和物理模拟模式下，它决定当前被高亮的物体；在建模模式下，仅有这个物体被绘制。
      */
     Object* selected_object;
+    /*!
+     * \~chinese
+     * \brief 当前被选中的元素。
+     *
+     * 根据当前所处的模式，物体、各类几何基本元素、光源都可能被选中，详见 `SelectableType`
+     * 的类型说明。当 `selected_element` 持有 `std::monostate` 类型时，
+     * 当前的选择状态为空（没有任何元素被选中）。
+     */
+    SelectableType selected_element;
     /*! \~chinese 用于预览场景的观察相机（主相机）。 */
     Camera main_camera;
     /*! \~chinese 用于 **离线渲染** 的相机，和用于预览场景的观察相机（主相机）无关。 */
@@ -132,18 +176,29 @@ public:
     std::list<Light> lights;
     /*! \~chinese 用于建模模式的半边网格。 */
     std::unique_ptr<HalfedgeMesh> halfedge_mesh;
+    /*! \~chinese 用于在物理模拟模式下显示速度向量。 */
+    ArrowSet arrows;
+    /*! \~chinese 用于显示地面网格。 */
+    LineSet ground_grid;
+    /*! \~chinese 用于显示 x 轴。 */
+    LineSet x_axis;
+    /*! \~chinese 用于显示 y 轴。 */
+    LineSet y_axis;
+    /*! \~chinese 用于显示 z 轴。 */
+    LineSet z_axis;
+    /*! \~chinese 用于显示离线渲染相机。 */
+    LineSet camera_wireframe;
+    /*! \~chinese 被选中元素类型为顶点、边、面片或光源时使用的绘制对象。 */
+    Mesh highlighted_element;
+    /*! \~chinese 被选中元素类型为半边时使用的绘制对象。 */
+    ArrowSet highlighted_halfedge;
+    /*! \~chinese 显示拾取射线用的绘制对象，对应 `DebugOptions::show_picking_ray` 。 */
+    LineSet picking_ray;
+    /*! \~chinese 显示光源。这个 Mesh 中只包含一个光源示意图的几何数据，渲染时需要多次绘制。 */
+    Mesh light_indicator;
 
 private:
 
-    /*! \~chinese
-     * \brief 绘制空间坐标轴和 \f$y=1\f$ 平面上表示地面的网格线。
-     *
-     * 这个函数在 \f$x\f$ 和 \f$z\f$ 方向各绘制 1000 条网格线，并分别用红、绿、蓝三色绘制
-     * \f$x,y,z\f$ 三轴正半轴。
-     *
-     * \param shader `Shader` 对象的引用
-     */
-    static void render_ground(const Shader& shader);
     /*!
      * \~chinese
      * 主相机的初始位置。
@@ -159,46 +214,12 @@ private:
      * 保存场景元数据的文件名。
      */
     static constexpr std::string_view metadata_filename = "metadata.json";
-    /*! \~chinese
-     * \brief 在渲染模式 (Rendering mode) 下绘制代表相机视锥的线框。
-     *
-     * 根据场景对象的相机参数（位置、目标点、远近平面、视角），绘制四棱锥形的相机视锥。
-     * 由于近平面通常离相机视点很近，这个函数不会绘制近平面。离线渲染时，
-     * 会裁剪掉视锥范围外的所有内容。
-     *
-     * \param shader `Shader` 对象的引用
-     */
-    void render_camera(const Shader& shader);
-    /*! \~chinese
-     * \brief 在渲染模式下绘制光源。
-     *
-     * 这个函数将一个点光源表示成一个中心点和六个亮点。
-     *
-     * \param shader `Shader` 对象的引用
-     */
-    void render_lights(const Shader& shader);
-    /*!
-     * \~chinese
-     * \brief 计算场景中所有物体下一帧要渲染的运动状态。
-     *
-     * 这个函数按照固定的时间步长模拟物体运动。
-     *
-     * 每一帧的渲染过程可以概括为更新数据（几何、运动等等）和渲染图像两步。
-     * 约定当前屏幕上显示的是上一帧的图像，正在计算的是当前帧的数据。
-     * 更新运动状态时首先用当前时间减去 `last_update` 得到上一帧和之前帧剩余时长之和；
-     * 再循环模拟物体运动。每循环一次走过一个长度为 `time_step` 的时间步、
-     * 剩余时长减去 `time_step` ；当剩余时长不足一个 `time_step` 时停止模拟，
-     * 并将这一帧模拟走过的总时长累加到 `last_update` 上。
-     */
-    void simulation_update();
     /*! \~chinese 状态变量，表示当前是否正在进行物理模拟。 */
     bool during_animation;
     /*! \~chinese 上一次将模拟状态同步到渲染的时间点。 */
     std::chrono::time_point<std::chrono::steady_clock> last_update;
     /*! \~chinese 碰撞检测时记录所有物体，其他情况下无效。 */
     std::vector<Object*> all_objects;
-    /*! \~chinese 用于在物理模拟模式下显示速度向量。 */
-    GL::LineSet arrows;
     /*! \~chinese 日志记录器。 */
     std::shared_ptr<spdlog::logger> logger;
 };

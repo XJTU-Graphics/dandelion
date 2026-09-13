@@ -37,19 +37,16 @@ Controller& Controller::controller()
     return instance;
 }
 
-Controller::Controller() :
-    highlighted_halfedge("highlighted halfedge", GL::Mesh::highlight_wireframe_color),
-    picking_ray("picking ray")
+Controller::Controller()
 {
     logger                         = get_logger("Controller");
     scene                          = make_unique<Scene>();
     menubar                        = make_unique<UI::Menubar>(debug_options);
     menubar->reset_ui              = [this]() -> void { this->return_to_safe_state(); };
-    toolbar                        = make_unique<UI::Toolbar>(mode, selected_element);
+    toolbar                        = make_unique<UI::Toolbar>(mode, scene->selected_element);
     toolbar->on_element_selected   = [this](SelectableType element) { select(element); };
     toolbar->on_selection_canceled = [this]() { unselect(); };
     trackball_radius               = 300.0f;
-    selected_element               = monostate();
     // Device-independent configurations (i.e. styles) here.
     ImGui::StyleColorsDark();
     ImGuiStyle& style  = ImGui::GetStyle();
@@ -92,6 +89,13 @@ Controller::~Controller()
 {
 }
 
+void Controller::shutdown()
+{
+    // UI widgets may hold OpenGL texture object for rendering images
+    menubar.reset();
+    toolbar.reset();
+}
+
 void Controller::on_mouse_dragged(bool initial)
 {
     bool is_middle_dragging = ImGui::IsMouseDragging(ImGuiMouseButton_Middle);
@@ -126,10 +130,10 @@ void Controller::on_picking()
         pick_object(ray);
     }
 
+    if (scene->picking_ray.n_lines() > 0)
+        scene->picking_ray.clear();
     if (debug_options.show_picking_ray) {
-        picking_ray.clear();
-        picking_ray.add_line_segment(ray.origin, ray.origin + 1000.0f * ray.direction);
-        picking_ray.to_gpu();
+        scene->picking_ray.add_line(ray.origin, ray.origin + 1000.0f * ray.direction);
     }
 }
 
@@ -183,7 +187,7 @@ void Controller::process_input()
         }
     }
     if (ImGui::IsKeyDown(ImGuiKey_Delete)) {
-        Object** object_result = get_if<Object*>(&selected_element);
+        Object** object_result = get_if<Object*>(&scene->selected_element);
         if (object_result != nullptr) {
             Object* selected_object = *object_result;
             for (auto group = scene->groups.begin(); group != scene->groups.end(); ++group) {
@@ -213,7 +217,7 @@ void Controller::process_input()
                 }
             }
         }
-        Light** light_result = get_if<Light*>(&selected_element);
+        Light** light_result = get_if<Light*>(&scene->selected_element);
         if (light_result != nullptr) {
             Light* selected_light = *light_result;
             size_t index          = 1;
@@ -234,20 +238,16 @@ void Controller::process_input()
     }
 }
 
-void Controller::render(const Shader& shader)
+void Controller::render(PreviewRenderer& renderer)
 {
     menubar->render(*scene);
     toolbar->render(*scene);
 
     ImGui::Render();
 
-    Matrix4f view_projection = scene->main_camera.projection() * scene->main_camera.view();
-    shader.set_uniform("view_projection", view_projection);
-    shader.set_uniform("camera_position", scene->main_camera.position);
-    scene->render(shader, mode);
-
-    render_selected_element(shader);
-    render_debug_helpers(shader);
+    if (mode == WorkingMode::SIMULATE && scene->check_during_simulation())
+        scene->simulation_update();
+    renderer.render(*scene, mode, debug_options);
 }
 
 void Controller::select(SelectableType element)
@@ -270,14 +270,10 @@ void Controller::unselect()
 {
     static auto unselect_object           = []([[maybe_unused]]
                                                Object* object) {};
-    static auto clear_highlighted_element = [this]() {
-        highlighted_element.clear();
-        highlighted_element.to_gpu();
-    };
-    static auto unselect_halfedge = [this]([[maybe_unused]]
-                                           const Halfedge* halfedge) {
-        highlighted_halfedge.clear();
-        highlighted_halfedge.to_gpu();
+    static auto clear_highlighted_element = [this]() { scene->highlighted_element.clear(); };
+    static auto unselect_halfedge         = [this]([[maybe_unused]]
+                                                   const Halfedge* halfedge) {
+        scene->highlighted_halfedge.clear();
     };
     static auto unselect_vertex = []([[maybe_unused]]
                                      Vertex* vertex) { clear_highlighted_element(); };
@@ -292,93 +288,12 @@ void Controller::unselect()
             []([[maybe_unused]] monostate empty) {}, unselect_halfedge, unselect_object,
             unselect_vertex, unselect_edge, unselect_face, unselect_light
         },
-        selected_element
+        scene->selected_element
     );
     if (mode != WorkingMode::MODEL) {
         scene->selected_object = nullptr;
     }
-    if (scene->halfedge_mesh != nullptr) {
-        scene->halfedge_mesh->inconsistent_element = monostate();
-    }
-    selected_element = monostate();
-}
-
-void Controller::render_selected_element(const Shader& shader)
-{
-    static auto render_mesh_element = [this, &shader](unsigned element_flag) {
-        shader.set_uniform("color_per_vertex", false);
-        shader.set_uniform("use_global_color", true);
-        shader.set_uniform("model", I4f);
-        glDisable(GL_DEPTH_TEST);
-        highlighted_element.render(
-            shader, element_flag, false, GL::Mesh::highlight_wireframe_color
-        );
-        glEnable(GL_DEPTH_TEST);
-    };
-    static auto render_halfedge = [this, &shader]([[maybe_unused]]
-                                                  const Halfedge* halfedge) {
-        glDisable(GL_DEPTH_TEST);
-        highlighted_halfedge.render(shader);
-        glEnable(GL_DEPTH_TEST);
-    };
-    static auto render_vertex = [this](Vertex* vertex) {
-        highlighted_element.vertices.update(0, vertex->pos);
-        highlighted_element.vertices.to_gpu();
-        render_mesh_element(GL::Mesh::vertices_flag);
-    };
-    static auto render_edge = [this](Edge* edge) {
-        highlighted_element.vertices.update(0, edge->halfedge->from->pos);
-        highlighted_element.vertices.update(1, edge->halfedge->inv->from->pos);
-        highlighted_element.vertices.to_gpu();
-        render_mesh_element(GL::Mesh::edges_flag);
-    };
-    static auto render_face = [this](Face* face) {
-        const Halfedge* h = face->halfedge;
-        size_t          i = 0;
-        do {
-            highlighted_element.vertices.update(i, h->from->pos);
-            h = h->next;
-            ++i;
-        } while (h != face->halfedge);
-        highlighted_element.vertices.to_gpu();
-        render_mesh_element(GL::Mesh::faces_flag);
-    };
-    static auto render_light = [this, &shader](Light* light) {
-        Eigen::Affine3f t;
-        t              = Eigen::Translation3f(light->position);
-        Matrix4f model = t.matrix();
-        shader.set_uniform("color_per_vertex", false);
-        shader.set_uniform("use_global_color", true);
-        shader.set_uniform("model", model);
-        glDisable(GL_DEPTH_TEST);
-        highlighted_element.render(
-            shader, GL::Mesh::vertices_flag, false, GL::Mesh::highlight_wireframe_color
-        );
-        glEnable(GL_DEPTH_TEST);
-    };
-    visit(
-        overloaded{
-            []([[maybe_unused]] monostate empty) {}, []([[maybe_unused]] Object* object) {},
-            render_halfedge, render_vertex, render_edge, render_face, render_light
-        },
-        selected_element
-    );
-}
-
-void Controller::render_debug_helpers(const Shader& shader)
-{
-    if (debug_options.show_picking_ray) {
-        shader.set_uniform("model", I4f);
-        picking_ray.render(shader);
-    }
-    if (debug_options.show_BVH) {
-        for (auto& group: scene->groups) {
-            for (auto& object: group->objects) {
-                shader.set_uniform("model", object->model());
-                object->BVH_boxes.render(shader);
-            }
-        }
-    }
+    scene->selected_element = monostate();
 }
 
 void Controller::pick_object(Ray& ray)
@@ -386,20 +301,17 @@ void Controller::pick_object(Ray& ray)
     optional<Intersection> hit        = std::nullopt;
     Object*                hit_object = nullptr;
     // Test all objects and maintain the minimal t value.
-    for (auto& group: scene->groups) {
-        for (auto& object: group->objects) {
-            Matrix4f               model  = object->model();
-            GL::Mesh&              mesh   = object->mesh;
-            optional<Intersection> result = object->bvh->intersect(ray, mesh, model);
-            if (!result.has_value()) {
-                continue;
-            }
-            if (!hit.has_value() || hit.value().t > result.value().t) {
-                hit        = result;
-                hit_object = object.get();
-            }
+    scene->for_each_object([&ray, &hit, &hit_object](Object& object) -> void {
+        const Matrix4f         model  = object.model();
+        const Mesh&            mesh   = object.mesh;
+        optional<Intersection> result = object.bvh->intersect(ray, mesh, model);
+        if (!result.has_value())
+            return;
+        if (!hit.has_value() || hit.value().t > result.value().t) {
+            hit        = result;
+            hit_object = &object;
         }
-    }
+    });
     if (hit.has_value()) {
         logger->debug("object {} (ID: {}) is picked", hit_object->name, hit_object->id);
         select(hit_object);
@@ -417,14 +329,14 @@ void Controller::pick_element(Ray& ray)
         "perform picking on object \"{}\" (ID: {})", scene->selected_object->name,
         scene->selected_object->id
     );
-    GL::Mesh&              mesh = scene->selected_object->mesh;
+    Mesh&                  mesh = scene->selected_object->mesh;
     optional<Intersection> hit  = naive_intersect(ray, mesh, I4f);
     if (hit.has_value()) {
-        size_t           face_index       = hit.value().face_index;
-        Vector3f&        w                = hit.value().barycentric_coord;
-        array<size_t, 3> indices          = mesh.face(face_index);
-        size_t           max_weight_index = 0;
-        size_t           min_weight_index = 0;
+        size_t                 face_index       = hit.value().face_index;
+        Vector3f&              w                = hit.value().barycentric_coord;
+        array<unsigned int, 3> indices          = mesh.faces[face_index];
+        size_t                 max_weight_index = 0;
+        size_t                 min_weight_index = 0;
         logger->debug("hit face {} with barycentric coordinates {:.3f}", face_index, w);
         for (size_t i = 1; i < 3; ++i) {
             if (w(i) > w(max_weight_index)) {
@@ -475,66 +387,61 @@ void Controller::pick_element(Ray& ray)
 
 void Controller::select_object(Object* object)
 {
-    selected_element       = object;
-    scene->selected_object = object;
+    scene->selected_element = object;
+    scene->selected_object  = object;
 }
 
 void Controller::select_halfedge(const Halfedge* halfedge)
 {
-    selected_element = halfedge;
-    auto [from, to]  = HalfedgeMesh::halfedge_arrow_endpoints(halfedge);
-    highlighted_halfedge.add_arrow(from, to);
-    highlighted_halfedge.to_gpu();
+    scene->selected_element = halfedge;
+    auto [from, to]         = HalfedgeMesh::halfedge_arrow_endpoints(halfedge);
+    scene->highlighted_halfedge.add_arrow(from, to);
+    scene->highlighted_halfedge.modified = true;
 }
 
 void Controller::select_vertex(Vertex* vertex)
 {
-    selected_element                           = vertex;
-    scene->halfedge_mesh->inconsistent_element = vertex;
-    highlighted_element.vertices.append(vertex->pos.x(), vertex->pos.y(), vertex->pos.z());
-    highlighted_element.to_gpu();
+    scene->selected_element = vertex;
+    scene->highlighted_element.positions.emplace_back(vertex->pos);
+    scene->highlighted_element.modified = true;
 }
 
 void Controller::select_edge(Edge* edge)
 {
-    selected_element                           = edge;
-    scene->halfedge_mesh->inconsistent_element = edge;
-    const Vertex* v1                           = edge->halfedge->from;
-    const Vertex* v2                           = edge->halfedge->inv->from;
-    highlighted_element.vertices.append(v1->pos.x(), v1->pos.y(), v1->pos.z());
-    highlighted_element.vertices.append(v2->pos.x(), v2->pos.y(), v2->pos.z());
-    highlighted_element.edges.append(0u, 1u);
-    highlighted_element.to_gpu();
+    scene->selected_element = edge;
+    const Vertex* v1        = edge->halfedge->from;
+    const Vertex* v2        = edge->halfedge->inv->from;
+    scene->highlighted_element.positions.emplace_back(v1->pos);
+    scene->highlighted_element.positions.emplace_back(v2->pos);
+    scene->highlighted_element.edges.push_back({0u, 1u});
+    scene->highlighted_element.modified = true;
 }
 
 void Controller::select_face(Face* face)
 {
-    selected_element                           = face;
-    scene->halfedge_mesh->inconsistent_element = face;
-    const Halfedge* h                          = face->halfedge;
+    scene->selected_element = face;
+    const Halfedge* h       = face->halfedge;
     const Vertex*   v;
-    size_t          i = 0;
     do {
         v = h->from;
-        highlighted_element.vertices.append(v->pos.x(), v->pos.y(), v->pos.z());
-        highlighted_element.faces.data.push_back((unsigned int)i);
+        scene->highlighted_element.positions.emplace_back(v->pos);
         h = h->next;
-        ++i;
     } while (h != face->halfedge);
-    highlighted_element.to_gpu();
+    scene->highlighted_element.faces.push_back({0u, 1u, 2u});
+    scene->highlighted_element.modified = true;
 }
 
 void Controller::select_light(Light* light)
 {
-    selected_element = light;
-    highlighted_element.vertices.append(0.0f, 0.0f, 0.0f);
-    highlighted_element.vertices.append(0.1f, 0.0f, 0.0f);
-    highlighted_element.vertices.append(-0.1f, 0.0f, 0.0f);
-    highlighted_element.vertices.append(0.0f, 0.1f, 0.0f);
-    highlighted_element.vertices.append(0.0f, -0.1f, 0.0f);
-    highlighted_element.vertices.append(0.0f, 0.0f, 0.1f);
-    highlighted_element.vertices.append(0.0f, 0.0f, -0.1f);
-    highlighted_element.to_gpu();
+    scene->selected_element = light;
+    scene->highlighted_element.positions.emplace_back(0.0f, 0.0f, 0.0f);
+    scene->highlighted_element.positions.emplace_back(0.1f, 0.0f, 0.0f);
+    scene->highlighted_element.positions.emplace_back(-0.1f, 0.0f, 0.0f);
+    scene->highlighted_element.positions.emplace_back(0.0f, 0.1f, 0.0f);
+    scene->highlighted_element.positions.emplace_back(0.0f, -0.1f, 0.0f);
+    scene->highlighted_element.positions.emplace_back(0.0f, 0.0f, 0.1f);
+    scene->highlighted_element.positions.emplace_back(0.0f, 0.0f, -0.1f);
+    scene->highlighted_element.modified = true;
 }
 
 void Controller::on_rotating(bool initial)

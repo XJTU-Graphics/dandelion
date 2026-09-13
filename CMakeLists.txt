@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
-project(dandelion VERSION 1.2)
+project(dandelion VERSION 2.0)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
@@ -62,6 +62,7 @@ set(DANDELION_SCENE_SOURCES
     src/scene/object.cpp
     src/scene/camera.cpp
     src/scene/light.cpp
+    src/scene/material.cpp
 )
 set(DANDELION_UTILS_SOURCES
     src/utils/stb_image_wrapper.cpp
@@ -79,8 +80,10 @@ set(DANDELION_RENDER_SOURCES
     src/render/whitted_renderer.cpp
     src/render/render_engine.cpp
     src/render/triangle.cpp
+    src/render/preview_renderer.cpp
 )
 set(DANDELION_GEOMETRY_SOURCES
+    src/geometry/mesh.cpp
     src/geometry/halfedge_mesh.cpp
     src/geometry/meshedit.cpp
     src/geometry/halfedge.cpp

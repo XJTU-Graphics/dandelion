@@ -17,7 +17,7 @@
 #include <imgui/imgui_impl_opengl3.h>
 #include <spdlog/spdlog.h>
 
-#include "shader.hpp"
+#include "../render/preview_renderer.h"
 
 /*!
  * \ingroup platform
@@ -89,8 +89,8 @@ private:
     ///@}
     /*! \~chinese 屏幕分辨率，实际是 PPI (Pixels Per Inch)，称为 DPI 只是出于习惯。 */
     double dpi;
-    /*! \~chinese 用于实时渲染预览窗口的 OpenGL Shader 封装对象。 */
-    std::unique_ptr<Shader> shader;
+    /*! \~chinese 用于实时预览的渲染器实例。 */
+    PreviewRenderer renderer;
 };
 
 #endif

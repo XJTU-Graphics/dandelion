@@ -2,10 +2,10 @@
 #define DANDELION_UI_TOOLBAR_H
 
 #include <cstddef>
-#include <optional>
 #include <functional>
 
-#include "selection_helper.h"
+#include "../scene/selection_helper.h"
+#include "../scene/material.hpp"
 #include "../scene/scene.h"
 #include "../utils/rendering.hpp"
 
@@ -55,12 +55,14 @@ public:
 
 private:
 
+    /*! \~chinese 切换工作模式，清理上一个模式的临时数据。 */
+    void switch_mode(WorkingMode target_mode, Scene& scene);
     /*! \~chinese 将场景层次结构展示为一个树形列表。 */
     void scene_hierarchies(Scene& scene);
     /*! \~chinese 显示标签分别为 x, y, z 的三个 `ImGui::DragFloat` 控件。 */
     void xyz_drag(float* x, float* y, float* z, float v_speed, const char* format = "%.2f");
     /*! \~chinese 显示并编辑单个物体的材质属性。 */
-    void material_editor(GL::Material& material);
+    void material_editor(Material& material);
     /*! \~chinese 布局模式对应的标签页。 */
     void layout_mode(Scene& scene);
     /*! \~chinese 建模模式对应的标签页。 */

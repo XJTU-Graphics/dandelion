@@ -7,19 +7,14 @@
 
 #include "../src/geometry/halfedge.h"
 #include "../src/scene/group.h"
-#include "../src/scene/object.h"
-#include "../src/utils/formatter.hpp"
-#include "../src/utils/math.hpp"
+#include "../src/utils/formatter.hpp" // IWYU pragma: keep
 
 using Eigen::AngleAxisf;
 using Eigen::Matrix4f;
-using Eigen::Scaling;
 using Eigen::Translation3f;
 using Eigen::Vector3f;
 using Eigen::Vector4f;
 using std::default_random_engine;
-using std::random_device;
-using std::uniform_real_distribution;
 
 using std::pair;
 using std::set;
@@ -34,14 +29,15 @@ TEST_CASE("Loop Subdivision", "[geometry]")
 {
 
     vector<pair<string, string>> test_cases = {
-        {"../input/geometry/cube.obj", "../ans/geometry/loop_subdivision/cube.txt"},
+        {"../input/geometry/cube.obj",   "../ans/geometry/loop_subdivision/cube.txt"  },
         {"../input/geometry/sphere.obj", "../ans/geometry/loop_subdivision/sphere.txt"},
-        {"../input/geometry/cow.dae", "../ans/geometry/loop_subdivision/cow.txt"},
+        {"../input/geometry/cow.dae",    "../ans/geometry/loop_subdivision/cow.txt"   },
         {"../input/geometry/teapot.dae", "../ans/geometry/loop_subdivision/teapot.txt"},
-        {"../input/geometry/bunny.obj", "../ans/geometry/loop_subdivision/bunny.txt"}};
+        {"../input/geometry/bunny.obj",  "../ans/geometry/loop_subdivision/bunny.txt" }
+    };
 
     size_t case_id = 0;
-    for (const auto& test_case : test_cases) {
+    for (const auto& test_case: test_cases) {
         auto model_path      = test_case.first;
         auto std_result_path = test_case.second;
 
@@ -49,7 +45,7 @@ TEST_CASE("Loop Subdivision", "[geometry]")
 
         // Step 1. Load Test and STD Data
         Group test_group("Test group");
-        bool model_load_ok = test_group.load(model_path);
+        bool  model_load_ok = test_group.load_models(model_path);
         REQUIRE(model_load_ok);
         REQUIRE(!test_group.objects.empty());
 
@@ -107,10 +103,10 @@ TEST_CASE("Loop Subdivision", "[geometry]")
         REQUIRE(test_edge_count == std_edge_count);
 
         for (Edge* e = test_mesh.edges.head; e != nullptr; e = e->next_node) {
-            Vertex* v1 = e->halfedge->from;
-            Vertex* v2 = e->halfedge->inv->from;
-            size_t id1 = test_vertex_id[v1];
-            size_t id2 = test_vertex_id[v2];
+            Vertex* v1  = e->halfedge->from;
+            Vertex* v2  = e->halfedge->inv->from;
+            size_t  id1 = test_vertex_id[v1];
+            size_t  id2 = test_vertex_id[v2];
 
             auto edge_pair          = std::make_pair(id1, id2);
             auto edge_pair_reversed = std::make_pair(id2, id1);
@@ -119,7 +115,7 @@ TEST_CASE("Loop Subdivision", "[geometry]")
             if (it == std_edges.end()) {
                 it = std_edges.find(edge_pair_reversed);
             }
-            INFO("At least one edge connects wrong vertexs.");
+            INFO("At least one edge connects wrong vertices.");
             REQUIRE(it != std_edges.end());
         }
         spdlog::info("Test Pass: loop subdivision of: {}", model_path);

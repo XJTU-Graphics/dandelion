@@ -4,6 +4,7 @@
 #include <functional>
 
 #include "../scene/scene.h"
+#include "../utils/rendering.hpp"
 
 /*!
  * \file ui/menubar.h
@@ -11,21 +12,6 @@
  */
 
 namespace UI {
-
-/*!
- * \ingroup ui
- * \~chinese
- * \brief 辅助调试的 GUI 选项。
- */
-struct DebugOptions
-{
-    /*! \~chinese 默认关闭所有的调试选项。 */
-    DebugOptions();
-    /*! \~chinese 显示进行拾取时生成的虚拟光线。 */
-    bool show_picking_ray;
-    /*! \~chinese 显示所有物体的 BVH 结构。 */
-    bool show_BVH;
-};
 
 /*!
  * \ingroup ui

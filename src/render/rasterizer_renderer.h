@@ -7,7 +7,6 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
-#include "../platform/gl.hpp"
 #include "../scene/light.h"
 #include "../scene/camera.h"
 #include "graphics_interface.h"
@@ -83,7 +82,7 @@ public:
      * \return 计算得到的片元RGB颜色
      */
     Eigen::Vector3f (*fragment_shader_ptr)(
-        const FragmentShaderPayload& payload, const GL::Material& material,
+        const FragmentShaderPayload& payload, const PhongMaterial& material,
         const std::list<Light>& lights, const Camera& camera
     );
 

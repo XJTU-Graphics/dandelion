@@ -56,13 +56,13 @@ bool AABB::intersect(const Ray& ray, const Vector3f& inv_dir, const std::array<i
 }
 
 // 获取当前图元对应AABB
-AABB get_aabb(const GL::Mesh& mesh, size_t face_idx)
+AABB get_aabb(const Mesh& mesh, size_t face_idx)
 {
-    std::array<size_t, 3>   face = mesh.face(face_idx);
-    std::array<Vector3f, 3> v;
-    v[0] = mesh.vertex(face[0]).homogeneous().topRows(3); // a
-    v[1] = mesh.vertex(face[1]).homogeneous().topRows(3); // b
-    v[2] = mesh.vertex(face[2]).homogeneous().topRows(3); // c
+    std::array<unsigned int, 3> face = mesh.faces[face_idx];
+    std::array<Vector3f, 3>     v;
+    v[0] = mesh.positions[face[0]].homogeneous().topRows(3); // a
+    v[1] = mesh.positions[face[1]].homogeneous().topRows(3); // b
+    v[2] = mesh.positions[face[2]].homogeneous().topRows(3); // c
     return union_AABB(AABB(v[0], v[1]), v[2]);
 }
 

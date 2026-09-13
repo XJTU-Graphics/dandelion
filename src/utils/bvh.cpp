@@ -1,7 +1,6 @@
 #include "bvh.h"
 
 #include <cassert>
-#include <iostream>
 #include <optional>
 
 #include <Eigen/Geometry>
@@ -18,20 +17,20 @@ BVHNode::BVHNode() : left(nullptr), right(nullptr), face_idx(0)
 {
 }
 
-BVH::BVH(const GL::Mesh& mesh) : root(nullptr), mesh(mesh)
+BVH::BVH(const Mesh& mesh) : root(nullptr), mesh(mesh)
 {
 }
 
 // 建立bvh，将需要建立BVH的图元索引初始化
 void BVH::build()
 {
-    if (mesh.faces.count() == 0) {
+    if (mesh.faces.size() == 0) {
         root = nullptr;
         return;
     }
 
-    primitives.resize(mesh.faces.count());
-    for (size_t i = 0; i < mesh.faces.count(); i++) primitives[i] = i;
+    primitives.resize(mesh.faces.size());
+    for (size_t i = 0; i < mesh.faces.size(); i++) primitives[i] = i;
 
     root = recursively_build(primitives);
     return;
@@ -76,9 +75,8 @@ BVHNode* BVH::recursively_build(vector<size_t> faces_idx)
 }
 
 // 使用BVH求交
-optional<Intersection> BVH::intersect(
-    const Ray& ray, [[maybe_unused]] const GL::Mesh& mesh, const Eigen::Matrix4f obj_model
-)
+optional<Intersection>
+BVH::intersect(const Ray& ray, [[maybe_unused]] const Mesh& mesh, const Eigen::Matrix4f obj_model)
 {
     model = obj_model;
     optional<Intersection> isect;
