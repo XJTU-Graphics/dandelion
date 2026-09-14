@@ -1,5 +1,4 @@
-#ifndef DANDELION_SCENE_OBJECT_H
-#define DANDELION_SCENE_OBJECT_H
+#pragma once
 
 #include <cstddef>
 #include <string>
@@ -11,7 +10,6 @@
 #include <Eigen/Geometry>
 #include <spdlog/spdlog.h>
 
-#include "../platform/gl.hpp"
 #include "../platform/shader.hpp"
 #include "../utils/rendering.hpp"
 #include "../utils/bvh.h"
@@ -73,16 +71,6 @@ public:
     void update(std::vector<Object*>& all_objects);
     /*!
      * \~chinese
-     * \brief 根据指定的渲染模式渲染物体。
-     *
-     * \param shader 对一个 `Shader` 对象的引用
-     * \param mode 渲染模式。所有模式下都渲染面片，建模模式下额外渲染边和顶点。
-     * \param selected 布局模式下该物体是否被选中，被选中的物体额外渲染边。其他模式下，
-     * 该参数无意义。
-     */
-    void render(const Shader& shader, WorkingMode mode, bool selected);
-    /*!
-     * \~chinese
      * \brief 重新构建 BVH 。
      *
      * 原先没有构建过 BVH 的情况下调用这个函数也是安全的。
@@ -126,7 +114,7 @@ public:
      * 由于位姿参数每一帧都可能变化，mesh 中存储模型坐标系下的坐标以提高运行效率。
      * 如需获取世界坐标系下的坐标，请乘上模型变换矩阵。
      */
-    GL::Mesh mesh;
+    Mesh mesh;
     /*!
      * \~chinese
      * \brief 根据这个物体建立的 BVH 。
@@ -140,7 +128,7 @@ public:
      */
     std::unique_ptr<BVH> bvh;
     /*! \~chinese 代表 BVH 所有包围盒的线框。 */
-    GL::LineSet BVH_boxes;
+    AABBSet BVH_boxes;
 
 private:
 
@@ -156,5 +144,3 @@ private:
     /*! \~chinese 日志记录器。 */
     std::shared_ptr<spdlog::logger> logger;
 };
-
-#endif // DANDELION_SCENE_OBJECT_H

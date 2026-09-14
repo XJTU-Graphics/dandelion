@@ -53,6 +53,8 @@ struct Mesh
     std::vector<Eigen::Vector3f> positions;
     /*! \~chinese 顶点法线。 */
     std::vector<Eigen::Vector3f> normals;
+    /*! \~chinese 边的顶点索引。 */
+    std::vector<std::array<unsigned int, 2>> edges;
     /*! \~chinese 面片的顶点索引。 */
     std::vector<std::array<unsigned int, 3>> faces;
     /*! \~chinese Mesh 的材质。 */
