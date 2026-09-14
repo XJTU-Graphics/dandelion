@@ -1,12 +1,9 @@
-#ifndef DANDELION_UTILS_BVH_H
-#define DANDELION_UTILS_BVH_H
+#pragma once
 
 #include <vector>
-#include <memory>
-#include <algorithm>
 
-#include "../src/platform/gl.hpp"
-#include "./ray.h"
+#include "../geometry/mesh.hpp"
+#include "ray.h"
 #include "aabb.h"
 
 /*!
@@ -59,7 +56,7 @@ public:
      *
      * \param mesh_type mesh的类型
      */
-    BVH(const GL::Mesh& mesh);
+    BVH(const Mesh& mesh);
 
     /*! \~chinese 建立整个object的bvh的函数调用接口 */
     void build();
@@ -78,7 +75,7 @@ public:
      * \param obj_model 当前mesh所在object的model矩阵
      */
     std::optional<Intersection>
-    intersect(const Ray& ray, const GL::Mesh& mesh, const Eigen::Matrix4f obj_model);
+    intersect(const Ray& ray, const Mesh& mesh, const Eigen::Matrix4f obj_model);
 
     /*!
      * \~chinese
@@ -95,11 +92,9 @@ public:
     BVHNode* recursively_build(std::vector<size_t> faces_idx);
 
     /*! \~chinese 当前bvh所在object的mesh */
-    const GL::Mesh& mesh;
+    const Mesh& mesh;
     /*! \~chinese 当前mesh的所有图元索引 */
     std::vector<size_t> primitives;
     /*! \~chinese 当前bvh所在object的model矩阵 */
     Eigen::Matrix4f model;
 };
-
-#endif // DANDELION_UTILS_BVH_H

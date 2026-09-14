@@ -41,7 +41,7 @@ Ray generate_ray(int width, int height, int x, int y, Camera& camera, float dept
     return {camera.position, (world_pos - camera.position).normalized()};
 }
 
-optional<Intersection> ray_triangle_intersect(const Ray& ray, const GL::Mesh& mesh, size_t index)
+optional<Intersection> ray_triangle_intersect(const Ray& ray, const Mesh& mesh, size_t index)
 {
     // these lines below are just for compiling and can be deleted
     (void)ray;
@@ -57,7 +57,7 @@ optional<Intersection> ray_triangle_intersect(const Ray& ray, const GL::Mesh& me
     }
 }
 
-optional<Intersection> naive_intersect(const Ray& ray, const GL::Mesh& mesh, const Matrix4f model)
+optional<Intersection> naive_intersect(const Ray& ray, const Mesh& mesh, const Matrix4f model)
 {
     // these lines below are just for compiling and can be deleted
     (void)ray;
@@ -65,7 +65,7 @@ optional<Intersection> naive_intersect(const Ray& ray, const GL::Mesh& mesh, con
     // these lines above are just for compiling and can be deleted
 
     Intersection result;
-    for (size_t i = 0; i < mesh.faces.count(); ++i) {
+    for (size_t i = 0; i < mesh.faces.size(); ++i) {
         // Vertex a, b and c are assumed to be in counterclockwise order.
         // Construct matrix A = [d, a - b, a - c] and solve Ax = (a - origin)
         // Matrix A is not invertible, indicating the ray is parallel with the triangle.

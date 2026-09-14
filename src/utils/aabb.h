@@ -1,12 +1,11 @@
-#ifndef DANDELION_UTILS_AABB_H
-#define DANDELION_UTILS_AABB_H
+#pragma once
 
-#include <limits>
 #include <array>
 
 #include <Eigen/Core>
 #include <spdlog/spdlog.h>
 
+#include "../geometry/mesh.hpp"
 #include "ray.h"
 
 /*!
@@ -75,6 +74,4 @@ AABB union_AABB(const AABB& b, const Eigen::Vector3f& p);
  * \param mesh 当前AABB所在的mesh
  * \param face_idx 当前的面片所对应的index
  */
-AABB get_aabb(const GL::Mesh& mesh, size_t face_idx);
-
-#endif // DANDELION_UTILS_AABB_H
+AABB get_aabb(const Mesh& mesh, size_t face_idx);
