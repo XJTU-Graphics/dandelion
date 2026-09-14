@@ -5,6 +5,8 @@
 
 #include <Eigen/Core>
 
+#include "../scene/material.hpp"
+
 /*!
  * \file geometry/mesh.hpp
  * \~chinese
@@ -51,6 +53,8 @@ struct Mesh
     std::vector<Eigen::Vector3f> normals;
     /*! \~chinese 面片的顶点索引。 */
     std::vector<std::array<unsigned int, 3>> faces;
+    /*! \~chinese Mesh 的材质。 */
+    PhongMaterial material;
 
     /*! \~chinese 用于同步 GPU 的顶点坐标 buffer 。 */
     std::vector<float> position_buffer;
@@ -72,6 +76,8 @@ struct Mesh
  *
  * 外界读取顶点和线条数据时一般应该选择 `positions`/`edges`
  * 属性，而渲染器需要向 GPU 同步数据时而渲染器需要向 GPU 同步数据时则应该直接使用扁平的 `vector` 。
+ *
+ * 线条只支持单色渲染，着色效果不受光照的影响。
  */
 struct LineSet
 {
@@ -99,6 +105,8 @@ struct LineSet
     std::vector<Eigen::Vector3f> positions;
     /*! \~chinese 线条的顶点索引。 */
     std::vector<std::array<unsigned int, 2>> lines;
+    /*! \~chinese 线条的颜色，每个分量取值范围在 0 到 1 之间。 */
+    Eigen::Vector3f color;
 
     /*! \~chinese 用于同步 GPU 的顶点坐标 buffer 。 */
     std::vector<float> position_buffer;
