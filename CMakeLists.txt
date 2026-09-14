@@ -62,6 +62,7 @@ set(DANDELION_SCENE_SOURCES
     src/scene/object.cpp
     src/scene/camera.cpp
     src/scene/light.cpp
+    src/scene/material.cpp
 )
 set(DANDELION_UTILS_SOURCES
     src/utils/stb_image_wrapper.cpp
