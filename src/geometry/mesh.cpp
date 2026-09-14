@@ -6,11 +6,25 @@
 
 using Eigen::Vector3f;
 using std::array;
+using std::make_unique;
 using std::memcpy;
 using std::unordered_set;
 using std::vector;
 
 // -------------------- Mesh --------------------
+Mesh::Mesh(const Mesh& other) :
+    positions(other.positions), normals(other.normals), faces(other.faces),
+    position_buffer(other.position_buffer), normal_buffer(other.normal_buffer),
+    edge_index_buffer(other.edge_index_buffer), face_index_buffer(other.face_index_buffer)
+{
+    switch (other.material->type()) {
+    case MaterialType::Phong:
+        const PhongMaterial& reference = dynamic_cast<PhongMaterial&>(*other.material);
+        material                       = make_unique<PhongMaterial>(reference);
+        break;
+    }
+}
+
 void Mesh::clear() noexcept
 {
     positions.clear();
@@ -18,7 +32,7 @@ void Mesh::clear() noexcept
     faces.clear();
 }
 
-void Mesh::fill_buffers()
+void Mesh::prepare_buffers()
 {
     position_buffer.resize(positions.size() * 3);
     memcpy(position_buffer.data(), positions.data(), positions.size() * sizeof(Vector3f));
@@ -55,7 +69,7 @@ void LineSet::clear() noexcept
     lines.clear();
 }
 
-void LineSet::fill_buffers()
+void LineSet::prepare_buffers()
 {
     position_buffer.resize(positions.size() * 3);
     memcpy(position_buffer.data(), positions.data(), positions.size() * sizeof(Vector3f));
