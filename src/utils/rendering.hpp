@@ -1,5 +1,6 @@
-#ifndef DANDELION_UTILS_RENDERING_HPP
-#define DANDELION_UTILS_RENDERING_HPP
+#pragma once
+
+#include <Eigen/Core>
 
 /*!
  * \ingroup utils
@@ -27,8 +28,7 @@
  * 中的 shader 代码。
  */
 constexpr unsigned int vertex_position_location = 0;
-constexpr unsigned int vertex_color_location    = 1;
-constexpr unsigned int vertex_normal_location   = 2;
+constexpr unsigned int vertex_normal_location   = 1;
 ///@}
 
 /*!
@@ -41,6 +41,15 @@ constexpr float point_size = 8.0f;
  * 预览场景时用 OpenGL 绘制的线宽。
  */
 constexpr float line_width = 2.0f;
+
+/*! \~chinese 默认线框颜色（黄色）。 */
+const Eigen::Vector3f default_wireframe_color(RGB_COLOR(255, 194, 75));
+/*! \~chinese 默认面片颜色（中灰色）。 */
+const Eigen::Vector3f default_face_color(RGB_COLOR(255, 255, 255));
+/*! \~chinese 高亮线框颜色（浅蓝色）。 */
+const Eigen::Vector3f highlight_wireframe_color(RGB_COLOR(115, 206, 244));
+/*! \~chinese 高亮面片颜色（浅蓝色）。 */
+const Eigen::Vector3f highlight_face_color(RGB_COLOR(115, 206, 244));
 
 /*!
  * \~chinese
@@ -80,5 +89,3 @@ inline bool check_picking_enabled(WorkingMode mode)
     }
     return false;
 }
-
-#endif // DANDELION_UTILS_RENDERING_HPP
