@@ -27,10 +27,6 @@ const char* usage_title               = "Usage";
 const char* about_title               = "About Us";
 const char* debug_options_panel_title = "Debug Options";
 
-DebugOptions::DebugOptions() : show_picking_ray(false), show_BVH(false)
-{
-}
-
 Menubar::Menubar(DebugOptions& debug_options) : debug_options(debug_options)
 {
     int            width, height, n_channels;

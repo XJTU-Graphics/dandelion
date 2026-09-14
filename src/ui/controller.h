@@ -210,7 +210,7 @@ private:
      */
     WorkingMode mode;
     /*! \~chinese 一些帮助调试的选项，详见 `UI::DebugOptions` 类型说明。 */
-    UI::DebugOptions debug_options;
+    DebugOptions debug_options;
     /*! \~chinese 菜单栏。 */
     std::unique_ptr<UI::Menubar> menubar;
     /*! \~chinese 工具栏。 */

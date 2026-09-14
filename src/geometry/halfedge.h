@@ -308,18 +308,12 @@ public:
     LinkedList<Face> faces;
     /*! \~chinese 将 `Mesh` 使用的顶点索引映射为半边网格中的顶点指针。 */
     std::vector<Vertex*> v_pointers;
-    /*!
-     * \~chinese
-     * \brief 当前处于不一致状态的几何基本元素。
-     *
-     * 在 GUI 上选中了半边网格中的某个元素后，控制器将设置该属性，`sync`
-     * 函数根据该属性的值在每一帧更新数据源 mesh 中的顶点坐标，让建模模式下可以实时预览形变效果。
-     */
-    std::variant<std::monostate, Vertex*, Edge*, Face*> inconsistent_element;
-    /*! \~chinese 全局一致性。成功完成一次全局操作后，此变量将置为真，表示需要同步到参照 mesh。 */
-    bool global_inconsistent;
+    /*! \~chinese 半边网格被修改后置为 `true`，表示需要同步到参照 mesh。 */
+    bool modified;
     /*! \~chinese 在创建半边网格时设置，如果创建正常则为 `std::nullopt`。 */
     std::optional<HalfedgeMeshFailure> error_info;
+    /*! \~chinese 用于渲染半边的 `LineSet` 对象。 */
+    ArrowSet halfedge_arrows;
 
 private:
 
@@ -399,8 +393,6 @@ private:
     std::unordered_map<const Vertex*, size_t> v_indices;
     /*! \~chinese 将半边网格的半边指针映射为 `LineSet` 中的箭头索引。 */
     std::unordered_map<const Halfedge*, size_t> h_indices;
-    /*! \~chinese 用于渲染半边的 `LineSet` 对象。 */
-    ArrowSet halfedge_arrows;
     /*! \~chinese 日志记录器。 */
     std::shared_ptr<spdlog::logger> logger;
 };

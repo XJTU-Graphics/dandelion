@@ -159,8 +159,10 @@ public:
     Mesh highlighted_element;
     /*! \~chinese 被选中元素类型为半边时使用的绘制对象。 */
     ArrowSet highlighted_halfedge;
-    /*! \~chinese 显示拾取射线用的绘制对象，对应 `UI::DebugOptions::show_picking_ray` 。 */
+    /*! \~chinese 显示拾取射线用的绘制对象，对应 `DebugOptions::show_picking_ray` 。 */
     LineSet picking_ray;
+    /*! \~chinese 显示光源。这个 Mesh 中只包含一个光源示意图的几何数据，渲染时需要多次绘制。 */
+    Mesh light_indicator;
 
 private:
 

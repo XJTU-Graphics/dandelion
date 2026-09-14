@@ -89,3 +89,15 @@ inline bool check_picking_enabled(WorkingMode mode)
     }
     return false;
 }
+
+/*!
+ * \~chinese
+ * \brief 辅助调试的 GUI 选项。
+ */
+struct DebugOptions
+{
+    /*! \~chinese 显示进行拾取时生成的虚拟光线。 */
+    bool show_picking_ray = false;
+    /*! \~chinese 显示所有物体的 BVH 结构。 */
+    bool show_BVH = false;
+};

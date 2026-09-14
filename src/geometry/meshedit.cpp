@@ -1,7 +1,6 @@
 #include "halfedge.h"
 
 #include <set>
-#include <map>
 #include <vector>
 #include <string>
 
@@ -99,7 +98,7 @@ void HalfedgeMesh::loop_subdivide()
 
     // Once we have successfully subdivided the mesh, set global_inconsistent
     // to true to trigger synchronization with GL::Mesh.
-    global_inconsistent = true;
+    modified = true;
     logger->info("subdivided mesh: {} vertices, {} faces in total", vertices.size, faces.size);
     logger->info("Loop Subdivision done");
     logger->info("");
@@ -139,7 +138,7 @@ void HalfedgeMesh::simplify()
 
     logger->info("simplified mesh: {} vertices, {} faces", vertices.size, faces.size);
     logger->info("simplification done\n");
-    global_inconsistent = true;
+    modified = true;
     validate();
 }
 
@@ -175,6 +174,6 @@ void HalfedgeMesh::isotropic_remesh()
         // Vertex averaging.
     }
     logger->info("remeshed mesh: {} vertices, {} faces\n", vertices.size, faces.size);
-    global_inconsistent = true;
+    modified = true;
     validate();
 }
