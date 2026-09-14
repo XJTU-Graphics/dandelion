@@ -3,6 +3,7 @@
 #include <string>
 #include <filesystem>
 #include <fstream>
+#include <variant>
 
 #include <Eigen/Core>
 #include <assimp/Importer.hpp>
@@ -34,6 +35,7 @@ using std::chrono::duration_cast;
 using std::unique_ptr;
 using namespace std::chrono_literals;
 using nlohmann::json;
+using std::monostate;
 
 Vector3f Scene::initial_camera_pos(5.0f, 5.0f, 5.0f);
 Vector3f Scene::initial_camera_target(0.0f, 0.0f, 0.0f);
@@ -86,6 +88,11 @@ Scene::Scene() :
     }
     ground_grid.color    = Vector3f(RGB_COLOR(68, 68, 68));
     ground_grid.modified = true;
+
+    highlighted_element.name  = "Highlighted Element";
+    highlighted_halfedge.name = "Highlighted Halfedge";
+    picking_ray.name          = "Picking Ray";
+    selected_element          = monostate();
 }
 
 bool Scene::import_model(const string& file_path)

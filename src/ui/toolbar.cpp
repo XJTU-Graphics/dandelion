@@ -8,12 +8,13 @@
 #include <optional>
 #include <filesystem>
 #include <format>
+#include <memory>
 
 #include <imgui/imgui.h>
 #include <glad/glad.h>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
-#include "../utils/formatter.hpp"
+#include "../utils/formatter.hpp" // IWYU pragma: keep
 #include <spdlog/spdlog.h>
 #include <portable-file-dialogs.h>
 #include <stb/stb_image_write.h>
@@ -36,6 +37,7 @@ using Eigen::Vector3f;
 using std::format;
 using std::get_if;
 using std::holds_alternative;
+using std::make_unique;
 using std::optional;
 using std::size_t;
 using std::string;
@@ -76,6 +78,33 @@ void Toolbar::render(Scene& scene)
         ImGui::EndTabBar(); // Mode
     }
     ImGui::End(); // End Tools
+}
+
+void Toolbar::switch_mode(WorkingMode target_mode, Scene& scene)
+{
+    if (target_mode == mode) [[likely]]
+        return;
+    switch (mode) {
+    case WorkingMode::MODEL:
+    {
+        if (scene.halfedge_mesh)
+            scene.halfedge_mesh.reset();
+        break;
+    }
+    default: break;
+    }
+    switch (target_mode) {
+    case WorkingMode::MODEL:
+    {
+        if (scene.selected_object) {
+            scene.halfedge_mesh = make_unique<HalfedgeMesh>(*scene.selected_object);
+        }
+        break;
+    }
+    default: break;
+    }
+    mode = target_mode;
+    on_selection_canceled();
 }
 
 void Toolbar::scene_hierarchies(Scene& scene)
@@ -158,10 +187,8 @@ void Toolbar::material_editor(Material& material)
 void Toolbar::layout_mode(Scene& scene)
 {
     if (ImGui::BeginTabItem("Layout")) {
-        if (mode != WorkingMode::LAYOUT) {
-            on_selection_canceled();
-            mode = WorkingMode::LAYOUT;
-        }
+        switch_mode(WorkingMode::LAYOUT, scene);
+
         scene_hierarchies(scene);
 
         Object* selected_object = scene.selected_object;
@@ -211,7 +238,7 @@ void Toolbar::layout_mode(Scene& scene)
 void Toolbar::model_mode(Scene& scene)
 {
     if (ImGui::BeginTabItem("Model")) {
-        mode = WorkingMode::MODEL;
+        switch_mode(WorkingMode::MODEL, scene);
 
         bool no_halfedge_mesh = !scene.halfedge_mesh;
         bool halfedge_mesh_failed =
@@ -357,11 +384,7 @@ const char* renderer_names[] = {"Rasterizer Renderer", "Whitted-Style Ray-Tracer
 void Toolbar::render_mode(Scene& scene)
 {
     if (ImGui::BeginTabItem("Render")) {
-        // un-select the selected object (if there is a selected object)
-        if (mode != WorkingMode::RENDER) {
-            on_selection_canceled();
-            mode = WorkingMode::RENDER;
-        }
+        switch_mode(WorkingMode::RENDER, scene);
         bool open_rendered_image = false;
         bool always_true         = true;
 
@@ -527,10 +550,7 @@ const char* solver_names[] = {
 void Toolbar::simulate_mode(Scene& scene)
 {
     if (ImGui::BeginTabItem("Simulate")) {
-        if (mode != WorkingMode::SIMULATE) {
-            on_selection_canceled();
-            mode = WorkingMode::SIMULATE;
-        }
+        switch_mode(WorkingMode::SIMULATE, scene);
 
         static int current_solver_index = 0;
         ImGui::Combo("Kinetic Solver", &current_solver_index, solver_names, 4);

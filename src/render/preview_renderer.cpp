@@ -68,7 +68,9 @@ void PreviewRenderer::render(Scene& scene, WorkingMode mode)
         drawable_lineset->VAO.draw(GL_LINES, 0, drawable_lineset->positions.count());
     }
 
-    if (mode == WorkingMode::LAYOUT) {
+    const bool selected_object_highlight =
+        mode == WorkingMode::LAYOUT || mode == WorkingMode::SIMULATE;
+    if (selected_object_highlight) {
         render_selected_object_if_exist(scene);
     }
 

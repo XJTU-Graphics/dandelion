@@ -4,7 +4,7 @@
 #include <cstddef>
 #include <functional>
 
-#include "selection_helper.h"
+#include "../scene/selection_helper.h"
 #include "../scene/material.hpp"
 #include "../scene/scene.h"
 #include "../utils/rendering.hpp"
@@ -55,6 +55,8 @@ public:
 
 private:
 
+    /*! \~chinese 切换工作模式，清理上一个模式的临时数据。 */
+    void switch_mode(WorkingMode target_mode, Scene& scene);
     /*! \~chinese 将场景层次结构展示为一个树形列表。 */
     void scene_hierarchies(Scene& scene);
     /*! \~chinese 显示标签分别为 x, y, z 的三个 `ImGui::DragFloat` 控件。 */
