@@ -20,7 +20,7 @@ using Eigen::Vector3f;
 using Eigen::Vector4f;
 using std::memcpy;
 
-// vertex processor & rasterizer & fragement processor can visit
+// vertex processor & rasterizer & fragment processor can visit
 // all the static variables below from Uniforms structure
 Eigen::Matrix4f Uniforms::MVP;
 Eigen::Matrix4f Uniforms::inv_trans_M;

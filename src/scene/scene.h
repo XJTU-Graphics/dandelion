@@ -13,6 +13,7 @@
 #include "group.h"
 #include "camera.h"
 #include "light.h"
+#include "selection_helper.h"
 #include "../geometry/mesh.hpp"
 #include "../geometry/halfedge.h"
 
@@ -125,6 +126,15 @@ public:
      * 在布局模式和物理模拟模式下，它决定当前被高亮的物体；在建模模式下，仅有这个物体被绘制。
      */
     Object* selected_object;
+    /*!
+     * \~chinese
+     * \brief 当前被选中的元素。
+     *
+     * 根据当前所处的模式，物体、各类几何基本元素、光源都可能被选中，详见 `SelectableType`
+     * 的类型说明。当 `selected_element` 持有 `std::monostate` 类型时，
+     * 当前的选择状态为空（没有任何元素被选中）。
+     */
+    SelectableType selected_element;
     /*! \~chinese 用于预览场景的观察相机（主相机）。 */
     Camera main_camera;
     /*! \~chinese 用于 **离线渲染** 的相机，和用于预览场景的观察相机（主相机）无关。 */
@@ -145,6 +155,12 @@ public:
     LineSet z_axis;
     /*! \~chinese 用于显示离线渲染相机。 */
     LineSet camera_wireframe;
+    /*! \~chinese 被选中元素类型为顶点、边、面片或光源时使用的绘制对象。 */
+    Mesh highlighted_element;
+    /*! \~chinese 被选中元素类型为半边时使用的绘制对象。 */
+    ArrowSet highlighted_halfedge;
+    /*! \~chinese 显示拾取射线用的绘制对象，对应 `UI::DebugOptions::show_picking_ray` 。 */
+    LineSet picking_ray;
 
 private:
 

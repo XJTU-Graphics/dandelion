@@ -41,16 +41,12 @@ Controller::Controller()
 {
     logger                         = get_logger("Controller");
     scene                          = make_unique<Scene>();
-    highlighted_element.name       = "Highlighted Element";
-    highlighted_halfedge.name      = "Highlighted Halfedge";
-    picking_ray.name               = "Picking Ray";
     menubar                        = make_unique<UI::Menubar>(debug_options);
     menubar->reset_ui              = [this]() -> void { this->return_to_safe_state(); };
-    toolbar                        = make_unique<UI::Toolbar>(mode, selected_element);
+    toolbar                        = make_unique<UI::Toolbar>(mode, scene->selected_element);
     toolbar->on_element_selected   = [this](SelectableType element) { select(element); };
     toolbar->on_selection_canceled = [this]() { unselect(); };
     trackball_radius               = 300.0f;
-    selected_element               = monostate();
     // Device-independent configurations (i.e. styles) here.
     ImGui::StyleColorsDark();
     ImGuiStyle& style  = ImGui::GetStyle();
@@ -135,8 +131,8 @@ void Controller::on_picking()
     }
 
     if (debug_options.show_picking_ray) {
-        picking_ray.clear();
-        picking_ray.add_line(ray.origin, ray.origin + 1000.0f * ray.direction);
+        scene->picking_ray.clear();
+        scene->picking_ray.add_line(ray.origin, ray.origin + 1000.0f * ray.direction);
     }
 }
 
@@ -190,7 +186,7 @@ void Controller::process_input()
         }
     }
     if (ImGui::IsKeyDown(ImGuiKey_Delete)) {
-        Object** object_result = get_if<Object*>(&selected_element);
+        Object** object_result = get_if<Object*>(&scene->selected_element);
         if (object_result != nullptr) {
             Object* selected_object = *object_result;
             for (auto group = scene->groups.begin(); group != scene->groups.end(); ++group) {
@@ -220,7 +216,7 @@ void Controller::process_input()
                 }
             }
         }
-        Light** light_result = get_if<Light*>(&selected_element);
+        Light** light_result = get_if<Light*>(&scene->selected_element);
         if (light_result != nullptr) {
             Light* selected_light = *light_result;
             size_t index          = 1;
@@ -272,10 +268,10 @@ void Controller::unselect()
 {
     static auto unselect_object           = []([[maybe_unused]]
                                      Object* object) {};
-    static auto clear_highlighted_element = [this]() { highlighted_element.clear(); };
+    static auto clear_highlighted_element = [this]() { scene->highlighted_element.clear(); };
     static auto unselect_halfedge         = [this]([[maybe_unused]]
                                            const Halfedge* halfedge) {
-        highlighted_halfedge.clear();
+        scene->highlighted_halfedge.clear();
     };
     static auto unselect_vertex = []([[maybe_unused]]
                                      Vertex* vertex) { clear_highlighted_element(); };
@@ -292,7 +288,7 @@ void Controller::unselect()
             unselect_halfedge, unselect_object, unselect_vertex, unselect_edge, unselect_face,
             unselect_light
         },
-        selected_element
+        scene->selected_element
     );
     if (mode != WorkingMode::MODEL) {
         scene->selected_object = nullptr;
@@ -300,7 +296,7 @@ void Controller::unselect()
     if (scene->halfedge_mesh != nullptr) {
         scene->halfedge_mesh->inconsistent_element = monostate();
     }
-    selected_element = monostate();
+    scene->selected_element = monostate();
 }
 
 void Controller::pick_object(Ray& ray)
@@ -397,59 +393,59 @@ void Controller::pick_element(Ray& ray)
 
 void Controller::select_object(Object* object)
 {
-    selected_element       = object;
-    scene->selected_object = object;
+    scene->selected_element = object;
+    scene->selected_object  = object;
 }
 
 void Controller::select_halfedge(const Halfedge* halfedge)
 {
-    selected_element = halfedge;
-    auto [from, to]  = HalfedgeMesh::halfedge_arrow_endpoints(halfedge);
-    highlighted_halfedge.add_arrow(from, to);
+    scene->selected_element = halfedge;
+    auto [from, to]         = HalfedgeMesh::halfedge_arrow_endpoints(halfedge);
+    scene->highlighted_halfedge.add_arrow(from, to);
 }
 
 void Controller::select_vertex(Vertex* vertex)
 {
-    selected_element                           = vertex;
+    scene->selected_element                    = vertex;
     scene->halfedge_mesh->inconsistent_element = vertex;
-    highlighted_element.positions.emplace_back(vertex->pos);
+    scene->highlighted_element.positions.emplace_back(vertex->pos);
 }
 
 void Controller::select_edge(Edge* edge)
 {
-    selected_element                           = edge;
+    scene->selected_element                    = edge;
     scene->halfedge_mesh->inconsistent_element = edge;
     const Vertex* v1                           = edge->halfedge->from;
     const Vertex* v2                           = edge->halfedge->inv->from;
-    highlighted_element.positions.emplace_back(v1->pos);
-    highlighted_element.positions.emplace_back(v2->pos);
-    highlighted_element.edges.push_back({0u, 1u});
+    scene->highlighted_element.positions.emplace_back(v1->pos);
+    scene->highlighted_element.positions.emplace_back(v2->pos);
+    scene->highlighted_element.edges.push_back({0u, 1u});
 }
 
 void Controller::select_face(Face* face)
 {
-    selected_element                           = face;
+    scene->selected_element                    = face;
     scene->halfedge_mesh->inconsistent_element = face;
     const Halfedge* h                          = face->halfedge;
     const Vertex*   v;
     do {
         v = h->from;
-        highlighted_element.positions.emplace_back(v->pos);
+        scene->highlighted_element.positions.emplace_back(v->pos);
         h = h->next;
     } while (h != face->halfedge);
-    highlighted_element.faces.push_back({0u, 1u, 2u});
+    scene->highlighted_element.faces.push_back({0u, 1u, 2u});
 }
 
 void Controller::select_light(Light* light)
 {
-    selected_element = light;
-    highlighted_element.positions.push_back({0.0f, 0.0f, 0.0f});
-    highlighted_element.positions.push_back({0.1f, 0.0f, 0.0f});
-    highlighted_element.positions.push_back({-0.1f, 0.0f, 0.0f});
-    highlighted_element.positions.push_back({0.0f, 0.1f, 0.0f});
-    highlighted_element.positions.push_back({0.0f, -0.1f, 0.0f});
-    highlighted_element.positions.push_back({0.0f, 0.0f, 0.1f});
-    highlighted_element.positions.push_back({0.0f, 0.0f, -0.1f});
+    scene->selected_element = light;
+    scene->highlighted_element.positions.push_back({0.0f, 0.0f, 0.0f});
+    scene->highlighted_element.positions.push_back({0.1f, 0.0f, 0.0f});
+    scene->highlighted_element.positions.push_back({-0.1f, 0.0f, 0.0f});
+    scene->highlighted_element.positions.push_back({0.0f, 0.1f, 0.0f});
+    scene->highlighted_element.positions.push_back({0.0f, -0.1f, 0.0f});
+    scene->highlighted_element.positions.push_back({0.0f, 0.0f, 0.1f});
+    scene->highlighted_element.positions.push_back({0.0f, 0.0f, -0.1f});
 }
 
 void Controller::on_rotating(bool initial)
