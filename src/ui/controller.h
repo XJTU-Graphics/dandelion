@@ -13,9 +13,8 @@
 #include "menubar.h"
 #include "toolbar.h"
 #include "selection_helper.h"
-#include "../platform/gl.hpp"
-#include "../platform/shader.hpp"
 #include "../scene/scene.h"
+#include "../render/preview_renderer.h"
 
 /*!
  * \ingroup ui
@@ -51,6 +50,8 @@ public:
     Controller& operator=(Controller& other) = delete;
     ///@}
     ~Controller();
+    /*! \~chinese 清理需要手动释放而不能随析构自动处理的资源。 */
+    void shutdown();
     /*!
      * \~chinese
      * \brief 将鼠标拖动转换为旋转视角或平移视角操作。
@@ -106,9 +107,9 @@ public:
     /*!
      * \~chinese
      * 渲染场景和各个 UI 组件。控制器本身不直接渲染任何内容，而是调用相应类的 `render()` 方法。
-     * \param shader 当前渲染使用的 shader，用于设置 shader 中的全局变量。
+     * \param renderer 预览渲染器实例。
      */
-    void render(const Shader& shader);
+    void render(PreviewRenderer& renderer);
     /*!
      * \~chinese
      * 在加载场景前重置 UI 的状态，避免加载场景时控制器仍有不当的数据引用。
@@ -145,22 +146,6 @@ private:
      * 如果之前的被选中元素设置过 `Scene` 等对象的属性，它也会一并将其重置。
      */
     void unselect();
-    /*!
-     * \~chinese
-     * \brief 渲染当前选中的元素。
-     *
-     * 渲染选中元素时会禁用深度检测 `GL_DEPTH_TEST` ，直接在原先的绘制结果上叠加。
-     * 因此，即使将视角旋转到背面也会看到高亮出来的被选中元素。
-     */
-    void render_selected_element(const Shader& shader);
-    /*!
-     * \~chinese
-     * \brief 渲染帮助调试的元素。
-     *
-     * 根据 `debug_options` 中的各项设置，渲染帮助调试的结构，如 BVH
-     * 的所有包围盒等。
-     */
-    void render_debug_helpers(const Shader& shader);
     /*!
      * \~chinese
      * \brief 拾取物体。
@@ -246,11 +231,11 @@ private:
     /*! \~chinese 当前的轨迹球半径，决定轨迹球控制曲面上球面和双曲面部分的相切位置。 */
     float trackball_radius;
     /*! \~chinese 被选中元素类型为顶点、边、面片或光源时使用的绘制对象。 */
-    GL::Mesh highlighted_element;
+    Mesh highlighted_element;
     /*! \~chinese 被选中元素类型为半边时使用的绘制对象。 */
-    GL::LineSet highlighted_halfedge;
+    ArrowSet highlighted_halfedge;
     /*! \~chinese 显示拾取射线用的绘制对象，对应 `UI::DebugOptions::show_picking_ray` 。 */
-    GL::LineSet picking_ray;
+    LineSet picking_ray;
 };
 
 #endif // DANDELION_UI_CONTROLLER_H

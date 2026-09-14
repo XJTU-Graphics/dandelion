@@ -67,7 +67,7 @@ struct VertexArrayObject
     /*! \~chinese 解绑 VAO。 */
     void release() const noexcept;
     /*! \~chinese 绘制这个 VAO 记录的所有内容，无需专门绑定和解绑。 */
-    void draw(GLenum mode, int first, std::size_t count);
+    void draw(GLenum mode, int first, std::size_t n_vertices) const;
 
     /*! \~chinese OpenGL VAO 的名字 (name)，是该 VAO 的唯一标识。 */
     unsigned int descriptor;

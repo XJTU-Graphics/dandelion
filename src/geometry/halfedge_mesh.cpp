@@ -6,6 +6,7 @@
 #include <vector>
 #include <utility>
 #include <string>
+#include <set>
 
 #include <Eigen/Core>
 #include <Eigen/Dense>

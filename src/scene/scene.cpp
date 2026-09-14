@@ -18,6 +18,7 @@
 #include "../utils/kinetic_state.h"
 #include "../utils/logger.h"
 #include "../utils/json_serialize.hpp"
+#include "../utils/rendering.hpp"
 
 namespace fs = std::filesystem;
 using Eigen::Matrix4f;
@@ -44,8 +45,46 @@ Scene::Scene() :
     ),
     camera(initial_camera_pos, initial_camera_target), during_animation(false)
 {
+    constexpr float  far_distance = 1e3;
+    constexpr size_t n_baselines  = 1'000;
+    constexpr float  baseline_gap = 1.0f;
+
     arrows.name = "Scene Arrows";
     logger      = get_logger("Scene");
+
+    logger->info("Initialize axis and ground grid");
+    x_axis.name = "x Axis";
+    x_axis.add_line({0.0f, 0.0f, 0.0f}, {far_distance, 0.0f, 0.0f});
+    x_axis.color    = Vector3f(RGB_COLOR(226, 53, 79));
+    x_axis.modified = true;
+    ground_grid.add_line({0.0f, 0.0f, 0.0f}, {-far_distance, 0.0f, 0.0f});
+    y_axis.name = "y Axis";
+    y_axis.add_line({0.0f, 0.0f, 0.0f}, {0.0f, far_distance, 0.0f});
+    y_axis.color    = Vector3f(RGB_COLOR(131, 204, 6));
+    y_axis.modified = true;
+    z_axis.name     = "z Axis";
+    z_axis.add_line({0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, far_distance});
+    z_axis.color = Vector3f(RGB_COLOR(43, 134, 232));
+    ground_grid.add_line({0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -far_distance});
+    z_axis.modified = true;
+
+    // Here we start from 1 to skip the baselines overlapped with axes.
+    for (size_t i = 1; i < n_baselines; ++i) {
+        ground_grid.add_line(
+            {-far_distance, 0.0f, -baseline_gap * i}, {far_distance, 0.0f, -baseline_gap * i}
+        );
+        ground_grid.add_line(
+            {-far_distance, 0.0f, baseline_gap * i}, {far_distance, 0.0f, baseline_gap * i}
+        );
+        ground_grid.add_line(
+            {-baseline_gap * i, 0.0f, -far_distance}, {-baseline_gap * i, 0.0f, far_distance}
+        );
+        ground_grid.add_line(
+            {baseline_gap * i, 0.0f, -far_distance}, {baseline_gap * i, 0.0f, far_distance}
+        );
+    }
+    ground_grid.color    = Vector3f(RGB_COLOR(68, 68, 68));
+    ground_grid.modified = true;
 }
 
 bool Scene::import_model(const string& file_path)

@@ -10,7 +10,6 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
-#include "../utils/math.hpp"
 #include "../utils/ray.h"
 #include "../utils/rendering.hpp"
 #include "../simulation/solver.h"
@@ -39,6 +38,9 @@ Object::Object(const string& object_name) :
     modified = false;
     id       = next_available_id;
     ++next_available_id;
+    material = make_unique<PhongMaterial>(
+        Vector3f(0.0f, 0.0f, 0.0f), default_face_color, Vector3f(0.0f, 0.0f, 0.0f), 10.0f
+    );
     bvh                      = make_unique<BVH>(mesh);
     BVH_boxes.name           = "BVH";
     BVH_boxes.color          = highlight_wireframe_color;

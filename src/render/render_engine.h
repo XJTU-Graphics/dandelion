@@ -146,21 +146,22 @@ private:
      *
      */
     float fresnel(const Eigen::Vector3f& I, const Eigen::Vector3f& N, const float& ior);
-    
+
     /*!
      * \~chinese
      * \brief 追踪光线与场景中物体的相交情况
-     * 
+     *
      * 遍历场景中的所有物体，找到与光线最近的相交点，并返回相交信息和物体材质信息；
      * 根据`use_bvh`决定是否使用 BVH 进行加速求交
-     * 
+     *
      * \param ray 待检测的光线
      * \param scene 当前渲染的场景
-     * 
+     *
      * \returns 如果相交，返回包含相交信息和物体材质的元组；如果不相交，返回`std::nullopt`
      */
-    std::optional<std::tuple<Intersection, GL::Material>> trace(const Ray& ray, const Scene& scene);
-    
+    std::optional<std::tuple<Intersection, PhongMaterial>>
+    trace(const Ray& ray, const Scene& scene);
+
     /*!
      * \~chinese
      * \brief 追踪指定光线得到颜色

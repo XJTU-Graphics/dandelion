@@ -2,12 +2,9 @@
 
 #include <array>
 #include <vector>
-#include <memory>
 #include <string>
 
 #include <Eigen/Core>
-
-#include "../scene/material.hpp"
 
 /*!
  * \file geometry/mesh.hpp
@@ -43,11 +40,6 @@ struct Mesh
      * 传输数据的 buffer （私有成员）。
      */
     void clear() noexcept;
-    /*!
-     * \~chinese
-     * \brief 重新构建所有的渲染数据 buffer 。
-     */
-    void prepare_buffers();
 
     /*! \~chinese 顶点坐标。 */
     std::vector<Eigen::Vector3f> positions;
@@ -57,17 +49,8 @@ struct Mesh
     std::vector<std::array<unsigned int, 2>> edges;
     /*! \~chinese 面片的顶点索引。 */
     std::vector<std::array<unsigned int, 3>> faces;
-    /*! \~chinese Mesh 的材质。 */
-    std::unique_ptr<Material> material;
-
-    /*! \~chinese 用于同步 GPU 的顶点坐标 buffer 。 */
-    std::vector<float> position_buffer;
-    /*! \~chinese 用于同步 GPU 的顶点法线 buffer 。 */
-    std::vector<float> normal_buffer;
-    /*! \~chinese 用于同步 GPU 的边线索引 buffer ，只在需要显示边时才有用。 */
-    std::vector<unsigned int> edge_index_buffer;
-    /*! \~chinese 用于同步 GPU 的三角形面片索引 buffer 。 */
-    std::vector<unsigned int> face_index_buffer;
+    /*! \~chinese 相较于上次渲染，该 Mesh 是否被修改过。 */
+    bool modified;
     /*! \~chinese 名称。 */
     std::string name;
 };
@@ -114,11 +97,6 @@ struct LineSet
      * 传输数据的 buffer （私有成员）。
      */
     void clear() noexcept;
-    /*!
-     * \~chinese
-     * \brief 重新构建所有的渲染数据 buffer 。
-     */
-    void prepare_buffers();
 
     /*! \~chinese 顶点坐标。 */
     std::vector<Eigen::Vector3f> positions;
@@ -126,11 +104,8 @@ struct LineSet
     std::vector<std::array<unsigned int, 2>> lines;
     /*! \~chinese 线条的颜色，每个分量取值范围在 0 到 1 之间。 */
     Eigen::Vector3f color;
-
-    /*! \~chinese 用于同步 GPU 的顶点坐标 buffer 。 */
-    std::vector<float> position_buffer;
-    /*! \~chinese 用于同步 GPU 的线条索引 buffer 。 */
-    std::vector<unsigned int> line_index_buffer;
+    /*! \~chinese 相较于上次渲染，该线条集是否被修改过。 */
+    bool modified;
     /*! \~chinese 名称。 */
     std::string name;
 };
