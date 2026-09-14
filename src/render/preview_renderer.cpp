@@ -54,7 +54,7 @@ void PreviewRenderer::delete_drawable_resources()
     drawable_linesets.clear();
 }
 
-void PreviewRenderer::render(Scene& scene, [[maybe_unused]] WorkingMode mode)
+void PreviewRenderer::render(Scene& scene, WorkingMode mode)
 {
     update_drawable_meshes(scene);
     update_drawable_linesets(scene);
@@ -66,6 +66,39 @@ void PreviewRenderer::render(Scene& scene, [[maybe_unused]] WorkingMode mode)
     for (const auto& [lineset, drawable_lineset]: drawable_linesets) {
         primitive_shader->set_uniform("color", lineset->color);
         drawable_lineset->VAO.draw(GL_LINES, 0, drawable_lineset->positions.count());
+    }
+
+    if (mode == WorkingMode::LAYOUT) {
+        render_selected_object_if_exist(scene);
+    }
+
+    phong_shader->use();
+    phong_shader->set_uniform("view_projection", view_projection);
+    phong_shader->set_uniform("camera_position", scene.main_camera.position);
+    for (const unique_ptr<Group>& group: scene.groups) {
+        for (const unique_ptr<Object>& object: group->objects) {
+            if (object->material->type() != MaterialType::Phong)
+                continue;
+            const Mesh*             mesh     = &object->mesh;
+            const PhongMaterial&    material = dynamic_cast<PhongMaterial&>(*(object->material));
+            const Matrix4f          model    = object->model();
+            const Matrix4f          normal_transform = model.inverse().transpose();
+            const GL::DrawableMesh& drawable_mesh    = *drawable_meshes[mesh];
+            phong_shader->set_uniform("model", model);
+            phong_shader->set_uniform("normal_transform", normal_transform);
+            phong_shader->set_uniform("material.ambient", material.ambient);
+            phong_shader->set_uniform("material.diffuse", material.diffuse);
+            phong_shader->set_uniform("material.specular", material.specular);
+            phong_shader->set_uniform("material.shininess", material.shininess);
+            drawable_mesh.VAO.bind();
+            drawable_mesh.triangles.bind();
+            glDrawElements(
+                GL_TRIANGLES, static_cast<GLsizei>(drawable_mesh.triangles.data.size()),
+                GL_UNSIGNED_INT, (void*)0
+            );
+            drawable_mesh.triangles.release();
+            drawable_mesh.VAO.release();
+        }
     }
 }
 
@@ -80,6 +113,11 @@ void PreviewRenderer::fill_drawable_mesh(const Mesh& mesh, GL::DrawableMesh& dra
     );
     logger->debug(
         "{} float numbers copied as vertex positions", drawable_mesh.positions.data.size()
+    );
+    drawable_mesh.normals.data.resize(mesh.normals.size() * 3);
+    memcpy(
+        drawable_mesh.normals.data.data(), mesh.normals.data(),
+        mesh.normals.size() * sizeof(Vector3f)
     );
     drawable_mesh.edges.data.resize(mesh.edges.size() * 2);
     memcpy(
@@ -148,6 +186,7 @@ void PreviewRenderer::update_drawable_meshes(Scene& scene)
     }
     for (const Mesh* mesh: deleted_meshes) {
         drawable_meshes.erase(mesh);
+        logger->info("drawable mesh corresponding to mesh \"{}\" is removed", mesh->name);
     }
 }
 
@@ -174,5 +213,26 @@ void PreviewRenderer::update_drawable_linesets(Scene& scene)
     }
     for (const LineSet* lineset: deleted_linesets) {
         drawable_linesets.erase(lineset);
+        logger->info(
+            "drawable line set corresponding to line set \"{}\" is removed", lineset->name
+        );
     }
+}
+
+void PreviewRenderer::render_selected_object_if_exist(const Scene& scene)
+{
+    if (!scene.selected_object) {
+        return;
+    }
+
+    const Mesh*             mesh          = &scene.selected_object->mesh;
+    const GL::DrawableMesh& drawable_mesh = *drawable_meshes[mesh];
+    primitive_shader->set_uniform("color", default_wireframe_color);
+    drawable_mesh.VAO.bind();
+    drawable_mesh.edges.bind();
+    glDrawElements(
+        GL_LINES, static_cast<GLsizei>(drawable_mesh.edges.data.size()), GL_UNSIGNED_INT, (void*)0
+    );
+    drawable_mesh.edges.release();
+    drawable_mesh.VAO.release();
 }

@@ -68,6 +68,7 @@ Scene::Scene() :
     ground_grid.add_line({0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -far_distance});
     z_axis.modified = true;
 
+    ground_grid.name = "Ground";
     // Here we start from 1 to skip the baselines overlapped with axes.
     for (size_t i = 1; i < n_baselines; ++i) {
         ground_grid.add_line(
