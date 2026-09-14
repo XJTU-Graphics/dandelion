@@ -71,8 +71,8 @@ void Object::update(vector<Object*>& all_objects)
         for (size_t i = 0; i < mesh.edges.size(); ++i) {
             array<unsigned int, 2> v_indices = mesh.edges[i];
             (void)v_indices;
-            // v_indices 中是这条边两个端点的索引，以这两个索引为参数调用 GL::Mesh::vertex
-            // 方法可以获得它们的坐标，进而用于构造射线。
+            // v_indices 中是这条边两个端点的索引，用这两个索引访问 Mesh::positions
+            // 属性可以获得它们的坐标，进而用于构造射线。
             if (BVH_for_collision) {
             } else {
             }

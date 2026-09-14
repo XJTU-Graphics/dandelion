@@ -624,7 +624,7 @@ void Toolbar::simulate_mode(Scene& scene)
             "Simulation FPS", &fps, 5.0f, 60.0f, "%.1f", ImGuiSliderFlags_AlwaysClamp
         );
         time_step = 1.0f / fps;
-        ImGui::Checkbox("Use BVH to accererate collision", &Object::BVH_for_collision);
+        ImGui::Checkbox("Use BVH to accelerate collision", &Object::BVH_for_collision);
         if (ImGui::Button("Start")) {
             scene.start_simulation();
         }

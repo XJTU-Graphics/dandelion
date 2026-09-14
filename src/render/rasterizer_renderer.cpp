@@ -122,7 +122,7 @@ void RasterizerRenderer::render(const Scene& scene)
             const size_t n_faces = object->mesh.faces.size();
             faces.resize(n_faces * 3);
             memcpy(faces.data(), object->mesh.faces.data(), n_faces * 3 * sizeof(unsigned int));
-            unsigned int num_faces = faces.size();
+            unsigned int num_faces = static_cast<unsigned int>(faces.size());
 
             // process vertices
             for (size_t i = 0; i < num_faces; i += 3) {
