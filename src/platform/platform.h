@@ -91,6 +91,8 @@ private:
     double dpi;
     /*! \~chinese 用于实时渲染预览窗口的 OpenGL Shader 封装对象。 */
     std::unique_ptr<Shader> shader;
+    std::unique_ptr<Shader> primitive_shader;
+    std::unique_ptr<Shader> phong_shader;
 };
 
 #endif

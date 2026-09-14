@@ -2,6 +2,7 @@
 
 #include <array>
 #include <vector>
+#include <memory>
 
 #include <Eigen/Core>
 
@@ -29,8 +30,8 @@ struct Mesh
 {
     /*! \~chinese 默认构造一个空的 Mesh 。 */
     Mesh() = default;
-    /*! \~chinese 默认复制另一个 Mesh 中所有的数据。 */
-    Mesh(const Mesh& other) = default;
+    /*! \~chinese 复制另一个 Mesh 中所有的数据。 */
+    Mesh(const Mesh& other);
     /*! \~chinese 调用各成员的移动构造。 */
     Mesh(Mesh&& other) = default;
     /*!
@@ -43,9 +44,9 @@ struct Mesh
     void clear() noexcept;
     /*!
      * \~chinese
-     * \brief 重新填充所有的 buffer ，确保数据可以被传输到 GPU 。
+     * \brief 重新构建所有的渲染数据 buffer 。
      */
-    void fill_buffers();
+    void prepare_buffers();
 
     /*! \~chinese 顶点坐标。 */
     std::vector<Eigen::Vector3f> positions;
@@ -54,7 +55,7 @@ struct Mesh
     /*! \~chinese 面片的顶点索引。 */
     std::vector<std::array<unsigned int, 3>> faces;
     /*! \~chinese Mesh 的材质。 */
-    PhongMaterial material;
+    std::unique_ptr<Material> material;
 
     /*! \~chinese 用于同步 GPU 的顶点坐标 buffer 。 */
     std::vector<float> position_buffer;
@@ -97,9 +98,9 @@ struct LineSet
     void clear() noexcept;
     /*!
      * \~chinese
-     * \brief 重新填充所有的 buffer ，确保数据可以被传输到 GPU 。
+     * \brief 重新构建所有的渲染数据 buffer 。
      */
-    void fill_buffers();
+    void prepare_buffers();
 
     /*! \~chinese 顶点坐标。 */
     std::vector<Eigen::Vector3f> positions;

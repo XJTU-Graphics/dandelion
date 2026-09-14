@@ -85,6 +85,18 @@ Platform::Platform()
         logger->critical("Failed to compile shader program");
     }
     shader->use();
+    primitive_shader = make_unique<Shader>(logger);
+    primitive_shader->load_vertex_shader("resources/shaders/primitive.vert");
+    primitive_shader->load_fragment_shader("resources/shaders/copy-color.frag");
+    if (!primitive_shader->compile()) {
+        logger->critical("Failed to compile primitive shader");
+    }
+    phong_shader = make_unique<Shader>(logger);
+    phong_shader->load_vertex_shader("resources/shaders/phong.vert");
+    phong_shader->load_fragment_shader("resources/shaders/copy-color.frag");
+    if (!phong_shader->compile()) {
+        logger->critical("Failed to compile Phong shader");
+    }
 }
 
 Platform::~Platform()

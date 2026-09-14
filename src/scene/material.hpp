@@ -28,6 +28,7 @@ enum class MaterialType
 struct Material
 {
     Material();
+    virtual ~Material() = default;
     /*! \~chinese 获取材质类型，所有可用的材质模型参考 `MaterialType` 。 */
     virtual MaterialType type() const noexcept = 0;
 
@@ -62,6 +63,7 @@ struct PhongMaterial : public Material
         const Eigen::Vector3f& K_specular = Eigen::Vector3f(0.0f, 0.0f, 0.0f),
         float                  shininess  = 5.0f
     );
+    virtual ~PhongMaterial() = default;
     /*! \~chinese 返回 `MaterialType::Phong` 。 */
     virtual MaterialType type() const noexcept;
 
