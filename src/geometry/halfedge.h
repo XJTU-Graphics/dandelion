@@ -2,7 +2,7 @@
 #define DANDELION_GEOMETRY_HALFEDGE_H
 
 #include <cstddef>
-#include <set>
+
 #include <memory>
 #include <optional>
 #include <variant>
@@ -12,8 +12,6 @@
 #include <Eigen/Core>
 #include <spdlog/spdlog.h>
 
-#include "../platform/gl.hpp"
-#include "../platform/shader.hpp"
 #include "../utils/linked_list.hpp"
 #include "../scene/object.h"
 
@@ -221,7 +219,7 @@ class HalfedgeMesh
 {
 public:
 
-    /*! \~chinese 指定一个 `GL::Mesh` 作为参照，构造半边网格。 */
+    /*! \~chinese 指定一个 `Mesh` 作为参照，构造半边网格。 */
     HalfedgeMesh(Object& object);
     /*! \~chinese 全局只有一个半边网格实例，因此不允许复制构造。 */
     HalfedgeMesh(HalfedgeMesh& other) = delete;
@@ -229,8 +227,6 @@ public:
     ~HalfedgeMesh();
     /*! \~chinese 将当前半边网格的几何结构同步到数据源 mesh。 */
     void sync();
-    /*! \~chinese 渲染所有的半边（不负责渲染顶点、边和面片）。 */
-    void render(const Shader& shader);
     /*! \~chinese 返回绘制半边时的起点和终点坐标。 */
     static std::tuple<Eigen::Vector3f, Eigen::Vector3f> halfedge_arrow_endpoints(const Halfedge* h);
     /*!
@@ -310,7 +306,7 @@ public:
     LinkedList<Edge> edges;
     /*! \~chinese 所有面片。 */
     LinkedList<Face> faces;
-    /*! \~chinese 将 `GL::Mesh` 使用的顶点索引映射为半边网格中的顶点指针。 */
+    /*! \~chinese 将 `Mesh` 使用的顶点索引映射为半边网格中的顶点指针。 */
     std::vector<Vertex*> v_pointers;
     /*!
      * \~chinese
@@ -389,7 +385,7 @@ private:
     /*! \~chinese 数据源 mesh 对应的物体。 */
     Object& object;
     /*! \~chinese 数据源 mesh，用于构造半边网格，需要同步修改。 */
-    GL::Mesh& mesh;
+    Mesh& mesh;
     /*! \~chinese 已删除的半边。 */
     std::unordered_map<size_t, Halfedge*> erased_halfedges;
     /*! \~chinese 已删除的顶点。 */
@@ -399,12 +395,12 @@ private:
     /*! \~chinese 已删除的面。 */
     std::unordered_map<size_t, Face*> erased_faces;
 
-    /*! \~chinese 将半边网格中的顶点指针映射为 `GL::Mesh` 使用的顶点索引。 */
+    /*! \~chinese 将半边网格中的顶点指针映射为 `Mesh` 使用的顶点索引。 */
     std::unordered_map<const Vertex*, size_t> v_indices;
-    /*! \~chinese 将半边网格的半边指针映射为 `GL::LineSet` 中的箭头索引。 */
+    /*! \~chinese 将半边网格的半边指针映射为 `LineSet` 中的箭头索引。 */
     std::unordered_map<const Halfedge*, size_t> h_indices;
     /*! \~chinese 用于渲染半边的 `LineSet` 对象。 */
-    GL::LineSet halfedge_arrows;
+    ArrowSet halfedge_arrows;
     /*! \~chinese 日志记录器。 */
     std::shared_ptr<spdlog::logger> logger;
 };
