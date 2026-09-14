@@ -48,7 +48,7 @@ Object::Object(const string& object_name) :
     logger                   = get_logger(logger_name);
 }
 
-Matrix4f Object::model()
+Matrix4f Object::model() const
 {
     return Matrix4f::Identity();
 }

@@ -263,13 +263,11 @@ void Scene::start_simulation()
         return;
     }
     all_objects.clear();
-    for (const auto& group: groups) {
-        for (const auto& object: group->objects) {
-            object->backup     = {object->center, object->velocity, object->force / object->mass};
-            object->prev_state = object->backup;
-            all_objects.push_back(object.get());
-        }
-    }
+    for_each_object([this](Object& object) -> void {
+        object.backup     = {object.center, object.velocity, object.force / object.mass};
+        object.prev_state = object.backup;
+        all_objects.push_back(&object);
+    });
     during_animation = true;
     last_update      = steady_clock::now();
 }
@@ -284,12 +282,10 @@ void Scene::reset_simulation()
     if (during_animation) {
         stop_simulation();
     }
-    for (auto& group: groups) {
-        for (auto& object: group->objects) {
-            object->center   = object->backup.position;
-            object->velocity = object->backup.velocity;
-        }
-    }
+    for_each_object([](Object& object) -> void {
+        object.center   = object.backup.position;
+        object.velocity = object.backup.velocity;
+    });
 }
 
 bool Scene::check_during_simulation()

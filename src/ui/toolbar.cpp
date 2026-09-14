@@ -311,6 +311,8 @@ void Toolbar::model_mode(Scene& scene)
             const Vector3f position_snapshot = position;
             xyz_drag(&position.x(), &position.y(), &position.z(), POSITION_UNIT);
             if ((position - position_snapshot).squaredNorm() > POSITION_CHANGED_THRESHOLD) {
+                scene.highlighted_element.clear();
+                scene.highlighted_element.positions.push_back(position);
                 scene.halfedge_mesh->modified = true;
             }
             ImGui::PopID();
@@ -360,7 +362,9 @@ void Toolbar::model_mode(Scene& scene)
                 Vertex*  v2    = e->halfedge->inv->from;
                 v1->pos += delta;
                 v2->pos += delta;
-                scene.halfedge_mesh->modified = true;
+                for (Vector3f& p: scene.highlighted_element.positions) p += delta;
+                scene.highlighted_element.modified = true;
+                scene.halfedge_mesh->modified      = true;
             }
         } else if (holds_alternative<Face*>(selected_element)) {
             Face* f = std::get<Face*>(selected_element);
@@ -373,12 +377,17 @@ void Toolbar::model_mode(Scene& scene)
             ImGui::PushID("Selected Face##");
             xyz_drag(&center.x(), &center.y(), &center.z(), POSITION_UNIT);
             ImGui::PopID();
-            Vector3f  delta = center - f->center();
-            Halfedge* h     = f->halfedge;
-            do {
-                h->from->pos += delta;
-                h = h->next;
-            } while (h != f->halfedge);
+            Vector3f delta = center - f->center();
+            if (delta.squaredNorm() > POSITION_CHANGED_THRESHOLD) {
+                Halfedge* h = f->halfedge;
+                do {
+                    h->from->pos += delta;
+                    h = h->next;
+                } while (h != f->halfedge);
+                for (Vector3f& p: scene.highlighted_element.positions) p += delta;
+                scene.highlighted_element.modified = true;
+                scene.halfedge_mesh->modified      = true;
+            }
         }
 
         ImGui::SeparatorText("Global Operations");
@@ -643,7 +652,6 @@ void Toolbar::simulate_mode(Scene& scene)
             ImGui::PushID("Velocity##");
             Vector3f& velocity = selected_object->velocity;
             xyz_drag(&velocity.x(), &velocity.y(), &velocity.z(), PHYSICS_UNIT, "%.2f m/s");
-            scene.arrows.add_arrow(selected_object->center, selected_object->center + velocity);
             ImGui::PopID();
 
             ImGui::Text("Force");
@@ -651,6 +659,11 @@ void Toolbar::simulate_mode(Scene& scene)
             Vector3f& force = selected_object->force;
             xyz_drag(&force.x(), &force.y(), &force.z(), PHYSICS_UNIT, "%.2f N");
             ImGui::PopID();
+        }
+        if (selected_object) {
+            scene.arrows.add_arrow(
+                selected_object->center, selected_object->center + selected_object->velocity
+            );
         }
         ImGui::EndTabItem();
     }

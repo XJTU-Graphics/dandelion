@@ -56,7 +56,7 @@ public:
     ///@}
     ~Object() = default;
     /*! \~chinese 此物体的模型变换矩阵 (Model Transform Matrix)。 */
-    Eigen::Matrix4f model();
+    Eigen::Matrix4f model() const;
     /*!
      * \~chinese
      * \brief 更新下一个时间步的运动状态。
