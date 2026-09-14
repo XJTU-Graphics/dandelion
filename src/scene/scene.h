@@ -25,6 +25,15 @@
  * \brief 包含场景的类。
  */
 
+/*! \~chinese 约束 `F` 必须是对单个物体进行的读写操作。 */
+template<typename F>
+concept ObjectOp = std::invocable<F, Object&> && std::is_void_v<std::invoke_result_t<F, Object&>>;
+
+/*! \~chinese 约束 `F` 必须是对单个物体进行的只读操作。 */
+template<typename F>
+concept ObjectReadOp =
+    std::invocable<F, const Object&> && std::is_void_v<std::invoke_result_t<F, const Object&>>;
+
 /*!
  * \ingroup rendering
  * \ingroup simulation
@@ -116,6 +125,30 @@ public:
      * 并将这一帧模拟走过的总时长累加到 `last_update` 上。
      */
     void simulation_update();
+
+    /*!
+     * \~chinese
+     * 对每个物体执行同样的操作，允许读写物体数据。
+     * \param op 要执行的操作，其函数签名必须满足 `ObjectOp` 的要求。
+     */
+    template<ObjectOp F>
+    void for_each_object(F&& op)
+    {
+        for (std::unique_ptr<Group>& group: this->groups)
+            for (std::unique_ptr<Object>& object: group->objects) op(*object);
+    }
+
+    /*!
+     * \~chinese
+     * 对每个物体执行同样的操作，只能读取物体数据。
+     * \param op 要执行的操作，其函数签名必须满足 `ObjectReadOp` 的要求。
+     */
+    template<ObjectReadOp F>
+    void for_each_object(F&& op) const
+    {
+        for (const std::unique_ptr<Group>& group: this->groups)
+            for (const std::unique_ptr<Object>& object: group->objects) op(*object);
+    }
 
     /*! \~chinese 场景中所有的物体组。 */
     std::vector<std::unique_ptr<Group>> groups;

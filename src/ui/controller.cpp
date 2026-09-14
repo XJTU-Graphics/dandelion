@@ -245,6 +245,8 @@ void Controller::render(PreviewRenderer& renderer)
 
     ImGui::Render();
 
+    if (mode == WorkingMode::SIMULATE && scene->check_during_simulation())
+        scene->simulation_update();
     renderer.render(*scene, mode, debug_options);
 }
 
@@ -302,20 +304,17 @@ void Controller::pick_object(Ray& ray)
     optional<Intersection> hit        = std::nullopt;
     Object*                hit_object = nullptr;
     // Test all objects and maintain the minimal t value.
-    for (auto& group: scene->groups) {
-        for (auto& object: group->objects) {
-            Matrix4f               model  = object->model();
-            Mesh&                  mesh   = object->mesh;
-            optional<Intersection> result = object->bvh->intersect(ray, mesh, model);
-            if (!result.has_value()) {
-                continue;
-            }
-            if (!hit.has_value() || hit.value().t > result.value().t) {
-                hit        = result;
-                hit_object = object.get();
-            }
+    scene->for_each_object([&ray, &hit, &hit_object](Object& object) -> void {
+        const Matrix4f         model  = object.model();
+        const Mesh&            mesh   = object.mesh;
+        optional<Intersection> result = object.bvh->intersect(ray, mesh, model);
+        if (!result.has_value())
+            return;
+        if (!hit.has_value() || hit.value().t > result.value().t) {
+            hit        = result;
+            hit_object = &object;
         }
-    }
+    });
     if (hit.has_value()) {
         logger->debug("object {} (ID: {}) is picked", hit_object->name, hit_object->id);
         select(hit_object);
