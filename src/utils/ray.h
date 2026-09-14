@@ -13,7 +13,7 @@
 
 #include <Eigen/Core>
 
-#include "../platform/gl.hpp"
+#include "../geometry/mesh.hpp"
 #include "../scene/camera.h"
 
 /*!
@@ -80,8 +80,7 @@ Ray generate_ray(int width, int height, int x, int y, Camera& camera, float dept
  * \returns 一个 `std::optional` 对象，若相交，则此对象有值 (`has_value() == true`)；不相交则返回
  * `std::nullopt` 。
  */
-std::optional<Intersection>
-ray_triangle_intersect(const Ray& ray, const GL::Mesh& mesh, size_t index);
+std::optional<Intersection> ray_triangle_intersect(const Ray& ray, const Mesh& mesh, size_t index);
 
 /*!
  * \ingroup rendering
@@ -100,6 +99,6 @@ ray_triangle_intersect(const Ray& ray, const GL::Mesh& mesh, size_t index);
  * `std::nullopt` 。
  */
 std::optional<Intersection>
-naive_intersect(const Ray& ray, const GL::Mesh& mesh, const Eigen::Matrix4f model);
+naive_intersect(const Ray& ray, const Mesh& mesh, const Eigen::Matrix4f model);
 
 #endif // DANDELION_UTILS_RAY_H
