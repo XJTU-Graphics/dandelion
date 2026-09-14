@@ -51,8 +51,7 @@ Scene::Scene() :
     constexpr size_t n_baselines  = 1'000;
     constexpr float  baseline_gap = 1.0f;
 
-    arrows.name = "Scene Arrows";
-    logger      = get_logger("Scene");
+    logger = get_logger("Scene");
 
     logger->info("Initialize axis and ground grid");
     x_axis.name = "x Axis";
@@ -89,10 +88,29 @@ Scene::Scene() :
     ground_grid.color    = Vector3f(RGB_COLOR(68, 68, 68));
     ground_grid.modified = true;
 
-    highlighted_element.name  = "Highlighted Element";
-    highlighted_halfedge.name = "Highlighted Halfedge";
-    picking_ray.name          = "Picking Ray";
-    selected_element          = monostate();
+    highlighted_element.name      = "Highlighted Element";
+    highlighted_element.modified  = true;
+    highlighted_halfedge.name     = "Highlighted Halfedge";
+    highlighted_halfedge.modified = true;
+    picking_ray.name              = "Picking Ray";
+    picking_ray.color             = default_wireframe_color;
+    picking_ray.modified          = true;
+    selected_element              = monostate();
+    arrows.name                   = "Scene Arrows";
+    arrows.color                  = highlight_wireframe_color;
+    arrows.modified               = true;
+    camera_wireframe.name         = "Camera Wireframe";
+    camera_wireframe.color        = default_wireframe_color;
+    camera_wireframe.modified     = true;
+    light_indicator.name          = "Lights";
+    light_indicator.positions.emplace_back(0.0f, 0.0f, 0.0f);
+    light_indicator.positions.emplace_back(0.1f, 0.0f, 0.0f);
+    light_indicator.positions.emplace_back(-0.1f, 0.0f, 0.0f);
+    light_indicator.positions.emplace_back(0.0f, 0.1f, 0.0f);
+    light_indicator.positions.emplace_back(0.0f, -0.1f, 0.0f);
+    light_indicator.positions.emplace_back(0.0f, 0.0f, 0.1f);
+    light_indicator.positions.emplace_back(0.0f, 0.0f, -0.1f);
+    light_indicator.modified = true;
 }
 
 bool Scene::import_model(const string& file_path)

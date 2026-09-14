@@ -5,6 +5,7 @@
 #include <memory>
 #include <vector>
 #include <unordered_set>
+#include <variant>
 
 #include <Eigen/Core>
 
@@ -14,10 +15,12 @@
 using Eigen::Matrix4f;
 using Eigen::Vector3f;
 using std::array;
+using std::holds_alternative;
 using std::make_unique;
 using std::memcpy;
 using std::size_t;
 using std::unique_ptr;
+using std::unordered_map;
 using std::unordered_set;
 using std::vector;
 
@@ -50,30 +53,23 @@ void PreviewRenderer::delete_shaders()
 
 void PreviewRenderer::delete_drawable_resources()
 {
-    drawable_meshes.clear();
-    drawable_linesets.clear();
+    general_meshes.clear();
+    general_linesets.clear();
+    overlay_meshes.clear();
+    overlay_linesets.clear();
 }
 
-void PreviewRenderer::render(Scene& scene, WorkingMode mode)
+void PreviewRenderer::render(Scene& scene, WorkingMode mode, const DebugOptions& debug_options)
 {
+    if (mode == WorkingMode::MODEL && scene.halfedge_mesh) {
+        scene.halfedge_mesh->sync();
+    }
     update_drawable_meshes(scene);
     update_drawable_linesets(scene);
 
     const Matrix4f view_projection = scene.main_camera.projection() * scene.main_camera.view();
-    primitive_shader->use();
-    primitive_shader->set_uniform("view_projection", view_projection);
-    primitive_shader->set_uniform("model", I4f);
-    for (const auto& [lineset, drawable_lineset]: drawable_linesets) {
-        primitive_shader->set_uniform("color", lineset->color);
-        drawable_lineset->VAO.draw(GL_LINES, 0, drawable_lineset->positions.count());
-    }
 
-    const bool selected_object_highlight =
-        mode == WorkingMode::LAYOUT || mode == WorkingMode::SIMULATE;
-    if (selected_object_highlight) {
-        render_selected_object_if_exist(scene);
-    }
-
+    // The Phong shader is used to render triangle meshes.
     phong_shader->use();
     phong_shader->set_uniform("view_projection", view_projection);
     phong_shader->set_uniform("camera_position", scene.main_camera.position);
@@ -84,24 +80,129 @@ void PreviewRenderer::render(Scene& scene, WorkingMode mode)
             const Mesh*             mesh     = &object->mesh;
             const PhongMaterial&    material = dynamic_cast<PhongMaterial&>(*(object->material));
             const Matrix4f          model    = object->model();
+            const GL::DrawableMesh* drawable_mesh    = general_meshes[mesh].get();
             const Matrix4f          normal_transform = model.inverse().transpose();
-            const GL::DrawableMesh& drawable_mesh    = *drawable_meshes[mesh];
-            phong_shader->set_uniform("model", model);
+            if (mode == WorkingMode::MODEL && scene.selected_object == object.get())
+                phong_shader->set_uniform("model", I4f);
+            else
+                phong_shader->set_uniform("model", model);
             phong_shader->set_uniform("normal_transform", normal_transform);
             phong_shader->set_uniform("material.ambient", material.ambient);
             phong_shader->set_uniform("material.diffuse", material.diffuse);
             phong_shader->set_uniform("material.specular", material.specular);
             phong_shader->set_uniform("material.shininess", material.shininess);
-            drawable_mesh.VAO.bind();
-            drawable_mesh.triangles.bind();
+            drawable_mesh->VAO.bind();
+            drawable_mesh->triangles.bind();
             glDrawElements(
-                GL_TRIANGLES, static_cast<GLsizei>(drawable_mesh.triangles.data.size()),
+                GL_TRIANGLES, static_cast<GLsizei>(drawable_mesh->triangles.data.size()),
                 GL_UNSIGNED_INT, (void*)0
             );
-            drawable_mesh.triangles.release();
-            drawable_mesh.VAO.release();
+            drawable_mesh->triangles.release();
+            drawable_mesh->VAO.release();
         }
     }
+    // Phong shader off
+
+    // The primitive shader is used first to render primitives with a uniform color.
+    primitive_shader->use();
+    primitive_shader->set_uniform("view_projection", view_projection);
+    primitive_shader->set_uniform("color", highlight_wireframe_color);
+    unordered_set<const LineSet*> filtered_linesets = {&scene.camera_wireframe};
+    for (const unique_ptr<Group>& group: scene.groups) {
+        for (const unique_ptr<Object>& object: group->objects) {
+            const LineSet* boxes = &object->BVH_boxes;
+            filtered_linesets.insert(boxes);
+            if (debug_options.show_BVH) {
+                const GL::DrawableLineSet* drawable_lineset = general_linesets[boxes].get();
+                primitive_shader->set_uniform("model", object->model());
+                drawable_lineset->VAO.bind();
+                glDrawElements(
+                    GL_LINES, static_cast<GLsizei>(drawable_lineset->lines.data.size()),
+                    GL_UNSIGNED_INT, (void*)0
+                );
+            }
+        }
+    }
+    primitive_shader->set_uniform("color", scene.camera_wireframe.color);
+    primitive_shader->set_uniform("model", Matrix4f(scene.camera.view().inverse()));
+    const LineSet* camera = &scene.camera_wireframe;
+    general_linesets[&scene.camera_wireframe]->VAO.bind();
+    glDrawArrays(GL_POINTS, 0, static_cast<GLsizei>(camera->positions.size()));
+    glDrawElements(
+        GL_LINES, static_cast<GLsizei>(camera->n_lines() * 2), GL_UNSIGNED_INT, (void*)0
+    );
+    primitive_shader->set_uniform("model", I4f);
+    for (const auto& [lineset, drawable_lineset]: general_linesets) {
+        if (filtered_linesets.contains(lineset))
+            continue;
+        primitive_shader->set_uniform("color", lineset->color);
+        drawable_lineset->VAO.bind();
+        glDrawElements(
+            GL_LINES, static_cast<GLsizei>(drawable_lineset->lines.data.size()), GL_UNSIGNED_INT,
+            (void*)0
+        );
+    }
+
+    const bool highlight_selected_object =
+        mode == WorkingMode::LAYOUT || mode == WorkingMode::SIMULATE || mode == WorkingMode::MODEL;
+    if (highlight_selected_object) {
+        render_selected_object(scene, mode);
+    }
+    // Disable depth test to render indicators.
+    glDisable(GL_DEPTH_TEST);
+    if (mode == WorkingMode::RENDER) {
+        const Mesh* light_indicator = &scene.light_indicator;
+        primitive_shader->set_uniform("color", default_wireframe_color);
+        for (const Light& light: scene.lights) {
+            Matrix4f model          = Matrix4f::Identity();
+            model.block<3, 1>(0, 3) = light.position;
+            primitive_shader->set_uniform("model", model);
+            overlay_meshes[light_indicator]->VAO.bind();
+            glDrawArrays(GL_POINTS, 0, static_cast<GLsizei>(light_indicator->positions.size()));
+        }
+    }
+    primitive_shader->set_uniform("model", I4f);
+    primitive_shader->set_uniform("color", highlight_face_color);
+    const Mesh*             element      = &scene.highlighted_element;
+    const GL::DrawableMesh* overlay_mesh = overlay_meshes[element].get();
+    if (holds_alternative<const Halfedge*>(scene.selected_element)) {
+        const LineSet* halfedge = &scene.highlighted_halfedge;
+        overlay_linesets[halfedge]->VAO.bind();
+        glDrawElements(
+            GL_LINES, static_cast<GLsizei>(halfedge->n_lines() * 2), GL_UNSIGNED_INT, (void*)0
+        );
+    } else if (holds_alternative<Vertex*>(scene.selected_element)) {
+        overlay_mesh->VAO.bind();
+        glDrawArrays(GL_POINTS, 0, static_cast<GLsizei>(overlay_mesh->positions.count()));
+    } else if (holds_alternative<Light*>(scene.selected_element)) {
+        overlay_mesh->VAO.bind();
+        const Light* light      = std::get<Light*>(scene.selected_element);
+        Matrix4f     model      = Matrix4f::Identity();
+        model.block<3, 1>(0, 3) = light->position;
+        primitive_shader->set_uniform("model", model);
+        overlay_mesh->VAO.bind();
+        glDrawArrays(GL_POINTS, 0, static_cast<GLsizei>(overlay_mesh->positions.count()));
+    } else if (holds_alternative<Edge*>(scene.selected_element)) {
+        overlay_mesh->VAO.bind();
+        overlay_mesh->edges.bind();
+        glDrawElements(
+            GL_LINES, static_cast<GLsizei>(overlay_mesh->edges.data.size()), GL_UNSIGNED_INT,
+            (void*)0
+        );
+    } else if (holds_alternative<Face*>(scene.selected_element)) {
+        overlay_mesh->VAO.bind();
+        glDrawElements(
+            GL_TRIANGLES, static_cast<GLsizei>(overlay_mesh->triangles.data.size()),
+            GL_UNSIGNED_INT, (void*)0
+        );
+    }
+    const LineSet* arrows = &scene.arrows;
+    overlay_linesets[arrows]->VAO.bind();
+    glDrawElements(
+        GL_LINES, static_cast<GLsizei>(arrows->n_lines() * 2), GL_UNSIGNED_INT, (void*)0
+    );
+    glEnable(GL_DEPTH_TEST);
+    // Primitive shader off
 }
 
 void PreviewRenderer::fill_drawable_mesh(const Mesh& mesh, GL::DrawableMesh& drawable_mesh)
@@ -167,74 +268,117 @@ void PreviewRenderer::fill_drawable_lineset(
 
 void PreviewRenderer::update_drawable_meshes(Scene& scene)
 {
-    unordered_set<const Mesh*> exist_meshes;
+    unordered_set<const Mesh*> updated_general_meshes;
+    // Collect meshes from all objects in the scene.
     for (unique_ptr<Group>& group: scene.groups) {
         for (unique_ptr<Object>& object: group->objects) {
             Mesh* mesh = &object->mesh;
-            exist_meshes.insert(mesh);
+            updated_general_meshes.insert(mesh);
             if (!mesh->modified)
                 continue;
-            if (!drawable_meshes.contains(mesh)) {
-                drawable_meshes[mesh] = make_unique<GL::DrawableMesh>();
+            if (!general_meshes.contains(mesh)) {
+                general_meshes[mesh] = make_unique<GL::DrawableMesh>();
             }
-            fill_drawable_mesh(*mesh, *drawable_meshes[mesh]);
+            fill_drawable_mesh(*mesh, *general_meshes[mesh]);
             mesh->modified = false;
         }
     }
-    vector<const Mesh*> deleted_meshes;
-    for (auto& [mesh, drawable_mesh]: drawable_meshes) {
-        if (!exist_meshes.contains(mesh))
-            deleted_meshes.push_back(mesh);
+    // Update/create drawable meshes for indicators(e.g. picking ray or speed vector).
+    const vector<Mesh*> updated_overlay_meshes = {
+        &scene.highlighted_element, &scene.light_indicator
+    };
+    for (Mesh* mesh: updated_overlay_meshes) {
+        if (mesh->modified) {
+            if (!overlay_meshes.contains(mesh)) [[unlikely]] {
+                overlay_meshes[mesh] = make_unique<GL::DrawableMesh>();
+            }
+            fill_drawable_mesh(*mesh, *overlay_meshes[mesh]);
+            mesh->modified = false;
+        }
     }
-    for (const Mesh* mesh: deleted_meshes) {
-        drawable_meshes.erase(mesh);
+
+    vector<const Mesh*> general_meshes_to_delete;
+    for (auto& [mesh, drawable_mesh]: general_meshes) {
+        if (!updated_general_meshes.contains(mesh))
+            general_meshes_to_delete.push_back(mesh);
+    }
+    for (const Mesh* mesh: general_meshes_to_delete) {
+        general_meshes.erase(mesh);
         logger->info("drawable mesh corresponding to mesh \"{}\" is removed", mesh->name);
     }
 }
 
 void PreviewRenderer::update_drawable_linesets(Scene& scene)
 {
-    unordered_set<const LineSet*> exist_linesets;
-    vector<LineSet*>              linesets = {
-        &scene.x_axis, &scene.y_axis, &scene.z_axis, &scene.arrows, &scene.ground_grid
+    unordered_set<const LineSet*> updated_general_linesets;
+    // Pre-defined line sets
+    vector<LineSet*> linesets = {
+        // Axes and the ground grid.
+        &scene.x_axis, &scene.y_axis, &scene.z_axis, &scene.ground_grid,
+        // Global indicators (depth test enabled).
+        &scene.picking_ray, &scene.camera_wireframe
     };
-    for (LineSet* lineset: linesets) {
-        exist_linesets.insert(lineset);
+    // Global indicators (depth test disabled).
+    const vector<LineSet*> overlay_indicators = {&scene.arrows, &scene.highlighted_halfedge};
+    if (scene.halfedge_mesh) {
+        linesets.push_back(&scene.halfedge_mesh->halfedge_arrows);
+    }
+    // Collect BVH visualization result (if exist) for debugging.
+    auto update_lineset =
+        [this](
+            LineSet*                                                        lineset,
+            unordered_map<const LineSet*, unique_ptr<GL::DrawableLineSet>>& lineset_map
+        ) -> void {
         if (!lineset->modified)
-            continue;
-        if (!drawable_linesets.contains(lineset)) {
-            drawable_linesets[lineset] = make_unique<GL::DrawableLineSet>();
-        }
-        fill_drawable_lineset(*lineset, *drawable_linesets[lineset]);
+            return;
+        if (!lineset_map.contains(lineset)) [[unlikely]]
+            lineset_map[lineset] = make_unique<GL::DrawableLineSet>();
+        fill_drawable_lineset(*lineset, *lineset_map[lineset]);
         lineset->modified = false;
+    };
+    for (LineSet* lineset: overlay_indicators) update_lineset(lineset, overlay_linesets);
+    for (const unique_ptr<Group>& group: scene.groups) {
+        for (const unique_ptr<Object>& object: group->objects) {
+            LineSet* boxes = &object->BVH_boxes;
+            updated_general_linesets.insert(boxes);
+            update_lineset(boxes, general_linesets);
+        }
+    }
+    for (LineSet* lineset: linesets) {
+        updated_general_linesets.insert(lineset);
+        update_lineset(lineset, general_linesets);
     }
     vector<const LineSet*> deleted_linesets;
-    for (auto& [lineset, drawable_lineset]: drawable_linesets) {
-        if (!exist_linesets.contains(lineset))
+    for (auto& [lineset, drawable_lineset]: general_linesets) {
+        if (!updated_general_linesets.contains(lineset))
             deleted_linesets.push_back(lineset);
     }
     for (const LineSet* lineset: deleted_linesets) {
-        drawable_linesets.erase(lineset);
+        general_linesets.erase(lineset);
         logger->info(
             "drawable line set corresponding to line set \"{}\" is removed", lineset->name
         );
     }
 }
 
-void PreviewRenderer::render_selected_object_if_exist(const Scene& scene)
+void PreviewRenderer::render_selected_object(const Scene& scene, WorkingMode mode)
 {
-    if (!scene.selected_object) {
+    if (!scene.selected_object)
         return;
-    }
 
     const Mesh*             mesh          = &scene.selected_object->mesh;
-    const GL::DrawableMesh& drawable_mesh = *drawable_meshes[mesh];
+    const GL::DrawableMesh& drawable_mesh = *general_meshes[mesh];
     primitive_shader->set_uniform("color", default_wireframe_color);
+    if (mode == WorkingMode::MODEL)
+        primitive_shader->set_uniform("model", I4f);
+    else
+        primitive_shader->set_uniform("model", scene.selected_object->model());
     drawable_mesh.VAO.bind();
     drawable_mesh.edges.bind();
     glDrawElements(
         GL_LINES, static_cast<GLsizei>(drawable_mesh.edges.data.size()), GL_UNSIGNED_INT, (void*)0
     );
-    drawable_mesh.edges.release();
-    drawable_mesh.VAO.release();
+    if (mode == WorkingMode::MODEL) {
+        glDrawArrays(GL_POINTS, 0, static_cast<GLsizei>(drawable_mesh.positions.count()));
+    }
 }

@@ -29,6 +29,7 @@ void LineSet::add_line(const Vector3f& from, const Vector3f& to)
     positions.emplace_back(from);
     positions.emplace_back(to);
     lines.push_back({index, index + 1});
+    modified = true;
 }
 
 size_t LineSet::n_lines() const noexcept
@@ -63,9 +64,10 @@ void ArrowSet::add_arrow(const Vector3f& from, const Vector3f& to)
         const Vector3f v_transformed = length * (rotation * v) + from;
         positions.emplace_back(v_transformed);
     }
-    for (size_t index_offset = 0; index_offset < arrow_lines.size(); index_offset += 2) {
-        const unsigned int index = static_cast<unsigned int>(index_base + index_offset);
-        lines.push_back({index, index + 1});
+    for (size_t i = 0; i < arrow_lines.size(); i += 2) {
+        const unsigned int index1 = static_cast<unsigned int>(index_base + arrow_lines[i]);
+        const unsigned int index2 = static_cast<unsigned int>(index_base + arrow_lines[i + 1]);
+        lines.push_back({index1, index2});
     }
     modified = true;
 }
@@ -98,7 +100,7 @@ void AABBSet::add_AABB(const Vector3f& p_min, const Vector3f& p_max)
     for (int i = 0; i < 2; ++i) {
         for (int j = 0; j < 2; ++j) {
             for (int k = 0; k < 2; ++k) {
-                positions.emplace_back(x[i], y[i], z[i]);
+                positions.emplace_back(x[i], y[j], z[k]);
             }
         }
     }

@@ -117,11 +117,11 @@ void RasterizerRenderer::render(const Scene& scene)
             const size_t              n_vertices = object->mesh.positions.size();
             vertices.resize(n_vertices * 3);
             memcpy(vertices.data(), object->mesh.positions.data(), n_vertices * 3 * sizeof(float));
-            normals.resize(n_vertices);
+            normals.resize(n_vertices * 3);
             memcpy(normals.data(), object->mesh.normals.data(), n_vertices * 3 * sizeof(float));
             const size_t n_faces = object->mesh.faces.size();
             faces.resize(n_faces * 3);
-            memcpy(faces.data(), object->mesh.faces.data(), n_faces * 2 * sizeof(unsigned int));
+            memcpy(faces.data(), object->mesh.faces.data(), n_faces * 3 * sizeof(unsigned int));
             unsigned int num_faces = faces.size();
 
             // process vertices
@@ -177,6 +177,8 @@ void VertexProcessor::input_vertices(const Vector4f& positions, const Vector3f& 
 void VertexProcessor::worker_thread()
 {
     while (!Context::vertex_finish) {
+        if (vertex_queue.empty())
+            continue;
         VertexShaderPayload payload;
         {
             if (vertex_queue.empty()) {

@@ -130,8 +130,9 @@ void Controller::on_picking()
         pick_object(ray);
     }
 
-    if (debug_options.show_picking_ray) {
+    if (scene->picking_ray.n_lines() > 0)
         scene->picking_ray.clear();
+    if (debug_options.show_picking_ray) {
         scene->picking_ray.add_line(ray.origin, ray.origin + 1000.0f * ray.direction);
     }
 }
@@ -244,7 +245,7 @@ void Controller::render(PreviewRenderer& renderer)
 
     ImGui::Render();
 
-    renderer.render(*scene, mode);
+    renderer.render(*scene, mode, debug_options);
 }
 
 void Controller::select(SelectableType element)
@@ -292,9 +293,6 @@ void Controller::unselect()
     );
     if (mode != WorkingMode::MODEL) {
         scene->selected_object = nullptr;
-    }
-    if (scene->halfedge_mesh != nullptr) {
-        scene->halfedge_mesh->inconsistent_element = monostate();
     }
     scene->selected_element = monostate();
 }
@@ -402,31 +400,31 @@ void Controller::select_halfedge(const Halfedge* halfedge)
     scene->selected_element = halfedge;
     auto [from, to]         = HalfedgeMesh::halfedge_arrow_endpoints(halfedge);
     scene->highlighted_halfedge.add_arrow(from, to);
+    scene->highlighted_halfedge.modified = true;
 }
 
 void Controller::select_vertex(Vertex* vertex)
 {
-    scene->selected_element                    = vertex;
-    scene->halfedge_mesh->inconsistent_element = vertex;
+    scene->selected_element = vertex;
     scene->highlighted_element.positions.emplace_back(vertex->pos);
+    scene->highlighted_element.modified = true;
 }
 
 void Controller::select_edge(Edge* edge)
 {
-    scene->selected_element                    = edge;
-    scene->halfedge_mesh->inconsistent_element = edge;
-    const Vertex* v1                           = edge->halfedge->from;
-    const Vertex* v2                           = edge->halfedge->inv->from;
+    scene->selected_element = edge;
+    const Vertex* v1        = edge->halfedge->from;
+    const Vertex* v2        = edge->halfedge->inv->from;
     scene->highlighted_element.positions.emplace_back(v1->pos);
     scene->highlighted_element.positions.emplace_back(v2->pos);
     scene->highlighted_element.edges.push_back({0u, 1u});
+    scene->highlighted_element.modified = true;
 }
 
 void Controller::select_face(Face* face)
 {
-    scene->selected_element                    = face;
-    scene->halfedge_mesh->inconsistent_element = face;
-    const Halfedge* h                          = face->halfedge;
+    scene->selected_element = face;
+    const Halfedge* h       = face->halfedge;
     const Vertex*   v;
     do {
         v = h->from;
@@ -434,18 +432,20 @@ void Controller::select_face(Face* face)
         h = h->next;
     } while (h != face->halfedge);
     scene->highlighted_element.faces.push_back({0u, 1u, 2u});
+    scene->highlighted_element.modified = true;
 }
 
 void Controller::select_light(Light* light)
 {
     scene->selected_element = light;
-    scene->highlighted_element.positions.push_back({0.0f, 0.0f, 0.0f});
-    scene->highlighted_element.positions.push_back({0.1f, 0.0f, 0.0f});
-    scene->highlighted_element.positions.push_back({-0.1f, 0.0f, 0.0f});
-    scene->highlighted_element.positions.push_back({0.0f, 0.1f, 0.0f});
-    scene->highlighted_element.positions.push_back({0.0f, -0.1f, 0.0f});
-    scene->highlighted_element.positions.push_back({0.0f, 0.0f, 0.1f});
-    scene->highlighted_element.positions.push_back({0.0f, 0.0f, -0.1f});
+    scene->highlighted_element.positions.emplace_back(0.0f, 0.0f, 0.0f);
+    scene->highlighted_element.positions.emplace_back(0.1f, 0.0f, 0.0f);
+    scene->highlighted_element.positions.emplace_back(-0.1f, 0.0f, 0.0f);
+    scene->highlighted_element.positions.emplace_back(0.0f, 0.1f, 0.0f);
+    scene->highlighted_element.positions.emplace_back(0.0f, -0.1f, 0.0f);
+    scene->highlighted_element.positions.emplace_back(0.0f, 0.0f, 0.1f);
+    scene->highlighted_element.positions.emplace_back(0.0f, 0.0f, -0.1f);
+    scene->highlighted_element.modified = true;
 }
 
 void Controller::on_rotating(bool initial)

@@ -12,13 +12,13 @@
 #include <Eigen/Dense>
 
 #include "../utils/logger.h"
+#include "../utils/rendering.hpp"
 
 using Eigen::Matrix4f;
 using Eigen::Vector3f;
 using std::array;
 using std::make_pair;
 using std::map;
-using std::monostate;
 using std::optional;
 using std::pair;
 using std::set;
@@ -27,7 +27,6 @@ using std::string;
 using std::tuple;
 using std::unordered_map;
 using std::vector;
-using std::visit;
 
 size_t HalfedgeMesh::next_available_id = 0;
 
@@ -39,10 +38,10 @@ struct overloaded : Ts...
 template<class... Ts>
 overloaded(Ts...) -> overloaded<Ts...>;
 
-HalfedgeMesh::HalfedgeMesh(Object& object) :
-    inconsistent_element(monostate()), global_inconsistent(false), object(object), mesh(object.mesh)
+HalfedgeMesh::HalfedgeMesh(Object& object) : modified(false), object(object), mesh(object.mesh)
 {
     halfedge_arrows.name    = "Halfedge Mesh";
+    halfedge_arrows.color   = default_wireframe_color;
     logger                  = get_logger("Halfedge Mesh");
     const size_t n_vertices = mesh.positions.size();
     const size_t n_faces    = mesh.faces.size();
@@ -253,46 +252,8 @@ HalfedgeMesh::~HalfedgeMesh()
 
 void HalfedgeMesh::sync()
 {
-    if (!global_inconsistent) {
-        // Synchronize the inconsistent element
-        const auto sync_vertex = [this](Vertex* vertex) {
-            mesh.positions[v_indices[vertex]] = vertex->pos;
-            const Halfedge* h                 = vertex->halfedge;
-            do {
-                if (!(h->is_boundary())) {
-                    auto [from, to] = halfedge_arrow_endpoints(h);
-                    halfedge_arrows.update_arrow(h_indices[h], from, to);
-                }
-                if (!(h->inv->is_boundary())) {
-                    auto [from, to] = halfedge_arrow_endpoints(h->inv);
-                    halfedge_arrows.update_arrow(h_indices[h->inv], from, to);
-                }
-                h = h->inv->next;
-            } while (h != vertex->halfedge);
-        };
-        const auto sync_edge = [&sync_vertex](Edge* edge) {
-            Vertex* v1 = edge->halfedge->from;
-            Vertex* v2 = edge->halfedge->inv->from;
-            sync_vertex(v1);
-            sync_vertex(v2);
-        };
-        const auto sync_face = [&sync_vertex](Face* face) {
-            Halfedge* h = face->halfedge;
-            do {
-                sync_vertex(h->from);
-                h = h->next;
-            } while (h != face->halfedge);
-        };
-        visit(
-            overloaded{
-                []([[maybe_unused]]
-                   monostate empty) {},
-                sync_vertex, sync_edge, sync_face
-            },
-            inconsistent_element
-        );
+    if (!modified)
         return;
-    }
 
     logger->info("synchronize halfedge mesh to object {} (ID: {})", object.name, object.id);
 
@@ -347,13 +308,12 @@ void HalfedgeMesh::sync()
         }
     }
     logger->debug("face data is synchronized");
-    object.modified = true;
-    logger->debug("all data is synchronized, the object's dirty flag is set");
+    mesh.modified = true;
+    logger->debug("all data is synchronized, source mesh marked as modified");
     regenerate_halfedge_arrows();
     logger->debug("halfedge arrows are regenerated");
-    global_inconsistent = false;
+    modified = false;
     logger->info("synchronization done");
-    logger->info("");
 }
 
 tuple<Vector3f, Vector3f> HalfedgeMesh::halfedge_arrow_endpoints(const Halfedge* h)
@@ -411,6 +371,7 @@ void HalfedgeMesh::regenerate_halfedge_arrows()
         h_indices[h] = counter;
         ++counter;
     }
+    halfedge_arrows.modified = true;
 }
 
 void HalfedgeMesh::erase(Halfedge* h)
