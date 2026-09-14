@@ -81,6 +81,7 @@ set(DANDELION_RENDER_SOURCES
     src/render/triangle.cpp
 )
 set(DANDELION_GEOMETRY_SOURCES
+    src/geometry/mesh.cpp
     src/geometry/halfedge_mesh.cpp
     src/geometry/meshedit.cpp
     src/geometry/halfedge.cpp
