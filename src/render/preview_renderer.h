@@ -59,6 +59,11 @@ private:
     void update_drawable_meshes(Scene& scene);
     /*! \~chinese 将场景中所有的 `LineSet` 几何数据同步到 `GL::DrawableLineSet` 。 */
     void update_drawable_linesets(Scene& scene);
+    /*!
+     * \~chinese
+     * 处于布局模式下且有物体被选中时，渲染这个物体的高亮效果。
+     */
+    void render_selected_object_if_exist(const Scene& scene);
 
     std::unique_ptr<Shader>                                                  primitive_shader;
     std::unique_ptr<Shader>                                                  phong_shader;

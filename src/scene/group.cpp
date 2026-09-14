@@ -20,6 +20,8 @@
 using Eigen::Vector3f;
 using std::array;
 using std::make_unique;
+using std::pair;
+using std::set;
 using std::size_t;
 using std::string;
 using std::string_view;
@@ -65,16 +67,18 @@ bool Group::load_models(const string& file_path)
         const aiVector3D* normals    = mesh->mNormals;
         unsigned int      n_vertices = mesh->mNumVertices;
         unsigned int      n_faces    = mesh->mNumFaces;
-        string            name(mesh->mName.C_Str());
+        const string      name(mesh->mName.C_Str());
         logger->info("the {}-th mesh has {} faces", mesh_id + 1, n_faces);
 
         objects.push_back(make_unique<Object>(name));
-        Object&                         object           = *(objects.back());
-        vector<Vector3f>&               object_positions = object.mesh.positions;
-        vector<Vector3f>&               object_normals   = object.mesh.normals;
-        vector<array<unsigned int, 2>>& object_edges     = object.mesh.edges;
-        vector<array<unsigned int, 3>>& object_faces     = object.mesh.faces;
+        Object&                               object           = *(objects.back());
+        vector<Vector3f>&                     object_positions = object.mesh.positions;
+        vector<Vector3f>&                     object_normals   = object.mesh.normals;
+        vector<array<unsigned int, 2>>&       object_edges     = object.mesh.edges;
+        vector<array<unsigned int, 3>>&       object_faces     = object.mesh.faces;
+        set<pair<unsigned int, unsigned int>> exist_edges;
         logger->info("load mesh (object) {}", object.name);
+        object.mesh.name = name;
         // Load vertices and normals into the object's GL::Mesh.
         for (unsigned int vertex_id = 0; vertex_id < n_vertices; ++vertex_id) {
             const aiVector3D& vertex = vertices[vertex_id];
@@ -98,11 +102,17 @@ bool Group::load_models(const string& file_path)
 
                 const unsigned int next_vertex_id =
                     faces[face_id].mIndices[(current_vertex + 1) % vertices_per_face];
-                const unsigned int id_less    = std::min(vertex_id, next_vertex_id);
-                const unsigned int id_greater = std::max(vertex_id, next_vertex_id);
+                const unsigned int id_less               = std::min(vertex_id, next_vertex_id);
+                const unsigned int id_greater            = std::max(vertex_id, next_vertex_id);
+                const pair<unsigned int, unsigned int> e = {id_less, id_greater};
+                if (exist_edges.contains(e))
+                    continue;
+                exist_edges.insert(e);
                 object_edges.push_back({id_less, id_greater});
             }
+            object_faces.emplace_back(std::move(f));
         }
+        object.mesh.modified = true;
         // Load material if it exists.
         constexpr string_view assimp_default_material_name = "DefaultMaterial";
         const aiMaterial*     material = scene->mMaterials[mesh->mMaterialIndex];
