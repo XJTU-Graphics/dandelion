@@ -3,6 +3,7 @@
 #include <vector>
 #include <thread>
 #include <chrono>
+#include <cstring>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -17,6 +18,7 @@ using duration   = std::chrono::duration<float>;
 using time_point = std::chrono::time_point<steady_clock, duration>;
 using Eigen::Vector3f;
 using Eigen::Vector4f;
+using std::memcpy;
 
 // vertex processor & rasterizer & fragement processor can visit
 // all the static variables below from Uniforms structure
@@ -25,11 +27,11 @@ Eigen::Matrix4f Uniforms::inv_trans_M;
 int             Uniforms::width  = 0;
 int             Uniforms::height = 0;
 
-GL::Material     ini_material = GL::Material();
+PhongMaterial    ini_material = PhongMaterial();
 std::list<Light> ini_lights   = {};
 Camera           ini_camera = Camera(Vector3f::Ones(), Vector3f::Ones(), 0.1f, 10.0f, 45.0f, 1.33f);
 
-GL::Material&     Uniforms::material = ini_material;
+PhongMaterial&    Uniforms::material = ini_material;
 std::list<Light>& Uniforms::lights   = ini_lights;
 Camera&           Uniforms::camera   = ini_camera;
 
@@ -102,15 +104,25 @@ void RasterizerRenderer::render(const Scene& scene)
             Uniforms::width       = static_cast<int>(this->width);
             Uniforms::height      = static_cast<int>(this->height);
             // To do: 同步
-            Uniforms::material = object->mesh.material;
-            Uniforms::lights   = scene.lights;
-            Uniforms::camera   = scene.camera;
+            if (object->material->type() == MaterialType::Phong) {
+                Uniforms::material = dynamic_cast<PhongMaterial&>(*object->material);
+            }
+            Uniforms::lights = scene.lights;
+            Uniforms::camera = scene.camera;
 
             // input object->mesh's vertices & faces & normals data
-            const std::vector<float>&        vertices  = object->mesh.vertices.data;
-            const std::vector<unsigned int>& faces     = object->mesh.faces.data;
-            const std::vector<float>&        normals   = object->mesh.normals.data;
-            size_t                           num_faces = faces.size();
+            std::vector<float>        vertices;
+            std::vector<float>        normals;
+            std::vector<unsigned int> faces;
+            const size_t              n_vertices = object->mesh.positions.size();
+            vertices.resize(n_vertices * 3);
+            memcpy(vertices.data(), object->mesh.positions.data(), n_vertices * 3 * sizeof(float));
+            normals.resize(n_vertices);
+            memcpy(normals.data(), object->mesh.normals.data(), n_vertices * 3 * sizeof(float));
+            const size_t n_faces = object->mesh.faces.size();
+            faces.resize(n_faces * 3);
+            memcpy(faces.data(), object->mesh.faces.data(), n_faces * 2 * sizeof(unsigned int));
+            unsigned int num_faces = faces.size();
 
             // process vertices
             for (size_t i = 0; i < num_faces; i += 3) {

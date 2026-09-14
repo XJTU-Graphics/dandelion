@@ -25,7 +25,7 @@ VertexShaderPayload vertex_shader(const VertexShaderPayload& payload)
 }
 
 Vector3f phong_fragment_shader(
-    const FragmentShaderPayload& payload, const GL::Material& material,
+    const FragmentShaderPayload& payload, const PhongMaterial& material,
     const std::list<Light>& lights, const Camera& camera
 )
 {

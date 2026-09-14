@@ -38,10 +38,10 @@ void VertexArrayObject::release() const noexcept
     glBindVertexArray(0);
 }
 
-void VertexArrayObject::draw(GLenum mode, int first, size_t count)
+void VertexArrayObject::draw(GLenum mode, int first, size_t n_vertices) const
 {
     glBindVertexArray(descriptor);
-    glDrawArrays(mode, first, GLsizei(count));
+    glDrawArrays(mode, first, GLsizei(n_vertices));
     glBindVertexArray(0);
 }
 

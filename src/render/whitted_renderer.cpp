@@ -1,6 +1,5 @@
 #include <algorithm>
 #include <cmath>
-#include <fstream>
 #include <memory>
 #include <vector>
 #include <optional>
@@ -28,7 +27,7 @@ constexpr float INFINITY_FLOAT = std::numeric_limits<float>::max();
 constexpr float EPSILON = 0.00001f;
 
 // 当前物体的材质类型，根据不同材质类型光线会有不同的反射情况
-enum class MaterialType
+enum class PhysicalMaterialType
 {
     DIFFUSE_AND_GLOSSY,
     REFLECTION
@@ -111,7 +110,7 @@ float WhittedRenderer::fresnel(const Vector3f& I, const Vector3f& N, const float
 }
 
 // 如果相交返回Intersection结构体，如果不相交则返回false
-std::optional<std::tuple<Intersection, GL::Material>>
+std::optional<std::tuple<Intersection, PhongMaterial>>
 WhittedRenderer::trace(const Ray& ray, const Scene& scene)
 {
     // this line below is just for compiling and can be deleted
@@ -119,7 +118,7 @@ WhittedRenderer::trace(const Ray& ray, const Scene& scene)
 
     std::optional<Intersection> payload;
     Eigen::Matrix4f             M;
-    GL::Material                material;
+    PhongMaterial               material;
     for (const auto& group: scene.groups) {
         for (const auto& object: group->objects) {
 

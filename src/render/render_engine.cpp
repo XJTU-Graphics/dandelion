@@ -1,5 +1,7 @@
 #include "render_engine.h"
 
+#include "../utils/rendering.hpp"
+
 Eigen::Vector3f RenderEngine::background_color(RGB_COLOR(100, 100, 100));
 
 RenderEngine::RenderEngine()

@@ -80,6 +80,7 @@ set(DANDELION_RENDER_SOURCES
     src/render/whitted_renderer.cpp
     src/render/render_engine.cpp
     src/render/triangle.cpp
+    src/render/preview_renderer.cpp
 )
 set(DANDELION_GEOMETRY_SOURCES
     src/geometry/mesh.cpp

@@ -10,8 +10,7 @@
 #include <Eigen/Geometry>
 #include <spdlog/spdlog.h>
 
-#include "../platform/shader.hpp"
-#include "../utils/rendering.hpp"
+#include "material.hpp"
 #include "../utils/bvh.h"
 #include "../utils/kinetic_state.h"
 
@@ -115,6 +114,8 @@ public:
      * 如需获取世界坐标系下的坐标，请乘上模型变换矩阵。
      */
     Mesh mesh;
+    /*! \~chinese 该物体的材质。 */
+    std::unique_ptr<Material> material;
     /*!
      * \~chinese
      * \brief 根据这个物体建立的 BVH 。

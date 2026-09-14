@@ -129,17 +129,21 @@ void Toolbar::xyz_drag(float* x, float* y, float* z, float v_speed, const char* 
     ImGui::PopItemWidth();
 }
 
-void Toolbar::material_editor(GL::Material& material)
+void Toolbar::material_editor(Material& material)
 {
     static constexpr ImGuiColorEditFlags flags = ImGuiColorEditFlags_NoInputs;
+    if (material.type() != MaterialType::Phong) {
+        return;
+    }
+    PhongMaterial& phong_material = dynamic_cast<PhongMaterial&>(material);
     ImGui::SeparatorText("Material");
-    ImGui::ColorEdit3("Ambient", material.ambient.data(), flags);
+    ImGui::ColorEdit3("Ambient", phong_material.ambient.data(), flags);
     ImGui::SameLine();
-    ImGui::ColorEdit3("Diffuse", material.diffuse.data(), flags);
+    ImGui::ColorEdit3("Diffuse", phong_material.diffuse.data(), flags);
     ImGui::SameLine();
-    ImGui::ColorEdit3("Specular", material.specular.data(), flags);
+    ImGui::ColorEdit3("Specular", phong_material.specular.data(), flags);
     ImGui::SliderFloat(
-        "Shininess", &material.shininess, 0.0f, 1e6f, "%.1f",
+        "Shininess", &phong_material.shininess, 0.0f, 1e6f, "%.1f",
         ImGuiSliderFlags_AlwaysClamp | ImGuiSliderFlags_Logarithmic
     );
     if (ImGui::IsItemHovered()) {
@@ -162,7 +166,7 @@ void Toolbar::layout_mode(Scene& scene)
 
         Object* selected_object = scene.selected_object;
         if (selected_object != nullptr) {
-            material_editor(selected_object->mesh.material);
+            material_editor(*selected_object->material);
             ImGui::SeparatorText("Transform");
             ImGui::Text("Translation");
             ImGui::PushID("Translation##");
