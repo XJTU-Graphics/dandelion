@@ -7,7 +7,6 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
-#include "../platform/gl.hpp"
 #include "../scene/light.h"
 #include "../scene/camera.h"
 #include "graphics_interface.h"

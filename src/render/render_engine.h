@@ -2,8 +2,6 @@
 #define DANDELION_RENDER_RENDER_ENGINE_H
 
 #include <memory>
-#include <functional>
-#include <queue>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -11,7 +9,6 @@
 
 #include "../scene/scene.h"
 #include "rasterizer.h"
-#include "graphics_interface.h"
 #include "rasterizer_renderer.h"
 
 /*!

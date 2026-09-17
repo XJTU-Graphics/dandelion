@@ -6,7 +6,7 @@
 
 #include "../src/scene/object.h"
 #include "../src/utils/math.hpp"
-#include "../src/utils/formatter.hpp"
+#include "../src/utils/formatter.hpp" // IWYU pragma: keep
 
 using Eigen::AngleAxisf;
 using Eigen::Matrix4f;

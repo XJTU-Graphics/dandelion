@@ -4,12 +4,6 @@
 #include <optional>
 #include <format>
 
-#ifdef _WIN32
-    #include <Windows.h>
-#endif
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-
 #include "../utils/ray.h"
 #include "../utils/rendering.hpp"
 #include "../simulation/solver.h"

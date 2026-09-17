@@ -1,22 +1,11 @@
 #ifndef DANDELION_RENDER_RASTERIZER_H
 #define DANDELION_RENDER_RASTERIZER_H
 
-#include <algorithm>
-#include <functional>
-#include <map>
-#include <vector>
-#include <list>
-#include <queue>
-
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <spdlog/spdlog.h>
 
-#include "../platform/gl.hpp"
-#include "../scene/light.h"
-#include "../scene/camera.h"
 #include "triangle.h"
-#include "rasterizer_renderer.h"
 
 /*!
  * \file render/rasterizer.h
@@ -35,12 +24,13 @@ float sign(Eigen::Vector2f p1, Eigen::Vector2f p2, Eigen::Vector2f p3);
 class Rasterizer
 {
 public:
+
     /*!
      * \~chinese
      * \brief 负责执行光栅化的工作线程
-     * 
+     *
      * 不断读取顶点着色输出队列中的顶点数据，每三个顶点将其光栅化为三角形片元
-     * 
+     *
      */
     void worker_thread();
 
