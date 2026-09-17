@@ -10,10 +10,6 @@
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 #include <assimp/material.h>
-#ifdef _WIN32
-    #include <Windows.h>
-#endif
-#include <glad/glad.h>
 #include <nlohmann/json.hpp>
 
 #include "../utils/kinetic_state.h"

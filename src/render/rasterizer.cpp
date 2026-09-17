@@ -1,8 +1,4 @@
-#include <array>
-#include <limits>
 #include <tuple>
-#include <vector>
-#include <algorithm>
 #include <cmath>
 #include <mutex>
 
@@ -12,13 +8,12 @@
 
 #include "rasterizer.h"
 #include "triangle.h"
-#include "../utils/math.hpp"
+#include "graphics_interface.h"
 
 using Eigen::Matrix4f;
 using Eigen::Vector2i;
 using Eigen::Vector3f;
 using Eigen::Vector4f;
-using std::fill;
 using std::tuple;
 
 void Rasterizer::worker_thread()

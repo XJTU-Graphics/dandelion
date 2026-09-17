@@ -1,21 +1,8 @@
 #include <ctime>
-#include <chrono>
 
 #include <catch2/catch_amalgamated.hpp>
-#ifdef _WIN32
-    #include <Windows.h>
-#endif
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
-
-void abort_on_error()
-{
-    spdlog::shutdown();
-    glfwTerminate();
-    std::abort();
-}
 
 int main(int argc, char* argv[])
 {
@@ -29,32 +16,7 @@ int main(int argc, char* argv[])
         now->tm_year + 1'900, now->tm_mon + 1, now->tm_mday, now->tm_hour, now->tm_min, now->tm_sec
     );
 
-    GLFWwindow* window = nullptr;
-    glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_VISIBLE, GL_FALSE);
-#ifdef __APPLE__
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-    glfwWindowHint(GLFW_COCOA_MENUBAR, GL_FALSE);
-#endif
-    window = glfwCreateWindow(800, 600, "Dandelion 3D Test", nullptr, nullptr);
-    if (window == nullptr) {
-        spdlog::critical("Cannot create an OpenGL 3.3 context, abort");
-        abort_on_error();
-    }
-    glfwMakeContextCurrent(window);
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-        spdlog::critical("Cannot load OpenGL APIs, abort");
-        glfwDestroyWindow(window);
-        abort_on_error();
-    }
-
     int result = Catch::Session().run(argc, argv);
-
-    glfwDestroyWindow(window);
-    glfwTerminate();
 
     return result;
 }
