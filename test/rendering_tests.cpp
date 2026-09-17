@@ -17,16 +17,18 @@
 using Eigen::Vector3f;
 namespace fs = std::filesystem;
 
-TEST_CASE("Rasterizer Renderer", "[rendering]")
+namespace {
+
+// 参考图由正确的渲染器生成，只有光栅化时的线程竞争、模型文件往返保存的精度损失和
+// 浮点误差会带来少量像素差异；30dB 足以容忍这些噪声，而渲染逻辑错误通常会使 PSNR 掉到 20dB 以下。
+constexpr double psnr_threshold = 30.0;
+
+// 逐个加载 input_dir 中的场景，用 type 指定的渲染器渲染（纯黑背景），
+// 并与 ans_dir 中的同名参考图比较，PSNR 大于阈值时判定通过。
+void run_rendering_test(RendererType type, const fs::path& input_dir, const fs::path& ans_dir)
 {
-    // 参考图由正确的渲染器生成，只有光栅化时的线程竞争和浮点误差会带来少量像素差异；
-    // 30dB 足以容忍这些噪声，而渲染逻辑错误通常会使 PSNR 掉到 20dB 以下。
-    constexpr double psnr_threshold = 30.0;
     // 保存的场景数据中没有背景色，约定所有测试场景都使用纯黑色背景渲染。
     RenderEngine::background_color = Vector3f(0.0f, 0.0f, 0.0f);
-
-    const fs::path input_dir("../input/rendering");
-    const fs::path ans_dir("../ans/rendering/rasterizer_renderer");
 
     std::vector<fs::path> scene_dirs;
     for (const fs::directory_entry& entry: fs::directory_iterator(input_dir)) {
@@ -48,7 +50,9 @@ TEST_CASE("Rasterizer Renderer", "[rendering]")
         RenderEngine engine;
         engine.width  = 480.0f;
         engine.height = std::floor(engine.width / scene.camera.aspect_ratio);
-        engine.render(scene, RendererType::RASTERIZER);
+        // whitted 渲染器使用 BVH 加速求交
+        engine.whitted_render->use_bvh = true;
+        engine.render(scene, type);
 
         const fs::path ans_path  = ans_dir / (scene_name + ".png");
         int            ans_width = 0, ans_height = 0, ans_channels = 0;
@@ -72,4 +76,20 @@ TEST_CASE("Rasterizer Renderer", "[rendering]")
         INFO(std::format("scene: {}, PSNR: {:.2f} dB", scene_name, psnr));
         REQUIRE(psnr > psnr_threshold);
     }
+}
+
+} // namespace
+
+TEST_CASE("Rasterizer Renderer", "[rendering]")
+{
+    run_rendering_test(
+        RendererType::RASTERIZER, "../input/rendering", "../ans/rendering/rasterizer_renderer"
+    );
+}
+
+TEST_CASE("Whitted Renderer", "[rendering]")
+{
+    run_rendering_test(
+        RendererType::WHITTED_STYLE, "../input/rendering", "../ans/rendering/whitted_renderer"
+    );
 }
