@@ -66,6 +66,7 @@ set(TEST_SOURCES
     basic_tests.cpp
     geometry_tests.cpp
     rendering_tests.cpp
+    benchmark_tests.cpp
 )
 
 set(SOURCES
