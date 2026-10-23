@@ -10,7 +10,7 @@ using std::array;
 
 // -------------------- Mesh --------------------
 Mesh::Mesh(const Mesh& other) :
-    positions(other.positions), normals(other.normals), faces(other.faces)
+    positions(other.positions), normals(other.normals),edges(other.edges), faces(other.faces)
 {
 }
 
@@ -18,6 +18,7 @@ void Mesh::clear() noexcept
 {
     positions.clear();
     normals.clear();
+    edges.clear();
     faces.clear();
     modified = true;
 }
