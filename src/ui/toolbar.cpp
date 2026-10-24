@@ -327,6 +327,7 @@ void Toolbar::model_mode(Scene& scene)
                 optional<Edge*> result = scene.halfedge_mesh->flip_edge(e);
                 if (result.has_value()) {
                     scene.halfedge_mesh->modified = true;
+                    on_element_selected(result.value());
                 }
             }
             ImGui::SameLine();
